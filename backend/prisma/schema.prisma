@@ -1,0 +1,227 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  chain_admin
+  hotel_manager
+  receptionist
+  housekeeping
+}
+
+enum RoomStatus {
+  available
+  occupied
+  maintenance
+  out_of_order
+}
+
+enum CleaningStatus {
+  clean
+  dirty
+  in_progress
+}
+
+model Branch {
+  id             String    @id @default(uuid())
+  name           String    @db.VarChar(255)
+  address        String    @db.Text
+  phone          String?   @db.VarChar(30)
+  email          String?   @db.VarChar(255)
+  contactPerson  String?   @db.VarChar(255) @map("contact_person")
+  timezone       String    @default("Asia/Jerusalem") @db.VarChar(50)
+  isActive       Boolean   @default(true) @map("is_active")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  users          User[]
+  refreshTokens  RefreshToken[]
+  auditLogs      AuditLog[]
+  roomTypes       RoomType[]
+  rooms           Room[]
+  guests          Guest[]
+  guestDocuments  GuestDocument[]
+  reservations    Reservation[]
+
+  @@map("branches")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String    @db.VarChar(255)
+  email         String    @unique @db.VarChar(255)
+  passwordHash  String    @map("password_hash") @db.VarChar
+  role          Role
+  branchId      String?   @map("branch_id")
+  isActive      Boolean   @default(true) @map("is_active")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  branch               Branch?         @relation(fields: [branchId], references: [id])
+  refreshTokens        RefreshToken[]
+  auditLogs            AuditLog[]
+  recordedDocuments    GuestDocument[]
+  createdReservations  Reservation[]   @relation("ReservationCreatedBy")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id         String    @id @default(uuid())
+  userId     String    @map("user_id")
+  tokenHash  String    @map("token_hash") @db.VarChar
+  expiresAt  DateTime  @map("expires_at")
+  revokedAt  DateTime? @map("revoked_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user       User      @relation(fields: [userId], references: [id])
+  branch     Branch?   @relation(fields: [branchId], references: [id])
+  branchId   String?   @map("branch_id")
+
+  @@map("refresh_tokens")
+}
+
+model RoomType {
+  id            String    @id @default(uuid())
+  branchId      String    @map("branch_id")
+  name          String    @db.VarChar(100)
+  basePrice     Decimal   @map("base_price") @db.Decimal(10, 2)
+  maxOccupancy  Int       @map("max_occupancy")
+  description   String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  branch        Branch    @relation(fields: [branchId], references: [id])
+  rooms         Room[]
+
+  @@map("room_types")
+}
+
+model Room {
+  id             String         @id @default(uuid())
+  branchId       String         @map("branch_id")
+  roomTypeId     String         @map("room_type_id")
+  number         String         @db.VarChar(20)
+  floor          Int?
+  status         RoomStatus     @default(available)
+  cleaningStatus CleaningStatus @default(clean) @map("cleaning_status")
+  notes          String?        @db.Text
+  isActive       Boolean        @default(true) @map("is_active")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+
+  branch         Branch         @relation(fields: [branchId], references: [id])
+  roomType       RoomType       @relation(fields: [roomTypeId], references: [id])
+  reservations   Reservation[]
+
+  @@unique([branchId, number])
+  @@index([branchId, status])
+  @@index([branchId, roomTypeId])
+  @@map("rooms")
+}
+
+enum DocumentType {
+  passport
+  id_card
+  drivers_license
+  other
+}
+
+model Guest {
+  id          String    @id @default(uuid())
+  branchId    String    @map("branch_id")
+  fullName    String    @db.VarChar(255) @map("full_name")
+  email       String?   @db.VarChar(255)
+  phone       String    @db.VarChar(30)
+  passportId  String?   @db.VarChar(50) @map("passport_id")
+  nationality String?   @db.VarChar(10)
+  dateOfBirth DateTime? @db.Date @map("date_of_birth")
+  notes       String?   @db.Text
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  branch       Branch          @relation(fields: [branchId], references: [id])
+  documents    GuestDocument[]
+  reservations Reservation[]
+
+  @@index([branchId, email])
+  @@index([branchId, phone])
+  @@index([branchId, passportId])
+  @@map("guests")
+}
+
+model GuestDocument {
+  id             String       @id @default(uuid())
+  guestId        String       @map("guest_id")
+  branchId       String       @map("branch_id")
+  documentType   DocumentType @map("document_type")
+  documentNumber String       @db.VarChar(100) @map("document_number")
+  issuingCountry String       @db.VarChar(10) @map("issuing_country")
+  expiryDate     DateTime?    @db.Date @map("expiry_date")
+  recordedAt     DateTime     @map("recorded_at")
+  recordedBy     String       @map("recorded_by")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  guest    Guest  @relation(fields: [guestId], references: [id])
+  branch   Branch @relation(fields: [branchId], references: [id])
+  recorder User   @relation(fields: [recordedBy], references: [id])
+
+  @@map("guest_documents")
+}
+
+model AuditLog {
+  id          String    @id @default(uuid())
+  userId      String?   @map("user_id")
+  action      String    @db.VarChar(100)
+  entityType  String?   @map("entity_type") @db.VarChar(100)
+  entityId    String?   @map("entity_id") @db.Uuid
+  metadata    Json?
+  branchId    String?   @map("branch_id")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  user        User?     @relation(fields: [userId], references: [id])
+  branch      Branch?   @relation(fields: [branchId], references: [id])
+
+  @@map("audit_logs")
+}
+
+enum ReservationStatus {
+  pending
+  confirmed
+  checked_in
+  checked_out
+  cancelled
+  no_show
+}
+
+model Reservation {
+  id           String            @id @default(uuid())
+  branchId     String            @map("branch_id")
+  roomId       String            @map("room_id")
+  guestId      String            @map("guest_id")
+  checkInDate  DateTime          @db.Date @map("check_in_date")
+  checkOutDate DateTime          @db.Date @map("check_out_date")
+  status       ReservationStatus @default(pending)
+  totalPrice   Decimal           @map("total_price") @db.Decimal(10, 2)
+  source       String?           @db.VarChar(50)
+  notes        String?           @db.Text
+  version      Int               @default(0)
+  createdBy    String            @map("created_by")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  branch        Branch  @relation(fields: [branchId], references: [id])
+  room          Room    @relation(fields: [roomId], references: [id])
+  guest         Guest   @relation(fields: [guestId], references: [id])
+  createdByUser User    @relation("ReservationCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([branchId, checkInDate, checkOutDate])
+  @@index([roomId, checkInDate, checkOutDate])
+  @@index([branchId, status])
+  @@map("reservations")
+}
