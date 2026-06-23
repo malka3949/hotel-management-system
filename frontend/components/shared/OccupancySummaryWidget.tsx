@@ -18,20 +18,14 @@ const STATS: { key: keyof OccupancySummary; label: string; color: string }[] = [
 
 export function OccupancySummaryWidget({ branchId, date }: Props) {
   const [summary, setSummary] = useState<OccupancySummary | null>(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    getOccupancySummary(branchId, date)
-      .then(setSummary)
-      .finally(() => setLoading(false));
+    getOccupancySummary(branchId, date).then(setSummary).catch(() => {});
   }, [branchId, date]);
 
-  if (loading) {
+  if (!summary) {
     return <div className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>טוען...</div>;
   }
-
-  if (!summary) return null;
 
   return (
     <div className="grid grid-cols-5 gap-3">

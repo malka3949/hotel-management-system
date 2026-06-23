@@ -45,20 +45,18 @@ export default function RoomsPage() {
   const [filters, setFilters] = useState<RoomsFilter>({});
 
   useEffect(() => {
-    if (isAdmin) {
-      getBranches().then(setBranches).catch(() => {});
-    }
+    if (!isAdmin) return;
+    getBranches().then(setBranches).catch(() => {});
   }, [isAdmin]);
 
   const load = useCallback(async () => {
     if (isAdmin && !filters.branchId) {
+      await Promise.resolve();
       setLoading(false);
       setRooms([]);
       setRoomTypes([]);
       return;
     }
-    setLoading(true);
-    setError('');
     try {
       const [r, rt] = await Promise.all([
         getRooms(filters),
@@ -66,13 +64,15 @@ export default function RoomsPage() {
       ]);
       setRooms(r);
       setRoomTypes(rt);
+      setError('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בטעינת חדרים');
     } finally {
       setLoading(false);
     }
-  }, [filters]);
+  }, [filters, isAdmin]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   async function handleStatusChange(room: Room, status: RoomStatus) {
