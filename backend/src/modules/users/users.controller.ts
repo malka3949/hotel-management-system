@@ -34,6 +34,7 @@ export class UsersController {
   }
 
   @Get('me')
+  @Roles('chain_admin', 'hotel_manager', 'receptionist', 'housekeeping')
   findMe(@CurrentUser() user: JwtPayload) {
     return this.usersService.findMe(user.sub);
   }

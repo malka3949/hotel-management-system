@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md — Hotel Management System
 
-Last updated: 2026-06-22
+Last updated: 2026-06-28
 
 ---
 
@@ -12,9 +12,9 @@ Last updated: 2026-06-22
 | Phase 1 | Auth, Users & Branches | `PHASE-01-auth.md` | 🟢 Complete |
 | Phase 2 | Rooms Module | `PHASE-02-rooms.md` | 🟢 Complete |
 | Phase 3 | Guests Module | `PHASE-03-guests.md` | 🟢 Complete |
-| Phase 4 | Availability Engine | `PHASE-04-availability.md` | 🟡 In Progress |
-| Phase 5 | Reservations System | `PHASE-05-reservations.md` | ⏳ Pending |
-| Phase 6 | Check-in / Check-out | `PHASE-06-checkin-checkout.md` | ⏳ Pending |
+| Phase 4 | Availability Engine | `PHASE-04-availability.md` | 🟢 Complete |
+| Phase 5 | Reservations System | `PHASE-05-reservations.md` | 🟢 Complete |
+| Phase 6 | Check-in / Check-out | `PHASE-06-checkin-checkout.md` | 🟢 Complete |
 | Phase 7 | Billing & Payments | `PHASE-07-billing.md` | ⏳ Pending |
 | Phase 8 | Guest Portal | `PHASE-08-guest-portal.md` | ⏳ Pending |
 | Phase 9 | Housekeeping Module | `PHASE-09-housekeeping.md` | ⏳ Pending |
@@ -22,8 +22,8 @@ Last updated: 2026-06-22
 | Phase 11 | Security Audit & Hardening | `PHASE-11-security.md` | ⏳ Pending |
 | Phase 12 | Production Deployment | `PHASE-12-deployment.md` | ⏳ Pending |
 
-**Active phase: Phase 4 — Availability Engine (🟡 In Progress)**
-**Overall progress: 3/13 phases complete (Phase 4 in progress)**
+**Active phase: Phase 6 — Check-in / Check-out (🟢 Complete)**
+**Overall progress: 6/13 phases complete**
 
 ---
 
@@ -303,6 +303,115 @@ None. Tests require PostgreSQL + Redis — run via `docker compose up` then `npm
 
 ---
 
+## Phase 5 — Reservations System
+
+**Status:** 🟡 In Progress
+
+### Completed tasks
+
+#### Schema
+- [x] `ReservationSource` enum added (`walk_in`, `phone`, `website`, `ota`)
+- [x] `Reservation` model extended: `adults`, `children`, `cancelledAt`, `cancellationReason`, `source` → enum
+- [x] `ReservationGuest` model + `reservation_guests` table
+- [x] Migration `20260623000004_phase5_reservation_fields`
+
+#### Backend
+- [x] `ReservationsModule` — `ReservationsService`, `ReservationsController`
+- [x] `POST /api/v1/reservations` — atomic create, calls `AvailabilityService.isRoomAvailable()` inside `$transaction`
+- [x] `GET /api/v1/reservations` — paginated list with filters (status, date range, room, guest, search)
+- [x] `GET /api/v1/reservations/calendar` — calendar view by date range
+- [x] `GET /api/v1/reservations/:id` — full detail with guest + room
+- [x] `PATCH /api/v1/reservations/:id` — update (re-validates availability if dates/room changed)
+- [x] `PATCH /api/v1/reservations/:id/status` — validated status transitions
+- [x] `POST /api/v1/reservations/:id/cancel` — cancel with reason
+- [x] `GET /api/v1/rooms/:id/reservations` — in RoomsController
+- [x] `GET /api/v1/guests/:id/reservations` — in GuestsController
+- [x] Status transition validator (VALID_TRANSITIONS matrix)
+- [x] Price calculation: nights × roomType.basePrice
+- [x] Audit log for create/update/status-change/cancel
+- [x] NotificationService.sendEmail (async, non-blocking) on creation
+- [x] invalidateAvailabilityCache after create/cancel/checkout
+- [x] Branch isolation on all routes
+
+#### Frontend
+- [x] `lib/api/reservations.ts` — typed API client
+- [x] `ReservationStatusBadge` component
+- [x] `/reservations` — list with filters (status, dates, search)
+- [x] `/reservations/new` — create form (GuestSearchCombobox + room picker + price preview)
+- [x] `/reservations/[id]` — detail page + status actions + cancel dialog
+- [x] `/reservations/calendar` — monthly grid (room × day)
+- [x] Sidebar: "לוח שנה" link added
+
+#### Tests
+- [x] `test/reservations.e2e-spec.ts` — create, price calc, conflict detection, concurrent overbooking, status transitions, cancel + room freed, branch isolation, calendar, room/guest history, audit log
+
+### Exit criteria — status
+- [x] TypeScript strict — zero errors (backend + frontend)
+- [ ] Overbooking prevention tested under concurrent load — requires live PostgreSQL
+- [ ] Full reservation lifecycle working — requires live PostgreSQL
+- [ ] Reservation list, detail, calendar pages functional — requires running stack
+- [ ] Audit logging verified — requires live PostgreSQL
+- [ ] Integration tests — requires live PostgreSQL (`npm run test:e2e`)
+
+### Blockers
+None. Tests require PostgreSQL + Redis — run via `docker compose up` then `npm run test:e2e`.
+
+---
+
+## Phase 6 — Check-in / Check-out
+
+**Status:** 🟡 In Progress
+**Exit criteria doc:** `docs/phases/PHASE-06-checkin-checkout.md`
+
+### Completed tasks
+
+#### Schema
+- [x] `CheckIn` model + `check_ins` table
+- [x] `CheckOut` model + `check_outs` table
+- [x] `Invoice` model + `invoices` table (`InvoiceStatus` enum: draft/finalized/void)
+- [x] `InvoiceLineItem` model + `invoice_line_items` table (`InvoiceItemType` enum)
+- [x] Migration `20260624000005_phase6_checkin_checkout`
+- [x] Back-relations added to `Reservation`, `Branch`, `User`, `Guest`
+
+#### Backend
+- [x] `CheckInModule` — `CheckInService`, `CheckInController`
+- [x] `POST /api/v1/reservations/:id/check-in` — atomic: `confirmed` → `checked_in`, room → `occupied`, CheckIn record + Invoice (draft)
+- [x] `POST /api/v1/reservations/:id/check-out` — atomic: `checked_in` → `checked_out`, room → `available/dirty`, Invoice finalized
+- [x] `GET /api/v1/reservations/:id/invoice` — invoice with line items
+- [x] `GET /api/v1/front-desk/active-guests` — checked_in reservations
+- [x] `GET /api/v1/front-desk/arrivals` — confirmed reservations arriving on date
+- [x] `GET /api/v1/front-desk/departures` — checked_in reservations departing on date
+- [x] Tax rate 17%, invoice totals computed at check-in
+- [x] `RoomStatusGateway.emitRoomStatusUpdate()` called after status changes
+- [x] `AvailabilityService.invalidateAvailabilityCache()` called after check-in/out
+- [x] Audit log: `CHECK_IN`, `CHECK_OUT`
+- [x] Branch isolation on all routes
+- [x] `CheckInModule` imported in `AppModule`
+
+#### Frontend
+- [x] `lib/api/checkin.ts` — typed API client (checkIn, checkOut, getInvoice, getActiveGuests, getArrivals, getDepartures)
+- [x] `InvoiceSummary` component — line items table + tax + total (new shared component)
+- [x] `/front-desk` — tabs: הגעות היום / עזיבות היום / אורחים פעילים
+  - Check-in dialog with notes field
+  - Check-out dialog with InvoiceSummary preview
+- [x] `/reservations/[id]` — dedicated check-in/out buttons (replaces generic status buttons for these transitions)
+
+#### Tests
+- [x] `test/checkin.e2e-spec.ts` — check-in happy path, not-confirmed → 400, branch isolation, check-out happy path, not-checked-in → 400, active guests, arrivals, departures
+
+### Exit criteria — status
+- [ ] Check-in flow: confirmed → checked_in, room → occupied, invoice created
+- [ ] Check-out flow: checked_in → checked_out, room → dirty, invoice finalized
+- [ ] `/front-desk` page shows arrivals/departures/active guests
+- [ ] InvoiceSummary renders correctly before check-out
+- [ ] TypeScript strict — zero errors (backend + frontend)
+- [ ] Integration tests — requires live PostgreSQL (`npm run test:e2e`)
+
+### Blockers
+None. Tests require PostgreSQL — run via `docker compose up` then `npm run test:e2e`.
+
+---
+
 ## Architecture Decisions Log
 
 | Date | Decision | Reason |
@@ -327,6 +436,8 @@ None. Tests require PostgreSQL + Redis — run via `docker compose up` then `npm
 | 2026-06-22 | Reservation model added in Phase 4 (not Phase 5) | AvailabilityService must query reservations; adding model early avoids re-migration |
 | 2026-06-22 | cache-manager v7 `clear()` instead of `reset()` | v7 renamed the method; full-cache clear acceptable given 30s TTL and future Redis key-pattern support |
 | 2026-06-22 | RoomStatusGateway in RoomsModule (not standalone) | Gateway emits on room status changes — collocating with RoomsService avoids circular deps |
+| 2026-06-23 | ReservationsModule not imported by RoomsModule/GuestsModule — both import Reservations | ReservationsService uses PrismaService directly; no circular dep; RoomsModule/GuestsModule import ReservationsModule to get the service |
+| 2026-06-23 | ReservationSource as Prisma enum (not String?) | Type safety and clean frontend/backend contract; migration migrates existing string values |
 
 ---
 

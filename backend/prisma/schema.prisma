@@ -47,6 +47,9 @@ model Branch {
   guests          Guest[]
   guestDocuments  GuestDocument[]
   reservations    Reservation[]
+  checkIns        CheckIn[]
+  checkOuts       CheckOut[]
+  invoices        Invoice[]
 
   @@map("branches")
 }
@@ -67,6 +70,8 @@ model User {
   auditLogs            AuditLog[]
   recordedDocuments    GuestDocument[]
   createdReservations  Reservation[]   @relation("ReservationCreatedBy")
+  checkIns             CheckIn[]       @relation("CheckedInBy")
+  checkOuts            CheckOut[]      @relation("CheckedOutBy")
 
   @@map("users")
 }
@@ -145,9 +150,11 @@ model Guest {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  branch       Branch          @relation(fields: [branchId], references: [id])
-  documents    GuestDocument[]
-  reservations Reservation[]
+  branch             Branch             @relation(fields: [branchId], references: [id])
+  documents          GuestDocument[]
+  reservations       Reservation[]
+  reservationGuests  ReservationGuest[]
+  invoices           Invoice[]
 
   @@index([branchId, email])
   @@index([branchId, phone])
@@ -199,29 +206,138 @@ enum ReservationStatus {
   no_show
 }
 
-model Reservation {
-  id           String            @id @default(uuid())
-  branchId     String            @map("branch_id")
-  roomId       String            @map("room_id")
-  guestId      String            @map("guest_id")
-  checkInDate  DateTime          @db.Date @map("check_in_date")
-  checkOutDate DateTime          @db.Date @map("check_out_date")
-  status       ReservationStatus @default(pending)
-  totalPrice   Decimal           @map("total_price") @db.Decimal(10, 2)
-  source       String?           @db.VarChar(50)
-  notes        String?           @db.Text
-  version      Int               @default(0)
-  createdBy    String            @map("created_by")
-  createdAt    DateTime          @default(now()) @map("created_at")
-  updatedAt    DateTime          @updatedAt @map("updated_at")
+enum ReservationSource {
+  walk_in
+  phone
+  website
+  ota
+}
 
-  branch        Branch  @relation(fields: [branchId], references: [id])
-  room          Room    @relation(fields: [roomId], references: [id])
-  guest         Guest   @relation(fields: [guestId], references: [id])
-  createdByUser User    @relation("ReservationCreatedBy", fields: [createdBy], references: [id])
+model Reservation {
+  id                 String             @id @default(uuid())
+  branchId           String             @map("branch_id")
+  roomId             String             @map("room_id")
+  guestId            String             @map("guest_id")
+  checkInDate        DateTime           @db.Date @map("check_in_date")
+  checkOutDate       DateTime           @db.Date @map("check_out_date")
+  status             ReservationStatus  @default(pending)
+  totalPrice         Decimal            @map("total_price") @db.Decimal(10, 2)
+  source             ReservationSource? @default(walk_in)
+  adults             Int                @default(1)
+  children           Int                @default(0)
+  notes              String?            @db.Text
+  cancelledAt        DateTime?          @map("cancelled_at")
+  cancellationReason String?            @db.Text @map("cancellation_reason")
+  version            Int                @default(0)
+  createdBy          String             @map("created_by")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  branch             Branch             @relation(fields: [branchId], references: [id])
+  room               Room               @relation(fields: [roomId], references: [id])
+  guest              Guest              @relation(fields: [guestId], references: [id])
+  createdByUser      User               @relation("ReservationCreatedBy", fields: [createdBy], references: [id])
+  reservationGuests  ReservationGuest[]
+  checkIn            CheckIn?
+  checkOut           CheckOut?
+  invoice            Invoice?
 
   @@index([branchId, checkInDate, checkOutDate])
   @@index([roomId, checkInDate, checkOutDate])
   @@index([branchId, status])
   @@map("reservations")
+}
+
+model ReservationGuest {
+  id            String      @id @default(uuid())
+  reservationId String      @map("reservation_id")
+  guestId       String      @map("guest_id")
+  isPrimary     Boolean     @default(false) @map("is_primary")
+
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  guest         Guest       @relation(fields: [guestId], references: [id])
+
+  @@index([reservationId])
+  @@map("reservation_guests")
+}
+
+model CheckIn {
+  id               String      @id @default(uuid())
+  reservationId    String      @unique @map("reservation_id")
+  branchId         String      @map("branch_id")
+  actualCheckInAt  DateTime    @default(now()) @map("actual_check_in_at")
+  checkedInBy      String      @map("checked_in_by")
+  notes            String?     @db.Text
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  reservation      Reservation @relation(fields: [reservationId], references: [id])
+  branch           Branch      @relation(fields: [branchId], references: [id])
+  checkedInByUser  User        @relation("CheckedInBy", fields: [checkedInBy], references: [id])
+
+  @@map("check_ins")
+}
+
+model CheckOut {
+  id                String      @id @default(uuid())
+  reservationId     String      @unique @map("reservation_id")
+  branchId          String      @map("branch_id")
+  actualCheckOutAt  DateTime    @default(now()) @map("actual_check_out_at")
+  checkedOutBy      String      @map("checked_out_by")
+  notes             String?     @db.Text
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  reservation       Reservation @relation(fields: [reservationId], references: [id])
+  branch            Branch      @relation(fields: [branchId], references: [id])
+  checkedOutByUser  User        @relation("CheckedOutBy", fields: [checkedOutBy], references: [id])
+
+  @@map("check_outs")
+}
+
+enum InvoiceStatus {
+  draft
+  finalized
+  void
+}
+
+enum InvoiceItemType {
+  room_charge
+  tax
+  discount
+  other
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  reservationId String        @unique @map("reservation_id")
+  branchId      String        @map("branch_id")
+  guestId       String        @map("guest_id")
+  status        InvoiceStatus @default(draft)
+  subtotal      Decimal       @db.Decimal(10, 2)
+  tax           Decimal       @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
+  issuedAt      DateTime?     @map("issued_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  reservation   Reservation     @relation(fields: [reservationId], references: [id])
+  branch        Branch          @relation(fields: [branchId], references: [id])
+  guest         Guest           @relation(fields: [guestId], references: [id])
+  lineItems     InvoiceLineItem[]
+
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id          String          @id @default(uuid())
+  invoiceId   String          @map("invoice_id")
+  description String          @db.VarChar(255)
+  quantity    Int
+  unitPrice   Decimal         @db.Decimal(10, 2) @map("unit_price")
+  total       Decimal         @db.Decimal(10, 2)
+  itemType    InvoiceItemType @map("item_type")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  invoice     Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_line_items")
 }

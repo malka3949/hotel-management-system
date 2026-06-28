@@ -50,8 +50,8 @@ export default function RoomsPage() {
   }, [isAdmin]);
 
   const load = useCallback(async () => {
+    if (!user) return;
     if (isAdmin && !filters.branchId) {
-      await Promise.resolve();
       setLoading(false);
       setRooms([]);
       setRoomTypes([]);

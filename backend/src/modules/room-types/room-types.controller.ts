@@ -37,6 +37,7 @@ export class RoomTypesController {
   }
 
   @Get()
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   findAll(@CurrentUser() user: JwtPayload, @Query() query: RoomTypesQueryDto) {
     return this.roomTypesService.findAll(user, query.branchId);
   }

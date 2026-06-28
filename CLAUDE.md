@@ -1,5 +1,31 @@
 # CLAUDE.md — Hotel Management System
 
+Detail docs in `CLAUDE/` — read on demand. Phase status in `PROJECT_STATUS.md`.
+
+## Scope
+
+- **Working directory:** `/home/runner/hotel-management-system` only.
+- **Never access:** `/home/runner/MY PROJECT` or any path outside this repo.
+- Before any read/write — verify the path is under `hotel-management-system`.
+
+## Communication
+
+- עברית כברירת מחדל; קוד, שמות קבצים, לוגים — באנגלית.
+- תשובות קצרות — אין להסביר מה שברור מהקוד.
+- אין פיצ'רים, ריפקטורינג, או הפשטות מעבר למה שהמשימה דורשת.
+
+## Golden Rules
+
+- **PROGRESS.txt** — append after every significant change (timestamp, session_id, tasks, files). NEVER overwrite. Too big → `PROGRESS_OLD_{date}.txt`.
+- **FOLLOWUPS.md / BACKLOG.md** — read both at session start. P0/P1 in FOLLOWUPS → surface before new work. Out-of-scope bug → append to FOLLOWUPS (P0–P3, file:line, repro). Out-of-scope idea → append to BACKLOG.
+- **Past work lookup order:** (1) `PROGRESS.txt` + archives, (2) `git log --grep=…`, (3) memory search, (4) `CLAUDE/*.md`.
+- **Update docs with code.** After each completed build part → update this file + `PROJECT_STATUS.md`. New port/service/schema/endpoint → same commit as the code.
+- **READ INVARIANTS FIRST.** Before auth, reservations, payments, audit logs → read `CLAUDE/invariants.md`.
+- **"Verified" = real run.** Type-check/build = "compiles, untested" until tests or live run pass.
+- **Workflow:** read relevant files before editing; prefer `Edit` over `Write`; run independent tools in parallel; check for existing files before creating new ones.
+- **Destructive ops** (delete, force push, reset) — ask user first.
+- **Commit/push** only when explicitly requested. New commit always — no `--amend` unless asked. No `--no-verify` unless asked. Commit message: why, not what.
+
 ## Project Overview
 
 Hotel chain management system. Multi-branch, RTL Hebrew UI, NestJS backend + Next.js 16 frontend + PostgreSQL + Redis.
@@ -9,65 +35,40 @@ Hotel chain management system. Multi-branch, RTL Hebrew UI, NestJS backend + Nex
 - Frontend: Next.js 16 (App Router), TypeScript strict, Tailwind CSS v4, shadcn/ui
 - Auth: JWT (HttpOnly cookie), bcrypt, RBAC
 - Real-time: WebSockets (`socket.io`)
-- Payments: Stripe (primary) + Tranzila (Israel) behind `PaymentService` abstraction
-- Notifications: `NotificationService` (SendGrid or AWS SES) — wired Phase 1, used Phase 5+
-- Guest Portal: public tokenized access (no guest login system)
-
----
+- Payments: Stripe (primary) + Tranzila (Israel) via `PaymentService`
+- Notifications: `NotificationService` (SendGrid or AWS SES) — stub Phase 1, used Phase 5+
+- Guest Portal: tokenized public access (no guest login)
 
 ## Phase Discipline
 
-**Work one phase at a time. Never start Phase N+1 until Phase N exit criteria are met.**
+**One phase at a time. Never start Phase N+1 until Phase N exit criteria are met.**
 
-Current phase and status tracked in `PROJECT_STATUS.md`.
-Phase docs: `docs/phases/PHASE-{NN}-{name}.md`
+- Status: `PROJECT_STATUS.md`
+- Docs: `docs/phases/PHASE-{NN}-{name}.md`
 
-When a phase is complete:
+When a phase completes:
 1. Verify all exit criteria in the phase doc
-2. Update `PROJECT_STATUS.md` (status → 🟢, next phase → 🔴)
-3. Ask before starting next phase
-
----
+2. Update `PROJECT_STATUS.md` (status → 🟢, next → 🔴)
+3. Update this file if new patterns emerged
+4. Ask before starting the next phase
 
 ## Architecture Rules (Non-Negotiable)
 
-### Branch Isolation
-Every DB entity must have `branch_id`. Every query must be filtered by `branch_id` from the JWT. No exceptions.
+Full detail: `CLAUDE/invariants.md`.
 
-```typescript
-// Every service method must scope by branchId
-async findAll(branchId: string) {
-  return this.prisma.room.findMany({ where: { branchId } });
-}
-```
-
-### Reservation Integrity
-Reservation creation and any date/room change delegates availability checking to `AvailabilityService`. Never duplicate availability logic inside `ReservationsService`. `AvailabilityService` owns `SELECT FOR UPDATE`.
-
-### Audit Logs
-`audit_logs` table is append-only — enforced at DB level (REVOKE UPDATE/DELETE on app user). Never UPDATE or DELETE audit log records in application code. Every financial operation, reservation mutation, and auth event must write an audit log.
-
-### Payments
-All payment operations go through `PaymentService`. No direct Stripe or Tranzila calls from controllers or other services. Every payment operation uses an idempotency key.
-
-### Notifications
-All email sending goes through `NotificationService`. No direct SendGrid/SES calls elsewhere. `NotificationService` is a stub in Phase 1 and gains real implementations as phases add notification triggers.
-
-### Guest Portal
-Guest portal routes use `GuestTokenGuard` (not `JwtAuthGuard`). Guest tokens are time-limited JWTs scoped to a single reservation. Never grant guest tokens access to staff endpoints.
-
----
+- **Branch isolation** — every entity has `branch_id`; every query filtered by JWT branch. No exceptions.
+- **Reservations** — availability only via `AvailabilityService` (owns `SELECT FOR UPDATE`). Never duplicate in `ReservationsService`.
+- **Audit logs** — append-only at DB level. Never UPDATE/DELETE in app code.
+- **Payments** — only through `PaymentService` + idempotency key. No direct Stripe/Tranzila calls.
+- **Notifications** — only through `NotificationService`. No direct SendGrid/SES elsewhere.
+- **Guest portal** — `GuestTokenGuard` only; time-limited, single-reservation scope. No staff endpoints.
 
 ## Design System
 
-Design system doc: `design-system/` (see hook context for full spec).
+Doc: `design-system/`. **Do not invent colors, components, or patterns outside the design system.** Missing component → flag to user.
 
-**Do not invent colors, components, or patterns not in the design system.**
-If a needed component is missing → flag it to the user.
-
-Key tokens:
 | Token | Hex | Usage |
-|---|---|---|
+|-------|-----|-------|
 | primary | `#1E3A8A` | Main actions, nav active |
 | primary-light | `#3B82F6` | Hover, secondary buttons |
 | accent | `#CA8A04` | CTA buttons only |
@@ -77,123 +78,62 @@ Key tokens:
 | text-primary | `#0F172A` | Headings |
 | text-secondary | `#475569` | Supporting text |
 
-**RTL:** All pages use `dir="rtl"`. Hebrew is the default UI language. Never hardcode LTR layout assumptions.
-
----
+**RTL:** `dir="rtl"` on all pages. Hebrew default UI. No hardcoded LTR assumptions.
 
 ## Code Standards
 
-### TypeScript
-- `strict: true` — no `any`, no type bypasses
-- All DTO fields decorated with `class-validator`
-- `forbidUnknownValues: true` on global `ValidationPipe`
+- TypeScript `strict: true` — no `any`. DTOs with `class-validator`. `forbidUnknownValues: true` on global `ValidationPipe`.
+- Validation only at system boundaries (user input, external APIs).
+- Comments only for non-obvious WHY — never WHAT.
+- Node.js available in environment (`node_modules` in home dir).
 
-### NestJS Backend Structure
-```
-src/
-  modules/
-    auth/
-    users/
-    branches/
-    rooms/
-    guests/
-    reservations/
-    check-in/
-    availability/
-    housekeeping/
-    reports/
-    billing/       ← future
-    notifications/ ← future
-  common/
-    guards/        ← JwtAuthGuard, RolesGuard, BranchGuard
-    interceptors/  ← AuditInterceptor, ResponseInterceptor
-    filters/       ← GlobalExceptionFilter
-    decorators/    ← @Roles(), @CurrentUser(), @BranchId()
-    dto/           ← shared DTOs
-  config/          ← env validation, config module
-  prisma/          ← PrismaService
-```
+**Backend:** `src/modules/` (auth, users, branches, rooms, guests, reservations, check-in, availability, housekeeping, reports, billing*, notifications*), `src/common/` (guards, interceptors, filters, decorators, dto), `src/config/`, `src/prisma/`.
 
-### Next.js Frontend Structure
-```
-src/
-  app/
-    (auth)/        ← login, forgot-password, reset-password
-    (dashboard)/   ← all protected pages
-      layout.tsx   ← Sidebar + Topbar wrapper
-      page.tsx     ← dashboard home
-      rooms/
-      guests/
-      reservations/
-      front-desk/
-      housekeeping/
-      reports/
-  components/
-    layout/        ← Sidebar, Topbar
-    ui/            ← shadcn/ui components
-    shared/        ← GuestSearchCombobox, ReservationStatusBadge, etc.
-  lib/
-    api/           ← typed API clients per module
-    socket.ts      ← WebSocket client
-    store/         ← Zustand stores
-  hooks/           ← useAuth, useBranch, useReservations, etc.
-```
+**Frontend:** `src/app/(auth)/`, `src/app/(dashboard)/`, `src/components/{layout,ui,shared}/`, `src/lib/{api,socket,store}/`, `src/hooks/`.
 
-### API Conventions
-- Versioned: `/api/v1/`
-- REST: plural nouns, HTTP verbs
-- Response envelope: `{ success: true, data: ... }` or `{ success: false, error: "CODE", message: "..." }`
-- HTTP status codes: 200 OK, 201 Created, 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 409 Conflict, 429 Too Many Requests
+**API:** `/api/v1/`, REST plural nouns, envelope `{ success, data }` / `{ success: false, error, message }`.
 
----
+## Testing
 
-## Testing Requirements
-
-- Unit tests mandatory for: services, availability logic, status transition validators
-- Integration tests mandatory for: auth flows, reservation creation, branch isolation, role guards
-- **No DB mocks** — integration tests use a real test PostgreSQL instance
-- Minimum coverage: 80%
-- Reservation conflict tests are mandatory (concurrent request scenarios)
-
----
+- Unit tests: services, availability logic, status validators.
+- Integration tests: auth, reservation creation, branch isolation, role guards.
+- **No DB mocks** — real test PostgreSQL. Minimum 80% coverage.
+- Mandatory: reservation conflict / concurrent request tests.
+- UI changes: verify with real run, not compile-only.
 
 ## Git Workflow
 
-- `main` — production only, protected
-- `develop` — staging auto-deploy
-- Feature branches: `feature/phase-{N}-{short-name}`
+- `main` — production, protected. `develop` — staging auto-deploy.
+- Branches: `feature/phase-{N}-{short-name}`
 - PR required to merge into `develop`
-- No `--no-verify` unless explicitly requested
+- Docs in the same commit as the code they describe
 
----
+## Security
 
-## Security Rules
-
-- Passwords: bcrypt, rounds ≥ 12
-- JWT: stored in HttpOnly cookie, not localStorage
+- bcrypt rounds ≥ 12; JWT in HttpOnly cookie (not localStorage)
 - Never log passwords, tokens, or full card numbers
-- SQL: always use Prisma parameterized queries — no raw string concatenation
-- Rate limit auth endpoints: 30 req/min per IP
-- HTTPS enforced in all non-local environments
-- Secrets: environment variables only — never committed to git
-
----
+- Prisma parameterized queries only — no string concatenation
+- Auth rate limit: 30 req/min per IP; HTTPS in non-local envs
+- Secrets in env vars only — never in git
 
 ## What NOT to Do
 
-- Do not build Phase N+1 features inside Phase N
-- Do not add error handling for scenarios that cannot happen
-- Do not add backwards-compatibility shims for unused code
-- Do not use mocks for DB in integration tests
-- Do not invent UI components not in the design system
-- Do not add comments that explain WHAT the code does — only WHY when it's non-obvious
-- Do not bypass auth guards for "testing convenience"
-- Do not store sensitive data in localStorage or cookies without HttpOnly
+- Phase N+1 features inside Phase N
+- Error handling for impossible scenarios
+- Backwards-compatibility shims for unused code
+- DB mocks in integration tests
+- UI components not in design system
+- Bypass auth guards for "testing convenience"
+- Sensitive data in localStorage or non-HttpOnly cookies
 
----
+## Detail Docs (read when relevant)
 
-## Update This File When
-
-- A new architectural decision is made (log it in `PROJECT_STATUS.md` too)
-- A new shared utility or pattern is established
-- A phase is completed and new patterns emerged
+| File | When to read |
+|------|--------------|
+| `CLAUDE/invariants.md` | Before auth, reservations, payments, audit, guest portal |
+| `CLAUDE/git-workflow.md` | Before commit or parallel work |
+| `CLAUDE/services.md` | Ports, containers, dev commands |
+| `CLAUDE/db.md` | Schemas, connections, Redis keys |
+| `CLAUDE/lessons-learned.md` | After incidents — backward-looking log |
+| `docs/phases/PHASE-*.md` | Current phase scope and exit criteria |
+| `PROJECT_STATUS.md` | Current phase and overall status |

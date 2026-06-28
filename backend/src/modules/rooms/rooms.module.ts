@@ -4,6 +4,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { RoomsService } from './rooms.service';
 import { RoomsController } from './rooms.controller';
 import { RoomStatusGateway } from './room-status.gateway';
+import { ReservationsModule } from '../reservations/reservations.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { RoomStatusGateway } from './room-status.gateway';
       }),
       inject: [ConfigService],
     }),
+    ReservationsModule,
   ],
   providers: [RoomsService, RoomStatusGateway],
   controllers: [RoomsController],
