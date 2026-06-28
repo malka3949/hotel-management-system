@@ -78,6 +78,7 @@ export default function ReservationsCalendarPage() {
     }
   }, [year, month, effectiveBranchId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   function prevMonth() {

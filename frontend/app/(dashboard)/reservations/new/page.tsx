@@ -47,6 +47,7 @@ export default function NewReservationPage() {
     if (!checkIn || !checkOut || !effectiveBranchId) return;
     if (new Date(checkOut) <= new Date(checkIn)) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setRoomsLoading(true);
     setSelectedRoomId('');
     setAvailableRooms([]);

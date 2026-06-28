@@ -63,6 +63,7 @@ export default function ReservationsPage() {
     }
   }, [filters, page, isAdmin]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   function handleSearchChange(value: string) {

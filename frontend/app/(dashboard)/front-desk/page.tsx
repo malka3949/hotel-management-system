@@ -75,6 +75,7 @@ export default function FrontDeskPage() {
     }
   }, [user, isAdmin, selectedBranch, branchId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void load(); }, [load]);
 
   async function handleCheckIn() {

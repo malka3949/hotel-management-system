@@ -73,7 +73,7 @@ export function InvoiceSummary({ invoice }: Props) {
           </span>
         </div>
         <div className="flex justify-between">
-          <span style={{ color: 'var(--color-text-secondary)' }}>מע"מ (17%)</span>
+          <span style={{ color: 'var(--color-text-secondary)' }}>{'מע"מ (17%)'}</span>
           <span style={{ color: 'var(--color-text-primary)' }}>
             ₪{Number(invoice.tax).toLocaleString('he-IL', { minimumFractionDigits: 2 })}
           </span>
@@ -82,7 +82,7 @@ export function InvoiceSummary({ invoice }: Props) {
           className="flex justify-between font-semibold text-base pt-1 border-t"
           style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-primary)' }}
         >
-          <span>סה"כ לתשלום</span>
+          <span>{'סה"כ לתשלום'}</span>
           <span>₪{Number(invoice.total).toLocaleString('he-IL', { minimumFractionDigits: 2 })}</span>
         </div>
       </div>
