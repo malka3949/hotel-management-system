@@ -4,6 +4,7 @@ import { GetAvailabilityDto } from './dto/get-availability.dto';
 import { GetSummaryDto } from './dto/get-summary.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ForbiddenException } from '@nestjs/common';
@@ -14,6 +15,7 @@ export class AvailabilityController {
   constructor(private availabilityService: AvailabilityService) {}
 
   @Get()
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   getAvailableRooms(@Query() dto: GetAvailabilityDto, @CurrentUser() user: JwtPayload) {
     if (user.role !== 'chain_admin' && user.branchId !== dto.branchId) {
       throw new ForbiddenException('BRANCH_ACCESS_DENIED');
@@ -22,6 +24,7 @@ export class AvailabilityController {
   }
 
   @Get('summary')
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   getOccupancySummary(@Query() dto: GetSummaryDto, @CurrentUser() user: JwtPayload) {
     if (user.role !== 'chain_admin' && user.branchId !== dto.branchId) {
       throw new ForbiddenException('BRANCH_ACCESS_DENIED');

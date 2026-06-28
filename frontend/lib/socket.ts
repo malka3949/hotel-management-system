@@ -2,8 +2,8 @@ import { io, Socket } from 'socket.io-client';
 
 const WS_URL =
   typeof window !== 'undefined'
-    ? window.location.origin.replace(':3001', ':3001')
-    : 'http://localhost:3001';
+    ? `${window.location.protocol}//${window.location.hostname}:3001`
+    : '';
 
 let socket: Socket | null = null;
 

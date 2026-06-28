@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { GuestsService } from './guests.service';
+import { ReservationsService } from '../reservations/reservations.service';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { UpdateGuestDto } from './dto/update-guest.dto';
 import { FilterGuestsDto } from './dto/filter-guests.dto';
@@ -34,7 +35,10 @@ class SearchGuestsDto {
 @Controller('v1/guests')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class GuestsController {
-  constructor(private guestsService: GuestsService) {}
+  constructor(
+    private guestsService: GuestsService,
+    private reservationsService: ReservationsService,
+  ) {}
 
   @Post()
   @Roles('chain_admin', 'hotel_manager', 'receptionist')
@@ -49,11 +53,13 @@ export class GuestsController {
   }
 
   @Get()
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   findAll(@CurrentUser() user: JwtPayload, @Query() filters: FilterGuestsDto) {
     return this.guestsService.findAll(user, filters);
   }
 
   @Get(':id')
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.guestsService.findOne(id, user);
   }
@@ -88,5 +94,11 @@ export class GuestsController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.guestsService.addDocument(id, dto, user);
+  }
+
+  @Get(':id/reservations')
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
+  getReservations(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.reservationsService.getByGuest(id, user);
   }
 }
