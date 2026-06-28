@@ -10,6 +10,8 @@ COPY . .
 
 EXPOSE 3000
 
+ENV NEXT_PUBLIC_API_URL=/api
+ENV BACKEND_URL=http://backend:3001
 RUN npm run build
 
 ENV HOSTNAME=0.0.0.0

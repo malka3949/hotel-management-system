@@ -1,0 +1,21 @@
+# Services
+
+## Port map (dev)
+
+| Service | Port | Container | Purpose |
+|---------|------|-----------|---------|
+| ...     | ...  | ...       | ...     |
+
+## Dev commands
+
+| What | Command |
+|------|---------|
+| Build all | `<cmd>` |
+| Run tests | `<cmd>` |
+| Tail logs | `<cmd>` |
+| Lint | `<cmd>` |
+
+## Project map
+
+- `<project-a>/` — <one-line purpose>. Stack: <...>. Entrypoint: `<path>`.
+- `<project-b>/` — ...

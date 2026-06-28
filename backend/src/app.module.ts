@@ -13,6 +13,8 @@ import { GuestsModule } from './modules/guests/guests.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { NotificationModule } from './modules/notifications/notification.module';
 import { AvailabilityModule } from './modules/availability/availability.module';
+import { ReservationsModule } from './modules/reservations/reservations.module';
+import { CheckInModule } from './modules/check-in/check-in.module';
 
 @Module({
   imports: [
@@ -41,6 +43,8 @@ import { AvailabilityModule } from './modules/availability/availability.module';
     RoomsModule,
     GuestsModule,
     AvailabilityModule,
+    ReservationsModule,
+    CheckInModule,
   ],
   controllers: [HealthController],
 })
