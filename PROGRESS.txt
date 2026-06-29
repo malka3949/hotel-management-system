@@ -1,0 +1,38 @@
+================================================================================
+2026-06-29 | Phase 7 — Billing & Payments | COMPLETE + n8n triggers
+================================================================================
+Tasks:
+  - Migration 20260629000006_phase7_billing applied (dev + test DB)
+  - BillingModule: PaymentService, ChargeService, RefundService, InvoicePdfService
+  - Providers: StripeProvider (lazy), TranzilaProvider (stub), ManualProvider
+  - DTOs: CreatePayment, CreateCharge, CreateRefund, PrePayment
+  - 12 REST endpoints in BillingController
+  - Frontend: billing.ts API client, AddChargeModal, RefundModal
+  - Pages updated: /invoices/[id], /payments/checkout, /reports
+  - E2E tests: billing.e2e-spec.ts — 11/11 PASS
+  - ESLint: 0 errors | Frontend TS: 0 errors
+  - Documentation: team-Yuri/dev-phase7.md, PROJECT_STATUS.md updated
+  - n8n triggers added: payment.succeeded, payment.failed, refund.processed
+  - /payments/checkout wrapped in Suspense (Next.js useSearchParams fix)
+  - reservations/[id] page: re-fetch after check-in/out (crash fix)
+
+Files changed (key):
+  backend/src/modules/billing/** (new)
+  backend/prisma/migrations/20260629000006_phase7_billing/migration.sql (new)
+  backend/src/main.ts (rawBody: true)
+  backend/src/app.module.ts (BillingModule registered)
+  backend/src/config/env.validation.ts (Stripe keys optional)
+  backend/package.json (stripe, pdfkit added)
+  backend/test/billing.e2e-spec.ts (new)
+  frontend/lib/api/billing.ts (new)
+  frontend/components/shared/AddChargeModal.tsx (new)
+  frontend/components/shared/RefundModal.tsx (new)
+  frontend/app/(dashboard)/invoices/[id]/page.tsx (updated)
+  frontend/app/(dashboard)/payments/checkout/page.tsx (updated)
+  frontend/app/(dashboard)/reports/page.tsx (updated)
+  backend/src/modules/notifications/n8n.service.ts (3 billing events added)
+  backend/src/modules/billing/payment.service.ts (N8nService injected, triggers)
+  backend/src/modules/billing/refund.service.ts (N8nService injected, trigger)
+  frontend/app/(dashboard)/payments/checkout/page.tsx (Suspense fix)
+  frontend/app/(dashboard)/reservations/[id]/page.tsx (re-fetch after check-in/out)
+================================================================================
