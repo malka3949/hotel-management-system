@@ -39,17 +39,21 @@ model Branch {
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  users          User[]
-  refreshTokens  RefreshToken[]
-  auditLogs      AuditLog[]
-  roomTypes       RoomType[]
-  rooms           Room[]
-  guests          Guest[]
-  guestDocuments  GuestDocument[]
-  reservations    Reservation[]
-  checkIns        CheckIn[]
-  checkOuts       CheckOut[]
-  invoices        Invoice[]
+  users              User[]
+  refreshTokens      RefreshToken[]
+  auditLogs          AuditLog[]
+  roomTypes          RoomType[]
+  rooms              Room[]
+  guests             Guest[]
+  guestDocuments     GuestDocument[]
+  reservations       Reservation[]
+  checkIns           CheckIn[]
+  checkOuts          CheckOut[]
+  invoices           Invoice[]
+  payments           Payment[]
+  charges            Charge[]
+  refunds            Refund[]
+  serviceCatalog     ServiceCatalogEntry[]
 
   @@map("branches")
 }
@@ -72,6 +76,9 @@ model User {
   createdReservations  Reservation[]   @relation("ReservationCreatedBy")
   checkIns             CheckIn[]       @relation("CheckedInBy")
   checkOuts            CheckOut[]      @relation("CheckedOutBy")
+  payments             Payment[]       @relation("PaymentCreatedBy")
+  charges              Charge[]        @relation("ChargeAddedBy")
+  refunds              Refund[]        @relation("RefundApprovedBy")
 
   @@map("users")
 }
@@ -155,6 +162,8 @@ model Guest {
   reservations       Reservation[]
   reservationGuests  ReservationGuest[]
   invoices           Invoice[]
+  guestAccessTokens  GuestAccessToken[]
+  onlineCheckIns     OnlineCheckIn[]
 
   @@index([branchId, email])
   @@index([branchId, phone])
@@ -241,6 +250,9 @@ model Reservation {
   checkIn            CheckIn?
   checkOut           CheckOut?
   invoice            Invoice?
+  payments           Payment[]
+  guestAccessTokens  GuestAccessToken[]
+  onlineCheckIn      OnlineCheckIn?
 
   @@index([branchId, checkInDate, checkOutDate])
   @@index([roomId, checkInDate, checkOutDate])
@@ -296,6 +308,7 @@ model CheckOut {
 enum InvoiceStatus {
   draft
   finalized
+  paid
   void
 }
 
@@ -319,10 +332,12 @@ model Invoice {
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
 
-  reservation   Reservation     @relation(fields: [reservationId], references: [id])
-  branch        Branch          @relation(fields: [branchId], references: [id])
-  guest         Guest           @relation(fields: [guestId], references: [id])
+  reservation   Reservation       @relation(fields: [reservationId], references: [id])
+  branch        Branch            @relation(fields: [branchId], references: [id])
+  guest         Guest             @relation(fields: [guestId], references: [id])
   lineItems     InvoiceLineItem[]
+  payments      Payment[]
+  charges       Charge[]
 
   @@map("invoices")
 }
@@ -340,4 +355,184 @@ model InvoiceLineItem {
   invoice     Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
   @@map("invoice_line_items")
+}
+
+// ── Phase 7: Billing & Payments ───────────────────────────────────────────────
+
+enum PaymentStatus {
+  pending
+  processing
+  succeeded
+  failed
+  cancelled
+  refunded
+}
+
+enum PaymentMethod {
+  credit_card
+  cash
+  bank_transfer
+  pos_terminal
+}
+
+enum PaymentProvider {
+  stripe
+  tranzila
+  manual
+}
+
+enum ChargeType {
+  room_service
+  minibar
+  laundry
+  telephone
+  parking
+  other
+}
+
+enum RefundStatus {
+  pending
+  succeeded
+  failed
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  branchId          String        @map("branch_id")
+  invoiceId         String        @map("invoice_id")
+  reservationId     String        @map("reservation_id")
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @db.VarChar(3) @default("ILS")
+  status            PaymentStatus @default(pending)
+  paymentMethod     PaymentMethod @map("payment_method")
+  provider          PaymentProvider
+  providerPaymentId String?       @unique @map("provider_payment_id")
+  idempotencyKey    String        @unique @map("idempotency_key")
+  metadata          Json?
+  paidAt            DateTime?     @map("paid_at")
+  createdBy         String?       @map("created_by")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  branch          Branch          @relation(fields: [branchId], references: [id])
+  invoice         Invoice         @relation(fields: [invoiceId], references: [id])
+  reservation     Reservation     @relation(fields: [reservationId], references: [id])
+  createdByUser   User?           @relation("PaymentCreatedBy", fields: [createdBy], references: [id])
+  attempts        PaymentAttempt[]
+  refunds         Refund[]
+
+  @@index([branchId, invoiceId])
+  @@index([branchId, reservationId])
+  @@map("payments")
+}
+
+model PaymentAttempt {
+  id               String        @id @default(uuid())
+  paymentId        String        @map("payment_id")
+  attemptNumber    Int           @map("attempt_number")
+  status           PaymentStatus
+  errorCode        String?       @db.VarChar(100) @map("error_code")
+  errorMessage     String?       @db.Text @map("error_message")
+  providerResponse Json?         @map("provider_response")
+  attemptedAt      DateTime      @default(now()) @map("attempted_at")
+
+  payment          Payment       @relation(fields: [paymentId], references: [id])
+
+  @@map("payment_attempts")
+}
+
+model Charge {
+  id          String     @id @default(uuid())
+  branchId    String     @map("branch_id")
+  invoiceId   String     @map("invoice_id")
+  description String     @db.VarChar(255)
+  amount      Decimal    @db.Decimal(10, 2)
+  chargeType  ChargeType @map("charge_type")
+  addedBy     String     @map("added_by")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  addedByUser User  @relation("ChargeAddedBy", fields: [addedBy], references: [id])
+
+  @@index([branchId, invoiceId])
+  @@map("charges")
+}
+
+model Refund {
+  id               String       @id @default(uuid())
+  branchId         String       @map("branch_id")
+  paymentId        String       @map("payment_id")
+  amount           Decimal      @db.Decimal(10, 2)
+  reason           String       @db.Text
+  status           RefundStatus @default(pending)
+  providerRefundId String?      @map("provider_refund_id")
+  approvedBy       String       @map("approved_by")
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  branch        Branch  @relation(fields: [branchId], references: [id])
+  payment       Payment @relation(fields: [paymentId], references: [id])
+  approvedByUser User   @relation("RefundApprovedBy", fields: [approvedBy], references: [id])
+
+  @@map("refunds")
+}
+
+// ── Phase 8: Guest Portal ─────────────────────────────────────────────────────
+
+enum TokenPurpose {
+  view
+  checkin
+  payment
+}
+
+model GuestAccessToken {
+  id            String       @id @default(uuid())
+  reservationId String       @map("reservation_id")
+  guestId       String       @map("guest_id")
+  tokenHash     String       @map("token_hash") @db.VarChar
+  purpose       TokenPurpose @default(view)
+  expiresAt     DateTime     @map("expires_at")
+  usedAt        DateTime?    @map("used_at")
+  revokedAt     DateTime?    @map("revoked_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  reservation   Reservation  @relation(fields: [reservationId], references: [id])
+  guest         Guest        @relation(fields: [guestId], references: [id])
+
+  @@index([tokenHash])
+  @@index([reservationId])
+  @@map("guest_access_tokens")
+}
+
+model ServiceCatalogEntry {
+  id         String     @id @default(uuid())
+  branchId   String     @map("branch_id")
+  chargeType ChargeType @map("charge_type")
+  price      Decimal    @db.Decimal(10, 2)
+  isActive   Boolean    @default(true) @map("is_active")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  branch     Branch     @relation(fields: [branchId], references: [id])
+
+  @@unique([branchId, chargeType])
+  @@map("service_catalog_entries")
+}
+
+model OnlineCheckIn {
+  id                   String    @id @default(uuid())
+  reservationId        String    @unique @map("reservation_id")
+  guestId              String    @map("guest_id")
+  fullName             String    @db.VarChar(255) @map("full_name")
+  passportId           String    @db.VarChar(50) @map("passport_id")
+  email                String?   @db.VarChar(255)
+  phone                String?   @db.VarChar(30)
+  estimatedArrivalTime String?   @db.VarChar(5) @map("estimated_arrival_time")
+  specialRequests      String?   @db.Text @map("special_requests")
+  completedAt          DateTime  @default(now()) @map("completed_at")
+
+  reservation          Reservation @relation(fields: [reservationId], references: [id])
+  guest                Guest       @relation(fields: [guestId], references: [id])
+
+  @@map("online_check_ins")
 }

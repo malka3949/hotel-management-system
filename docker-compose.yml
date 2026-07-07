@@ -56,6 +56,9 @@ services:
       CSRF_SECRET: ${CSRF_SECRET}
       REFRESH_TOKEN_HMAC_KEY: ${REFRESH_TOKEN_HMAC_KEY}
       FRONTEND_URL: ${FRONTEND_URL}
+      N8N_BASE_URL: http://n8n:5678
+      RESEND_API_KEY: re_3WD3vmvB_5P76Ly3am3zfKheojS71YnDT
+      NODE_TLS_REJECT_UNAUTHORIZED: '0'
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
@@ -64,6 +67,32 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      n8n:
+        condition: service_healthy
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: hotel_n8n
+    restart: unless-stopped
+    ports:
+      - '5678:5678'
+    networks:
+      - hotel_internal
+    environment:
+      N8N_ENCRYPTION_KEY: rmc3TEszEbar6xpXhnt1KaXt6G+qNQr9
+      N8N_USER_MANAGEMENT_DISABLED: 'false'
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'false'
+      GENERIC_TIMEZONE: Asia/Jerusalem
+      TZ: Asia/Jerusalem
+      NODE_TLS_REJECT_UNAUTHORIZED: '0'
+      N8N_RUNNERS_ENABLED: 'false'
+    volumes:
+      - /home/runner/.n8n:/home/node/.n8n
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -q --spider http://localhost:5678/healthz || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build:
@@ -76,8 +105,12 @@ services:
     networks:
       - hotel_internal
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       BACKEND_URL: http://backend:3001
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
     depends_on:
       - backend
 

@@ -94,13 +94,9 @@ export class PaymentService {
       });
 
       if (chargeResult.status === 'succeeded') {
-        const invoiceUpdate: { status: 'paid'; total?: Prisma.Decimal } = { status: 'paid' };
-        if (dto.amount !== undefined && dto.amount < Number(invoice.total)) {
-          invoiceUpdate.total = new Prisma.Decimal(payAmount);
-        }
         await tx.invoice.update({
           where: { id: dto.invoiceId },
-          data: invoiceUpdate,
+          data: { status: 'paid' },
         });
       }
 
@@ -181,6 +177,41 @@ export class PaymentService {
     if (!payment) throw new NotFoundException('PAYMENT_NOT_FOUND');
     this.assertBranchAccess(payment.branchId, requester);
     return payment;
+  }
+
+  async listInvoices(
+    requester: JwtPayload,
+    filters: { branchId?: string; status?: string; page?: number; limit?: number },
+  ) {
+    const branchId = this.resolveBranchId(filters.branchId, requester);
+    const page = filters.page ?? 1;
+    const limit = Math.min(filters.limit ?? 20, 100);
+    const skip = (page - 1) * limit;
+
+    const where: Record<string, unknown> = { branchId };
+    if (filters.status) where['status'] = filters.status;
+
+    const [items, total] = await Promise.all([
+      this.prisma.invoice.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          reservation: {
+            select: {
+              id: true,
+              checkInDate: true,
+              checkOutDate: true,
+              guest: { select: { fullName: true } },
+            },
+          },
+        },
+      }),
+      this.prisma.invoice.count({ where }),
+    ]);
+
+    return { items, total, page, limit };
   }
 
   async getInvoiceById(invoiceId: string, requester: JwtPayload) {

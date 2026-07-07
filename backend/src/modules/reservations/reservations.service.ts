@@ -10,6 +10,7 @@ import { AuditService } from '../audit/audit.service';
 import { AvailabilityService } from '../availability/availability.service';
 import { NotificationService } from '../notifications/notification.service';
 import { N8nService } from '../notifications/n8n.service';
+import { GuestPortalService } from '../guest-portal/guest-portal.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
@@ -41,6 +42,18 @@ const RESERVATION_INCLUDE = {
     },
   },
   createdByUser: { select: { id: true, name: true } },
+  onlineCheckIn: {
+    select: { id: true, fullName: true, passportId: true, estimatedArrivalTime: true, completedAt: true },
+  },
+  checkIn: { select: { id: true, actualCheckInAt: true } },
+  invoice: {
+    select: {
+      id: true,
+      status: true,
+      total: true,
+      payments: { where: { status: 'succeeded' }, select: { amount: true } },
+    },
+  },
 } as const;
 
 @Injectable()
@@ -51,6 +64,7 @@ export class ReservationsService {
     private availability: AvailabilityService,
     private notifications: NotificationService,
     private n8n: N8nService,
+    private guestPortal: GuestPortalService,
   ) {}
 
   async create(dto: CreateReservationDto, requester: JwtPayload) {
@@ -127,6 +141,14 @@ export class ReservationsService {
       totalPrice: reservation.totalPrice,
       branchId,
     });
+
+    void this.guestPortal.generateAndSendPortalLink(
+      reservation.id,
+      guest.id,
+      checkOut,
+      guest.email ?? null,
+      guest.fullName,
+    );
 
     return reservation;
   }

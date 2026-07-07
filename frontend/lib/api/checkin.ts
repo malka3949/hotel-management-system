@@ -25,15 +25,22 @@ export interface InvoiceLineItem {
   itemType: 'room_charge' | 'tax' | 'discount' | 'other';
 }
 
+export interface InvoicePayment {
+  id: string;
+  amount: string;
+  paidAt: string | null;
+}
+
 export interface Invoice {
   id: string;
   reservationId: string;
-  status: 'draft' | 'finalized' | 'void';
+  status: 'draft' | 'finalized' | 'paid' | 'void';
   subtotal: string;
   tax: string;
   total: string;
   issuedAt: string | null;
   lineItems: InvoiceLineItem[];
+  payments?: InvoicePayment[];
 }
 
 export interface FrontDeskGuest {
@@ -48,6 +55,15 @@ export interface FrontDeskRoom {
   number: string;
   floor: number | null;
   roomType: { name: string };
+}
+
+export interface OnlineCheckInRecord {
+  id: string;
+  fullName: string;
+  passportId: string;
+  estimatedArrivalTime: string | null;
+  specialRequests: string | null;
+  completedAt: string;
 }
 
 export interface FrontDeskReservation {
@@ -65,6 +81,7 @@ export interface FrontDeskReservation {
   room: FrontDeskRoom;
   checkIn?: CheckInRecord;
   invoice?: Invoice;
+  onlineCheckIn?: OnlineCheckInRecord | null;
 }
 
 export async function checkIn(reservationId: string, notes?: string): Promise<FrontDeskReservation> {

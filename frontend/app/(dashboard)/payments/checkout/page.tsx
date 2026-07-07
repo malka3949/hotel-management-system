@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { initiatePayment, type PaymentMethod, type PaymentProvider } from '@/lib/api/billing';
+import { initiatePayment, applyDiscount, type PaymentMethod, type PaymentProvider } from '@/lib/api/billing';
 import { getInvoice, type Invoice } from '@/lib/api/checkin';
 
 const METHOD_OPTIONS: { value: PaymentMethod; label: string }[] = [
@@ -39,20 +39,27 @@ function CheckoutContent() {
     return 'manual';
   };
 
-  const discountAmount = Math.min(parseFloat(discount) || 0, Number(invoice?.total ?? 0));
-  const finalAmount = invoice ? Math.max(0, Number(invoice.total) - discountAmount) : 0;
+  const totalPaid = invoice?.payments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
+  const alreadyPaidFull = invoice?.status === 'paid';
+  const hasPartialPayment = totalPaid > 0 && !alreadyPaidFull;
+  const baseAmount = invoice ? Number(invoice.total) - totalPaid : 0;
+  const discountAmount = Math.min(parseFloat(discount) || 0, baseAmount);
+  const finalAmount = Math.max(0, baseAmount - discountAmount);
 
   const handlePay = async () => {
     if (!invoice) return;
     setLoading(true);
     setError('');
     try {
+      if (discountAmount > 0) {
+        await applyDiscount(invoice.id, discountAmount, 'הנחה/זיכוי');
+      }
       await initiatePayment(
         invoice.id,
         method,
         providerForMethod(method),
         method === 'credit_card' ? token || undefined : undefined,
-        discountAmount > 0 ? finalAmount : undefined,
+        finalAmount,
       );
       setSuccess(true);
     } catch (err) {
@@ -86,6 +93,32 @@ function CheckoutContent() {
     );
   }
 
+  if (alreadyPaidFull) {
+    return (
+      <div className="p-8 text-center max-w-md mx-auto" dir="rtl">
+        <div className="text-green-600 text-4xl mb-3">✓</div>
+        <div className="text-green-600 text-xl font-bold mb-2">החשבונית שולמה במלואה</div>
+        <p className="text-text-secondary mb-6">לא נדרש תשלום נוסף</p>
+        <div className="flex flex-col gap-3">
+          {invoice && (
+            <button
+              onClick={() => router.push(`/invoices/${invoice.id}`)}
+              className="w-full rounded bg-primary py-3 text-sm font-semibold text-white hover:bg-primary-light"
+            >
+              צפה בחשבונית
+            </button>
+          )}
+          <button
+            onClick={() => router.push(`/reservations/${reservationId}`)}
+            className="w-full rounded border border-border-default py-3 text-sm font-medium text-text-primary hover:bg-gray-50"
+          >
+            חזור להזמנה
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-6 max-w-lg mx-auto" dir="rtl">
       <h1 className="text-2xl font-bold text-text-primary mb-6">תשלום חשבונית</h1>
@@ -97,9 +130,15 @@ function CheckoutContent() {
             <span>₪{Number(invoice.subtotal).toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-sm mb-1">
-            <span className="text-text-secondary">מע"מ 17%:</span>
+            <span className="text-text-secondary">מע&quot;מ 17%:</span>
             <span>₪{Number(invoice.tax).toFixed(2)}</span>
           </div>
+          {hasPartialPayment && (
+            <div className="flex justify-between text-sm mb-1" style={{ color: '#15803D' }}>
+              <span>שולם מקוון:</span>
+              <span>−₪{totalPaid.toFixed(2)}</span>
+            </div>
+          )}
           {discountAmount > 0 && (
             <div className="flex justify-between text-sm text-red-600 mb-1">
               <span>הנחה / זיכוי:</span>
@@ -107,7 +146,7 @@ function CheckoutContent() {
             </div>
           )}
           <div className="flex justify-between font-bold mt-2 pt-2 border-t border-border-default">
-            <span>סה"כ לתשלום:</span>
+            <span>סה&quot;כ לגבייה:</span>
             <span className={discountAmount > 0 ? 'text-green-700' : ''}>
               ₪{finalAmount.toFixed(2)}
             </span>
@@ -146,7 +185,7 @@ function CheckoutContent() {
           <input
             type="number"
             min="0"
-            max={invoice ? Number(invoice.total) : undefined}
+            max={baseAmount}
             step="0.01"
             value={discount}
             onChange={(e) => setDiscount(e.target.value)}
@@ -177,7 +216,7 @@ function CheckoutContent() {
 
         <button
           onClick={handlePay}
-          disabled={loading || !invoice}
+          disabled={loading || !invoice || finalAmount <= 0}
           className="w-full rounded bg-accent py-3 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50"
         >
           {loading ? 'מעבד תשלום...' : `שלם ₪${finalAmount.toFixed(2)}`}

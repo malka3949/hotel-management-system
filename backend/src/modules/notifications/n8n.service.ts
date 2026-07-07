@@ -6,10 +6,14 @@ export class N8nService {
   private readonly baseUrl = process.env.N8N_BASE_URL ?? 'http://localhost:5678';
 
   private readonly webhooks: Record<string, string> = {
-    'reservation.confirmed': '/webhook/reservation-confirmed',
-    'reservation.cancelled': '/webhook/reservation-cancelled',
-    'checkin.completed': '/webhook/checkin-completed',
-    'checkout.completed': '/webhook/checkout-completed',
+    'reservation.confirmed': '/webhook/vOZ77rpHCNDjHYrT/webhook/reservation-confirmation',
+    'reservation.cancelled': '/webhook/QNz3j1O2wnsVcuhZ/webhook/reservation-cancelled',
+    'checkin.completed': '/webhook/QZFECJcVzT1kQGOE/webhook/checkin-completed',
+    'checkout.completed': '/webhook/bV0rCIhujBNmM6t5/webhook/checkout-completed',
+    'payment.succeeded': '/webhook/utSBBa1kFSHttSQd/webhook/payment-succeeded',
+    'payment.failed': '/webhook/oA4GogDF8shlreQh/webhook/payment-failed',
+    'refund.processed': '/webhook/TwIpgiQtNZLuLAcJ/webhook/refund-processed',
+    'guest.portal.link': '/webhook/guestPortalLink001/webhook/guest-portal-link',
   };
 
   async triggerEvent(event: string, payload: Record<string, unknown>): Promise<void> {

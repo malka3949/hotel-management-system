@@ -312,9 +312,10 @@ export default function InvoicePage() {
       </section>
 
       {/* Modals */}
-      {showAddCharge && (
+      {showAddCharge && invoice && (
         <AddChargeModal
           invoiceId={invoiceId}
+          branchId={invoice.branchId}
           onSuccess={() => { setShowAddCharge(false); void loadData(); }}
           onClose={() => setShowAddCharge(false)}
         />

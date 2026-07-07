@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md — Hotel Management System
 
-Last updated: 2026-06-28
+Last updated: 2026-07-02
 
 ---
 
@@ -15,15 +15,16 @@ Last updated: 2026-06-28
 | Phase 4 | Availability Engine | `PHASE-04-availability.md` | 🟢 Complete |
 | Phase 5 | Reservations System | `PHASE-05-reservations.md` | 🟢 Complete |
 | Phase 6 | Check-in / Check-out | `PHASE-06-checkin-checkout.md` | 🟢 Complete |
-| Phase 7 | Billing & Payments | `PHASE-07-billing.md` | ⏳ Pending |
-| Phase 8 | Guest Portal | `PHASE-08-guest-portal.md` | ⏳ Pending |
+| Phase 7 | Billing & Payments | `PHASE-07-billing.md` | 🟢 Complete |
+| Phase 8 | Guest Portal | `PHASE-08-guest-portal.md` | 🟢 Complete |
 | Phase 9 | Housekeeping Module | `PHASE-09-housekeeping.md` | ⏳ Pending |
 | Phase 10 | Dashboard & Reporting | `PHASE-10-dashboard.md` | ⏳ Pending |
 | Phase 11 | Security Audit & Hardening | `PHASE-11-security.md` | ⏳ Pending |
 | Phase 12 | Production Deployment | `PHASE-12-deployment.md` | ⏳ Pending |
 
-**Active phase: Phase 6 — Check-in / Check-out (🟢 Complete)**
-**Overall progress: 6/13 phases complete**
+**Active phase: Phase 9 — Housekeeping Module (⏳ Pending)**
+**Last completed: Phase 8 — Guest Portal**
+**Overall progress: 8/13 phases complete**
 
 ---
 

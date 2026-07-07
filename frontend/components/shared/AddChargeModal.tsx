@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { addCharge, type ChargeType } from '@/lib/api/billing';
+import { useState, useEffect } from 'react';
+import { addCharge, getServiceCatalog, type ChargeType, type ServiceCatalogEntry } from '@/lib/api/billing';
 
 const CHARGE_TYPE_LABELS: Record<ChargeType, string> = {
   room_service: 'שירות חדרים',
@@ -14,23 +14,44 @@ const CHARGE_TYPE_LABELS: Record<ChargeType, string> = {
 
 interface Props {
   invoiceId: string;
+  branchId: string;
   onSuccess: () => void;
   onClose: () => void;
 }
 
-export function AddChargeModal({ invoiceId, onSuccess, onClose }: Props) {
+export function AddChargeModal({ invoiceId, branchId, onSuccess, onClose }: Props) {
   const [chargeType, setChargeType] = useState<ChargeType>('room_service');
   const [description, setDescription] = useState('');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [catalog, setCatalog] = useState<ServiceCatalogEntry[]>([]);
+
+  useEffect(() => {
+    getServiceCatalog(branchId)
+      .then(setCatalog)
+      .catch(() => {});
+  }, [branchId]);
+
+  useEffect(() => {
+    const entry = catalog.find((e) => e.chargeType === chargeType && e.isActive);
+    if (entry) {
+      setAmount(Number(entry.price).toFixed(2));
+    } else {
+      setAmount('');
+    }
+  }, [chargeType, catalog]);
+
+  const catalogEntry = catalog.find((e) => e.chargeType === chargeType && e.isActive);
+  const priceFixed = !!catalogEntry;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
     try {
-      await addCharge(invoiceId, chargeType, description, Number(amount));
+      const desc = description.trim() || CHARGE_TYPE_LABELS[chargeType];
+      await addCharge(invoiceId, chargeType, desc, Number(amount));
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה');
@@ -68,31 +89,36 @@ export function AddChargeModal({ invoiceId, onSuccess, onClose }: Props) {
               type="text"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              required
-              minLength={2}
               className="w-full rounded border border-border-default p-2 text-sm"
-              placeholder="פרטי החיוב"
+              placeholder={CHARGE_TYPE_LABELS[chargeType]}
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-text-secondary mb-1">
               סכום (₪)
+              {priceFixed && (
+                <span className="mr-2 text-xs font-normal" style={{ color: '#6B7280' }}>
+                  מחיר קבוע
+                </span>
+              )}
             </label>
             <input
               type="number"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => !priceFixed && setAmount(e.target.value)}
+              readOnly={priceFixed}
               required
               min="0.01"
               step="0.01"
               className="w-full rounded border border-border-default p-2 text-sm"
+              style={priceFixed ? { backgroundColor: '#F3F4F6', cursor: 'default' } : {}}
             />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex gap-2 pt-2">
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !amount}
               className="flex-1 rounded bg-primary py-2 text-sm font-medium text-white hover:bg-primary-light disabled:opacity-50"
             >
               {loading ? 'שומר...' : 'הוסף חיוב'}

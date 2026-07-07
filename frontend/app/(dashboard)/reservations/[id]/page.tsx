@@ -6,12 +6,13 @@ import {
   getReservation,
   updateReservationStatus,
   cancelReservation,
+  sendPortalLink,
   type Reservation,
   type ReservationStatus,
   STATUS_LABELS,
   SOURCE_LABELS,
 } from '@/lib/api/reservations';
-import { checkIn, checkOut, type Invoice } from '@/lib/api/checkin';
+import { checkIn, checkOut, getInvoice, type Invoice } from '@/lib/api/checkin';
 import { ReservationStatusBadge } from '@/components/shared/ReservationStatusBadge';
 import { InvoiceSummary } from '@/components/shared/InvoiceSummary';
 
@@ -52,13 +53,21 @@ export default function ReservationDetailPage() {
   const [showCheckOutDialog, setShowCheckOutDialog] = useState(false);
   const [checkOutNotes, setCheckOutNotes] = useState('');
   const [checkOutInvoice, setCheckOutInvoice] = useState<Invoice | null>(null);
+  const [invoiceId, setInvoiceId] = useState<string | null>(null);
+  const [portalLinkSent, setPortalLinkSent] = useState(false);
+  const [sendingPortalLink, setSendingPortalLink] = useState(false);
 
   useEffect(() => {
     if (!params.id) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     getReservation(params.id)
-      .then(setReservation)
+      .then((res) => {
+        setReservation(res);
+        if (res.status === 'checked_in' || res.status === 'checked_out') {
+          getInvoice(res.id).then((inv) => setInvoiceId(inv.id)).catch(() => null);
+        }
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'שגיאה בטעינה'))
       .finally(() => setLoading(false));
   }, [params.id]);
@@ -82,8 +91,9 @@ export default function ReservationDetailPage() {
     setActionError('');
     setSubmitting(true);
     try {
-      const updated = await checkIn(reservation.id, checkInNotes || undefined);
-      setReservation(updated as unknown as Reservation);
+      await checkIn(reservation.id, checkInNotes || undefined);
+      const full = await getReservation(reservation.id);
+      setReservation(full);
       setShowCheckInDialog(false);
       setCheckInNotes('');
     } catch (err) {
@@ -99,8 +109,12 @@ export default function ReservationDetailPage() {
     setSubmitting(true);
     try {
       const result = await checkOut(reservation.id, checkOutNotes || undefined);
-      setReservation(result.reservation as unknown as Reservation);
-      if (result.invoice) setCheckOutInvoice(result.invoice);
+      const full = await getReservation(reservation.id);
+      setReservation(full);
+      if (result.invoice) {
+        setCheckOutInvoice(result.invoice);
+        setInvoiceId(result.invoice.id);
+      }
       setShowCheckOutDialog(false);
       setCheckOutNotes('');
     } catch (err) {
@@ -123,6 +137,19 @@ export default function ReservationDetailPage() {
       setActionError(err instanceof Error ? err.message : 'שגיאה בביטול');
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handleSendPortalLink() {
+    if (!reservation) return;
+    setSendingPortalLink(true);
+    try {
+      await sendPortalLink(reservation.id);
+      setPortalLinkSent(true);
+    } catch {
+      setPortalLinkSent(false);
+    } finally {
+      setSendingPortalLink(false);
     }
   }
 
@@ -169,7 +196,14 @@ export default function ReservationDetailPage() {
           className="p-5 rounded-lg border space-y-3"
           style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
         >
-          <h3 className="font-medium text-sm" style={{ color: 'var(--color-text-secondary)' }}>אורח ראשי</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-sm" style={{ color: 'var(--color-text-secondary)' }}>אורח ראשי</h3>
+            {reservation.onlineCheckIn && reservation.status !== 'checked_in' && reservation.status !== 'checked_out' && (
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: '#D1FAE5', color: '#065F46' }}>
+                ✓ צ&apos;ק-אין מקוון
+              </span>
+            )}
+          </div>
           <p className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{reservation.guest.fullName}</p>
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }} dir="ltr">{reservation.guest.phone}</p>
           {reservation.guest.email && (
@@ -178,6 +212,13 @@ export default function ReservationDetailPage() {
           <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>
             {reservation.adults} מבוגרים · {reservation.children} ילדים
           </p>
+          {reservation.onlineCheckIn && (
+            <div className="text-xs pt-1 space-y-0.5" style={{ color: 'var(--color-text-secondary)' }}>
+              {reservation.onlineCheckIn.estimatedArrivalTime && (
+                <p>שעת הגעה משוערת: {reservation.onlineCheckIn.estimatedArrivalTime}</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Room card */}
@@ -293,6 +334,24 @@ export default function ReservationDetailPage() {
                 {STATUS_LABELS[s]}
               </button>
             ))}
+            {invoiceId && (
+              <button
+                onClick={() => router.push(`/invoices/${invoiceId}`)}
+                className="px-4 py-2 rounded-md text-sm font-medium border"
+                style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-primary)' }}
+              >
+                צפה בחשבונית
+              </button>
+            )}
+            {invoiceId && reservation?.status === 'checked_in' && (
+              <button
+                onClick={() => router.push(`/payments/checkout?reservationId=${reservation.id}&invoiceId=${invoiceId}`)}
+                className="px-4 py-2 rounded-md text-sm font-medium text-white"
+                style={{ backgroundColor: 'var(--color-accent)' }}
+              >
+                לתשלום
+              </button>
+            )}
             {canCancel && (
               <button
                 onClick={() => setShowCancelDialog(true)}
@@ -301,6 +360,16 @@ export default function ReservationDetailPage() {
                 style={{ borderColor: '#FCA5A5', color: '#DC2626' }}
               >
                 ביטול הזמנה
+              </button>
+            )}
+            {(reservation?.status === 'confirmed' || reservation?.status === 'checked_in') && (
+              <button
+                onClick={handleSendPortalLink}
+                disabled={sendingPortalLink || portalLinkSent}
+                className="px-4 py-2 rounded-md text-sm font-medium border disabled:opacity-50"
+                style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
+              >
+                {sendingPortalLink ? 'שולח...' : portalLinkSent ? '✓ לינק נשלח' : 'שלח לינק לאורח'}
               </button>
             )}
           </div>
@@ -312,7 +381,25 @@ export default function ReservationDetailPage() {
           className="mt-4 p-5 rounded-lg border"
           style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
         >
-          <h3 className="font-medium text-sm mb-3" style={{ color: 'var(--color-text-secondary)' }}>חשבונית</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-medium text-sm" style={{ color: 'var(--color-text-secondary)' }}>חשבונית</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={() => router.push(`/payments/checkout?reservationId=${reservation?.id}&invoiceId=${checkOutInvoice.id}`)}
+                className="px-3 py-1 rounded text-xs font-medium text-white"
+                style={{ backgroundColor: 'var(--color-accent)' }}
+              >
+                לתשלום
+              </button>
+              <button
+                onClick={() => router.push(`/invoices/${checkOutInvoice.id}`)}
+                className="px-3 py-1 rounded text-xs font-medium border"
+                style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-primary)' }}
+              >
+                קבלה מלאה
+              </button>
+            </div>
+          </div>
           <InvoiceSummary invoice={checkOutInvoice} />
         </div>
       )}

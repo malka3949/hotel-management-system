@@ -53,6 +53,13 @@ export interface Reservation {
   guest: ReservationGuest;
   room: ReservationRoom;
   createdByUser: { id: string; name: string };
+  onlineCheckIn: { id: string; fullName: string; passportId: string; estimatedArrivalTime: string | null; completedAt: string } | null;
+  invoice?: {
+    id: string;
+    status: string;
+    total: string;
+    payments: Array<{ amount: string }>;
+  } | null;
 }
 
 export interface CalendarReservation {
@@ -194,3 +201,7 @@ export const SOURCE_LABELS: Record<ReservationSource, string> = {
   website: 'אתר',
   ota: 'OTA',
 };
+
+export function sendPortalLink(reservationId: string): Promise<{ sent: boolean; portalUrl: string }> {
+  return apiFetch(`/v1/portal/send-link/${reservationId}`, { method: 'POST' });
+}

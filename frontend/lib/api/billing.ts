@@ -96,6 +96,19 @@ export interface Invoice {
   lineItems?: InvoiceLineItem[];
   charges?: Charge[];
   payments?: Payment[];
+  reservation?: {
+    id: string;
+    checkInDate: string;
+    checkOutDate: string;
+    guest: { fullName: string };
+  };
+}
+
+export interface InvoiceListResult {
+  items: Invoice[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 export interface ReconciliationReport {
@@ -135,6 +148,21 @@ export function initiatePayment(
 
 export function getPayment(paymentId: string): Promise<Payment> {
   return apiFetch(`/v1/payments/${paymentId}`);
+}
+
+export function listInvoices(params?: {
+  branchId?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}): Promise<InvoiceListResult> {
+  const qs = new URLSearchParams();
+  if (params?.branchId) qs.set('branchId', params.branchId);
+  if (params?.status) qs.set('status', params.status);
+  if (params?.page) qs.set('page', String(params.page));
+  if (params?.limit) qs.set('limit', String(params.limit));
+  const q = qs.toString();
+  return apiFetch<InvoiceListResult>(`/v1/invoices${q ? `?${q}` : ''}`);
 }
 
 export function getInvoiceById(invoiceId: string): Promise<Invoice> {
@@ -202,6 +230,46 @@ export function initiateRefund(
 
 export function getRefund(refundId: string): Promise<Refund> {
   return apiFetch(`/v1/refunds/${refundId}`);
+}
+
+export function applyDiscount(
+  invoiceId: string,
+  amount: number,
+  description?: string,
+): Promise<{ id: string; total: string }> {
+  return apiFetch(`/v1/invoices/${invoiceId}/discount`, {
+    method: 'POST',
+    body: JSON.stringify({ amount, description }),
+  });
+}
+
+// ── Service Catalog ───────────────────────────────────────────────────────────
+
+export interface ServiceCatalogEntry {
+  id: string;
+  branchId: string;
+  chargeType: ChargeType;
+  price: string;
+  isActive: boolean;
+}
+
+export function getServiceCatalog(branchId: string): Promise<ServiceCatalogEntry[]> {
+  return apiFetch(`/v1/service-catalog?branchId=${encodeURIComponent(branchId)}`);
+}
+
+export function upsertServiceCatalogEntry(
+  branchId: string,
+  chargeType: ChargeType,
+  price: number,
+): Promise<ServiceCatalogEntry> {
+  return apiFetch('/v1/service-catalog', {
+    method: 'POST',
+    body: JSON.stringify({ branchId, chargeType, price }),
+  });
+}
+
+export function deleteServiceCatalogEntry(id: string): Promise<void> {
+  return apiFetch(`/v1/service-catalog/${id}`, { method: 'DELETE' });
 }
 
 // ── Reports ───────────────────────────────────────────────────────────────────

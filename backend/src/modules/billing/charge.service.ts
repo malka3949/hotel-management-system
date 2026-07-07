@@ -27,15 +27,17 @@ export class ChargeService {
     if (!invoice) throw new NotFoundException('INVOICE_NOT_FOUND');
     this.assertBranchAccess(invoice.branchId, requester);
 
-    if (invoice.status === 'paid') {
-      throw new BadRequestException('INVOICE_ALREADY_PAID');
-    }
     if (invoice.status === 'void') {
       throw new BadRequestException('INVOICE_VOID');
     }
 
-    const chargeAmount = new Prisma.Decimal(dto.amount);
-    const newSubtotal = new Prisma.Decimal(invoice.subtotal).add(chargeAmount);
+    // dto.amount is the VAT-inclusive (gross) price shown to the guest.
+    // Extract net before adding to subtotal so tax is not double-counted.
+    const grossAmount = new Prisma.Decimal(dto.amount);
+    const netAmount = grossAmount
+      .div(new Prisma.Decimal(1).add(new Prisma.Decimal(TAX_RATE)))
+      .toDecimalPlaces(2);
+    const newSubtotal = new Prisma.Decimal(invoice.subtotal).add(netAmount);
     const newTax = newSubtotal.mul(new Prisma.Decimal(TAX_RATE)).toDecimalPlaces(2);
     const newTotal = newSubtotal.add(newTax);
 
@@ -45,7 +47,7 @@ export class ChargeService {
           branchId: invoice.branchId,
           invoiceId: dto.invoiceId,
           description: dto.description,
-          amount: chargeAmount,
+          amount: netAmount,
           chargeType: dto.chargeType,
           addedBy: requester.sub,
         },
@@ -56,15 +58,21 @@ export class ChargeService {
           invoiceId: dto.invoiceId,
           description: dto.description,
           quantity: 1,
-          unitPrice: chargeAmount,
-          total: chargeAmount,
+          unitPrice: netAmount,
+          total: netAmount,
           itemType: 'other',
         },
       });
 
       const updatedInvoice = await tx.invoice.update({
         where: { id: dto.invoiceId },
-        data: { subtotal: newSubtotal, tax: newTax, total: newTotal },
+        data: {
+          subtotal: newSubtotal,
+          tax: newTax,
+          total: newTotal,
+          // Reopen paid invoice so remaining balance can be collected at checkout
+          ...(invoice.status === 'paid' ? { status: 'finalized' } : {}),
+        },
         include: { lineItems: true, charges: true },
       });
 
@@ -82,6 +90,51 @@ export class ChargeService {
         amount: dto.amount,
         description: dto.description,
       },
+    });
+
+    return result;
+  }
+
+  async applyDiscount(invoiceId: string, discountAmount: number, description: string, requester: JwtPayload) {
+    const invoice = await this.prisma.invoice.findUnique({ where: { id: invoiceId } });
+    if (!invoice) throw new NotFoundException('INVOICE_NOT_FOUND');
+    this.assertBranchAccess(invoice.branchId, requester);
+
+    if (invoice.status === 'void') throw new BadRequestException('INVOICE_VOID');
+    if (invoice.status === 'paid') throw new BadRequestException('INVOICE_ALREADY_PAID');
+
+    const discount = new Prisma.Decimal(discountAmount);
+    if (discount.lte(0)) throw new BadRequestException('DISCOUNT_MUST_BE_POSITIVE');
+    if (discount.gt(invoice.total)) throw new BadRequestException('DISCOUNT_EXCEEDS_TOTAL');
+
+    const newTotal = new Prisma.Decimal(invoice.total).sub(discount);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      await tx.invoiceLineItem.create({
+        data: {
+          invoiceId,
+          description: description || 'הנחה/זיכוי',
+          quantity: 1,
+          unitPrice: discount.neg(),
+          total: discount.neg(),
+          itemType: 'other',
+        },
+      });
+
+      return tx.invoice.update({
+        where: { id: invoiceId },
+        data: { total: newTotal },
+        include: { lineItems: true },
+      });
+    });
+
+    await this.audit.log({
+      userId: requester.sub,
+      action: 'DISCOUNT_APPLIED',
+      entityType: 'invoice',
+      entityId: invoiceId,
+      branchId: invoice.branchId,
+      metadata: { discountAmount, description },
     });
 
     return result;
