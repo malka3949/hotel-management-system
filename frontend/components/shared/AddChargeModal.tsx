@@ -22,7 +22,7 @@ interface Props {
 export function AddChargeModal({ invoiceId, branchId, onSuccess, onClose }: Props) {
   const [chargeType, setChargeType] = useState<ChargeType>('room_service');
   const [description, setDescription] = useState('');
-  const [amount, setAmount] = useState('');
+  const [manualAmount, setManualAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [catalog, setCatalog] = useState<ServiceCatalogEntry[]>([]);
@@ -33,17 +33,9 @@ export function AddChargeModal({ invoiceId, branchId, onSuccess, onClose }: Prop
       .catch(() => {});
   }, [branchId]);
 
-  useEffect(() => {
-    const entry = catalog.find((e) => e.chargeType === chargeType && e.isActive);
-    if (entry) {
-      setAmount(Number(entry.price).toFixed(2));
-    } else {
-      setAmount('');
-    }
-  }, [chargeType, catalog]);
-
   const catalogEntry = catalog.find((e) => e.chargeType === chargeType && e.isActive);
   const priceFixed = !!catalogEntry;
+  const amount = priceFixed ? Number(catalogEntry.price).toFixed(2) : manualAmount;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -105,7 +97,7 @@ export function AddChargeModal({ invoiceId, branchId, onSuccess, onClose }: Prop
             <input
               type="number"
               value={amount}
-              onChange={(e) => !priceFixed && setAmount(e.target.value)}
+              onChange={(e) => !priceFixed && setManualAmount(e.target.value)}
               readOnly={priceFixed}
               required
               min="0.01"

@@ -34,6 +34,7 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (!user) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     setError('');
     getReconciliation(startDate, endDate)
