@@ -9,11 +9,13 @@ import {
   getActiveGuests,
   checkIn,
   checkOut,
+  getInvoice,
   type FrontDeskReservation,
   type Invoice,
 } from '@/lib/api/checkin';
 import { ReservationStatusBadge } from '@/components/shared/ReservationStatusBadge';
 import { InvoiceSummary } from '@/components/shared/InvoiceSummary';
+import { AddChargeModal } from '@/components/shared/AddChargeModal';
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -41,6 +43,9 @@ export default function FrontDeskPage() {
   const [checkOutNotes, setCheckOutNotes] = useState('');
   const [checkOutInvoice, setCheckOutInvoice] = useState<Invoice | null>(null);
   const [checkOutLoading, setCheckOutLoading] = useState(false);
+
+  const [chargeTarget, setChargeTarget] = useState<{ reservationId: string; invoiceId: string; branchId: string } | null>(null);
+  const [chargeFetching, setChargeFetching] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -91,6 +96,30 @@ export default function FrontDeskPage() {
     } finally {
       setCheckInLoading(false);
     }
+  }
+
+  async function handleAddCharge(reservation: FrontDeskReservation) {
+    setChargeFetching(true);
+    setError('');
+    try {
+      const inv = await getInvoice(reservation.id);
+      setChargeTarget({ reservationId: reservation.id, invoiceId: inv.id, branchId: reservation.branchId });
+    } catch {
+      setError('שגיאה בטעינת חשבונית');
+    } finally {
+      setChargeFetching(false);
+    }
+  }
+
+  async function handleChargeSuccess() {
+    setChargeTarget(null);
+    if (chargeTarget && checkOutTarget && chargeTarget.reservationId === checkOutTarget.id) {
+      try {
+        const refreshed = await getInvoice(checkOutTarget.id);
+        setCheckOutInvoice(refreshed);
+      } catch { /* keep existing invoice on error */ }
+    }
+    await load();
   }
 
   function handleCheckOutOpen(reservation: FrontDeskReservation) {
@@ -203,11 +232,23 @@ export default function FrontDeskPage() {
                 <ReservationTable
                   reservations={activeGuests}
                   showCheckInTime
+                  secondaryActionLabel={chargeFetching ? '...' : 'הוסף חיוב'}
+                  secondaryActionStyle={{ border: '1px solid var(--color-border-default)', color: 'var(--color-text-secondary)', background: 'transparent' }}
+                  onSecondaryAction={handleAddCharge}
                 />
               )}
             </>
           )}
         </>
+      )}
+
+      {chargeTarget && (
+        <AddChargeModal
+          invoiceId={chargeTarget.invoiceId}
+          branchId={chargeTarget.branchId}
+          onSuccess={handleChargeSuccess}
+          onClose={() => setChargeTarget(null)}
+        />
       )}
 
       {checkInTarget && (
@@ -218,6 +259,22 @@ export default function FrontDeskPage() {
           <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>
             {formatDate(checkInTarget.checkInDate)} – {formatDate(checkInTarget.checkOutDate)}
           </p>
+          {checkInTarget.onlineCheckIn && (
+            <div
+              className="mb-4 rounded-md border p-3 text-sm space-y-1"
+              style={{ borderColor: '#86EFAC', backgroundColor: '#F0FDF4' }}
+            >
+              <p className="font-medium" style={{ color: '#15803D' }}>✓ צ&apos;ק-אין מקוון הושלם ע&quot;י האורח</p>
+              <p style={{ color: '#166534' }}>שם: {checkInTarget.onlineCheckIn.fullName}</p>
+              <p style={{ color: '#166534' }}>ת.ז / דרכון: {checkInTarget.onlineCheckIn.passportId}</p>
+              {checkInTarget.onlineCheckIn.estimatedArrivalTime && (
+                <p style={{ color: '#166534' }}>שעת הגעה משוערת: {checkInTarget.onlineCheckIn.estimatedArrivalTime}</p>
+              )}
+              {checkInTarget.onlineCheckIn.specialRequests && (
+                <p style={{ color: '#166534' }}>בקשות מיוחדות: {checkInTarget.onlineCheckIn.specialRequests}</p>
+              )}
+            </div>
+          )}
           <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
             הערות (אופציונלי)
           </label>
@@ -259,6 +316,13 @@ export default function FrontDeskPage() {
               style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-base)' }}
             >
               <InvoiceSummary invoice={checkOutInvoice} />
+              <button
+                onClick={() => checkOutTarget && setChargeTarget({ reservationId: checkOutTarget.id, invoiceId: checkOutInvoice.id, branchId: checkOutTarget.branchId })}
+                className="mt-3 text-xs px-3 py-1.5 rounded-md border w-full"
+                style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
+              >
+                + הוסף חיוב אחרון (מיניבר, חניה...)
+              </button>
             </div>
           )}
           <label className="block text-sm font-medium mb-1" style={{ color: 'var(--color-text-primary)' }}>
@@ -299,10 +363,13 @@ interface TableProps {
   actionLabel?: string;
   actionStyle?: React.CSSProperties;
   onAction?: (r: FrontDeskReservation) => void;
+  secondaryActionLabel?: string;
+  secondaryActionStyle?: React.CSSProperties;
+  onSecondaryAction?: (r: FrontDeskReservation) => void;
   showCheckInTime?: boolean;
 }
 
-function ReservationTable({ reservations, actionLabel, actionStyle, onAction, showCheckInTime }: TableProps) {
+function ReservationTable({ reservations, actionLabel, actionStyle, onAction, secondaryActionLabel, secondaryActionStyle, onSecondaryAction, showCheckInTime }: TableProps) {
   if (reservations.length === 0) {
     return (
       <p className="text-sm py-8 text-center" style={{ color: 'var(--color-text-secondary)' }}>
@@ -361,15 +428,26 @@ function ReservationTable({ reservations, actionLabel, actionStyle, onAction, sh
                 </td>
               )}
               <td className="px-4 py-3">
-                {actionLabel && onAction && (
-                  <button
-                    onClick={() => onAction(r)}
-                    className="text-xs px-3 py-1.5 rounded-md font-medium"
-                    style={actionStyle}
-                  >
-                    {actionLabel}
-                  </button>
-                )}
+                <div className="flex gap-2 justify-end">
+                  {secondaryActionLabel && onSecondaryAction && (
+                    <button
+                      onClick={() => onSecondaryAction(r)}
+                      className="text-xs px-3 py-1.5 rounded-md font-medium"
+                      style={secondaryActionStyle}
+                    >
+                      {secondaryActionLabel}
+                    </button>
+                  )}
+                  {actionLabel && onAction && (
+                    <button
+                      onClick={() => onAction(r)}
+                      className="text-xs px-3 py-1.5 rounded-md font-medium"
+                      style={actionStyle}
+                    >
+                      {actionLabel}
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

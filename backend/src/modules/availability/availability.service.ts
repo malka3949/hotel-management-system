@@ -33,18 +33,19 @@ export class AvailabilityService {
 
     const client = tx ?? this.prisma;
 
-    // SELECT FOR UPDATE — locks the room's reservation rows for the duration of the tx
-    const conflicts = await (client as PrismaService).$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(*) AS count
+    // SELECT FOR UPDATE — locks matching rows; COUNT(*) is illegal with FOR UPDATE in PostgreSQL
+    const conflicts = await (client as PrismaService).$queryRaw<{ found: number }[]>`
+      SELECT 1 AS found
       FROM reservations
       WHERE room_id = ${roomId}
         AND status NOT IN ('cancelled', 'no_show')
         AND check_in_date  < ${checkOut}::date
         AND check_out_date > ${checkIn}::date
       FOR UPDATE
+      LIMIT 1
     `;
 
-    return BigInt(conflicts[0]?.count ?? 0) === 0n;
+    return conflicts.length === 0;
   }
 
   async getAvailableRooms(dto: GetAvailabilityDto) {

@@ -4,9 +4,10 @@ import { ReservationsController } from './reservations.controller';
 import { AvailabilityModule } from '../availability/availability.module';
 import { AuditModule } from '../audit/audit.module';
 import { NotificationModule } from '../notifications/notification.module';
+import { GuestPortalModule } from '../guest-portal/guest-portal.module';
 
 @Module({
-  imports: [AvailabilityModule, AuditModule, NotificationModule],
+  imports: [AvailabilityModule, AuditModule, NotificationModule, GuestPortalModule],
   providers: [ReservationsService],
   controllers: [ReservationsController],
   exports: [ReservationsService],

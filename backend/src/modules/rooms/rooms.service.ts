@@ -122,6 +122,18 @@ export class RoomsService {
     if (!room) throw new NotFoundException('ROOM_NOT_FOUND');
     this.assertBranchAccess(room.branchId, requester);
 
+    if (dto.status === 'available') {
+      const activeGuest = await this.prisma.reservation.findFirst({
+        where: { roomId: id, status: 'checked_in' },
+        include: { guest: { select: { fullName: true } } },
+      });
+      if (activeGuest) {
+        throw new BadRequestException(
+          `לא ניתן לשחרר חדר — האורח ${activeGuest.guest.fullName} עדיין שוהה בחדר. יש לבצע צ'ק-אאוט תחילה.`,
+        );
+      }
+    }
+
     const updated = await this.prisma.room.update({
       where: { id },
       data: { status: dto.status },

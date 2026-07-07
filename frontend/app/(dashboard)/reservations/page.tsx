@@ -196,7 +196,15 @@ export default function ReservationsPage() {
                       {nightsBetween(r.checkInDate, r.checkOutDate)}
                     </td>
                     <td className="px-4 py-3">
-                      <ReservationStatusBadge status={r.status} />
+                      <div className="flex flex-col gap-1">
+                        <ReservationStatusBadge status={r.status} />
+                        {r.onlineCheckIn && r.status === 'confirmed' && (
+                          <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: '#DCFCE7', color: '#15803D' }}>
+                            צ&apos;ק-אין מקוון ✓
+                          </span>
+                        )}
+                        {r.invoice && <PaymentBadge invoice={r.invoice} />}
+                      </div>
                     </td>
                     <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
                       {r.createdByUser.name}
@@ -246,4 +254,27 @@ export default function ReservationsPage() {
       )}
     </div>
   );
+}
+
+function PaymentBadge({ invoice }: { invoice: { status: string; total: string; payments: Array<{ amount: string }> } }) {
+  const totalPaid = invoice.payments.reduce((s, p) => s + Number(p.amount), 0);
+  const isPaid = invoice.status === 'paid';
+  const hasPartial = totalPaid > 0 && !isPaid;
+
+  if (isPaid) {
+    return (
+      <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: '#DCFCE7', color: '#15803D' }}>
+        ✓ שולם
+      </span>
+    );
+  }
+  if (hasPartial) {
+    const remaining = Number(invoice.total) - totalPaid;
+    return (
+      <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: '#FEF9C3', color: '#854D0E' }}>
+        שולם חלקי · יתרה ₪{remaining.toFixed(0)}
+      </span>
+    );
+  }
+  return null;
 }

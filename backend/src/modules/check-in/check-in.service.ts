@@ -61,9 +61,13 @@ export class CheckInService {
         (reservation.checkOutDate.getTime() - reservation.checkInDate.getTime()) / 86400000,
       ),
     );
-    const basePrice = Number(reservation.room.roomType.basePrice);
-    const subtotal = new Prisma.Decimal(basePrice * nights);
-    const tax = new Prisma.Decimal(Number(subtotal) * TAX_RATE).toDecimalPlaces(2);
+    // basePrice is VAT-inclusive (gross). Extract net so tax is not double-counted.
+    const grossNightly = new Prisma.Decimal(reservation.room.roomType.basePrice);
+    const netNightly = grossNightly
+      .div(new Prisma.Decimal(1).add(new Prisma.Decimal(TAX_RATE)))
+      .toDecimalPlaces(2);
+    const subtotal = netNightly.mul(nights);
+    const tax = subtotal.mul(new Prisma.Decimal(TAX_RATE)).toDecimalPlaces(2);
     const total = subtotal.add(tax);
 
     const updated = await this.prisma.$transaction(async (tx) => {
@@ -100,7 +104,7 @@ export class CheckInService {
             create: {
               description: `לינה ${nights} לילות — חדר ${reservation.room.number}`,
               quantity: nights,
-              unitPrice: new Prisma.Decimal(basePrice),
+              unitPrice: netNightly,
               total: subtotal,
               itemType: 'room_charge',
             },
@@ -172,7 +176,7 @@ export class CheckInService {
       });
 
       let invoice = res.invoice;
-      if (invoice) {
+      if (invoice && invoice.status !== 'paid') {
         await tx.invoice.update({
           where: { id: invoice.id },
           data: { status: 'finalized', issuedAt: new Date() },
@@ -220,7 +224,7 @@ export class CheckInService {
 
     const invoice = await this.prisma.invoice.findUnique({
       where: { reservationId },
-      include: { lineItems: true },
+      include: { lineItems: true, payments: { where: { status: 'succeeded' } } },
     });
     if (!invoice) throw new NotFoundException('INVOICE_NOT_FOUND');
     return invoice;
@@ -254,6 +258,9 @@ export class CheckInService {
       include: {
         guest: { select: { id: true, fullName: true, email: true, phone: true } },
         room: { select: { id: true, number: true, floor: true, roomType: { select: { name: true } } } },
+        onlineCheckIn: {
+          select: { id: true, fullName: true, passportId: true, estimatedArrivalTime: true, specialRequests: true, completedAt: true },
+        },
       },
       orderBy: { checkInDate: 'asc' },
     });
@@ -275,7 +282,7 @@ export class CheckInService {
         guest: { select: { id: true, fullName: true, email: true, phone: true } },
         room: { select: { id: true, number: true, floor: true, roomType: { select: { name: true } } } },
         checkIn: true,
-        invoice: { include: { lineItems: true } },
+        invoice: { include: { lineItems: true, payments: { where: { status: 'succeeded' } } } },
       },
       orderBy: { checkOutDate: 'asc' },
     });

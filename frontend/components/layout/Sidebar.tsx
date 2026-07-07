@@ -22,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'לוח שנה', href: '/reservations/calendar', icon: '📅', roles: ['chain_admin', 'hotel_manager', 'receptionist'] },
   { label: 'קבלה', href: '/front-desk', icon: '🏨', roles: ['chain_admin', 'hotel_manager', 'receptionist'] },
   { label: 'חדרי שירות', href: '/housekeeping', icon: '🧹', roles: ['chain_admin', 'hotel_manager', 'housekeeping'] },
+  { label: 'חשבוניות', href: '/invoices', icon: '🧾', roles: ['chain_admin', 'hotel_manager', 'receptionist'] },
   { label: 'דוחות', href: '/reports', icon: '📊', roles: ['chain_admin', 'hotel_manager'] },
   { label: 'סניפים', href: '/admin/branches', icon: '🏢', roles: ['chain_admin'] },
   { label: 'משתמשים', href: '/admin/users', icon: '👥', roles: ['chain_admin', 'hotel_manager'] },

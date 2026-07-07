@@ -15,6 +15,8 @@ import { NotificationModule } from './modules/notifications/notification.module'
 import { AvailabilityModule } from './modules/availability/availability.module';
 import { ReservationsModule } from './modules/reservations/reservations.module';
 import { CheckInModule } from './modules/check-in/check-in.module';
+import { BillingModule } from './modules/billing/billing.module';
+import { GuestPortalModule } from './modules/guest-portal/guest-portal.module';
 
 @Module({
   imports: [
@@ -45,6 +47,8 @@ import { CheckInModule } from './modules/check-in/check-in.module';
     AvailabilityModule,
     ReservationsModule,
     CheckInModule,
+    BillingModule,
+    GuestPortalModule,
   ],
   controllers: [HealthController],
 })

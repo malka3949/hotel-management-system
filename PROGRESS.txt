@@ -1,0 +1,71 @@
+================================================================================
+2026-06-29 | Phase 7 — Billing & Payments | COMPLETE + n8n triggers
+================================================================================
+Tasks:
+  - Migration 20260629000006_phase7_billing applied (dev + test DB)
+  - BillingModule: PaymentService, ChargeService, RefundService, InvoicePdfService
+  - Providers: StripeProvider (lazy), TranzilaProvider (stub), ManualProvider
+  - DTOs: CreatePayment, CreateCharge, CreateRefund, PrePayment
+  - 12 REST endpoints in BillingController
+  - Frontend: billing.ts API client, AddChargeModal, RefundModal
+  - Pages updated: /invoices/[id], /payments/checkout, /reports
+  - E2E tests: billing.e2e-spec.ts — 11/11 PASS
+  - ESLint: 0 errors | Frontend TS: 0 errors
+  - Documentation: team-Yuri/dev-phase7.md, PROJECT_STATUS.md updated
+  - n8n triggers added: payment.succeeded, payment.failed, refund.processed
+  - /payments/checkout wrapped in Suspense (Next.js useSearchParams fix)
+  - reservations/[id] page: re-fetch after check-in/out (crash fix)
+
+Files changed (key):
+  backend/src/modules/billing/** (new)
+  backend/prisma/migrations/20260629000006_phase7_billing/migration.sql (new)
+  backend/src/main.ts (rawBody: true)
+  backend/src/app.module.ts (BillingModule registered)
+  backend/src/config/env.validation.ts (Stripe keys optional)
+  backend/package.json (stripe, pdfkit added)
+  backend/test/billing.e2e-spec.ts (new)
+  frontend/lib/api/billing.ts (new)
+  frontend/components/shared/AddChargeModal.tsx (new)
+  frontend/components/shared/RefundModal.tsx (new)
+  frontend/app/(dashboard)/invoices/[id]/page.tsx (updated)
+  frontend/app/(dashboard)/payments/checkout/page.tsx (updated)
+  frontend/app/(dashboard)/reports/page.tsx (updated)
+  backend/src/modules/notifications/n8n.service.ts (3 billing events added)
+  backend/src/modules/billing/payment.service.ts (N8nService injected, triggers)
+  backend/src/modules/billing/refund.service.ts (N8nService injected, trigger)
+  frontend/app/(dashboard)/payments/checkout/page.tsx (Suspense fix)
+  frontend/app/(dashboard)/reservations/[id]/page.tsx (re-fetch after check-in/out)
+================================================================================
+
+================================================================================
+2026-06-30 | Phase 8 — Guest Portal | COMPLETE
+================================================================================
+Tasks:
+  - Prisma schema updated with Phase 7 billing models (missing from schema.prisma)
+  - BillingModule registered in AppModule, exports PaymentService + InvoicePdfService
+  - Migration 20260630000007_phase8_guest_portal: guest_access_tokens, online_check_ins, payments.created_by nullable
+  - GuestPortalModule: GuestPortalService, GuestPortalController, GuestTokenGuard, GuestPaymentTokenGuard
+  - Token generation (SHA-256 hash) on reservation create → portal link emailed
+  - 7 portal endpoints: view, invoice, pdf, check-in, payment, token list, token revoke
+  - Online check-in: window validation (24h before check-in), guest profile update
+  - Portal payment: single-use token enforcement, audit log, invoice marked paid
+  - Frontend: 5 portal pages (/[token], /[token]/check-in, /[token]/payment, /[token]/confirmation, /expired)
+  - Frontend: online check-in badge in reservations/[id] page
+  - E2E tests: guest-portal.e2e-spec.ts — 12/12 PASS
+  - ESLint: 0 errors | Backend TS: 0 errors | Frontend TS: 0 errors
+
+Files changed (key):
+  backend/prisma/schema.prisma (billing models + portal models added)
+  backend/prisma/migrations/20260630000007_phase8_guest_portal/migration.sql (new)
+  backend/src/modules/guest-portal/** (new)
+  backend/src/app.module.ts (BillingModule + GuestPortalModule registered)
+  backend/src/modules/billing/billing.module.ts (exports added)
+  backend/src/modules/reservations/reservations.module.ts (GuestPortalModule import)
+  backend/src/modules/reservations/reservations.service.ts (portal link generation + include fix)
+  backend/test/guest-portal.e2e-spec.ts (new)
+  frontend/lib/api/portal.ts (new)
+  frontend/app/(portal)/[token]/** (new pages)
+  frontend/app/(portal)/expired/page.tsx (new)
+  frontend/lib/api/reservations.ts (onlineCheckIn field added)
+  frontend/app/(dashboard)/reservations/[id]/page.tsx (online check-in badge)
+================================================================================
