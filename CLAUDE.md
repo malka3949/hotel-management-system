@@ -14,6 +14,18 @@ Detail docs in `CLAUDE/` — read on demand. Phase status in `PROJECT_STATUS.md`
 - תשובות קצרות — אין להסביר מה שברור מהקוד.
 - אין פיצ'רים, ריפקטורינג, או הפשטות מעבר למה שהמשימה דורשת.
 
+## Default Test User / Fixture
+
+| Email | Password | Role | גישה |
+|---|---|---|---|
+| `admin@hotel.co.il` | `Admin123!` | `chain_admin` | כל הbranchים, כל הפיצ'רים |
+| `manager@hotel.co.il` | `Manager123!` | `hotel_manager` | branch תל אביב בלבד |
+| `reception@hotel.co.il` | `Reception123!` | `receptionist` | branch תל אביב, גישה מוגבלת |
+
+**Data scope:** סביבת dev בלבד — נתוני seed (`prisma/seed.ts`)
+
+Use for any manual / browser / API test against real data.
+
 ## Golden Rules
 
 - **PROGRESS.txt** — append after every significant change (timestamp, session_id, tasks, files). NEVER overwrite. Too big → `PROGRESS_OLD_{date}.txt`.
@@ -24,7 +36,7 @@ Detail docs in `CLAUDE/` — read on demand. Phase status in `PROJECT_STATUS.md`
 - **"Verified" = real run.** Type-check/build = "compiles, untested" until tests or live run pass.
 - **Workflow:** read relevant files before editing; prefer `Edit` over `Write`; run independent tools in parallel; check for existing files before creating new ones.
 - **Destructive ops** (delete, force push, reset) — ask user first.
-- **Commit/push** only when explicitly requested. New commit always — no `--amend` unless asked. No `--no-verify` unless asked. Commit message: why, not what.
+- **Commit every significant change** — locally, descriptive message. No push unless asked. No `--amend` unless asked. No `--no-verify` unless asked. Commit message: why, not what.
 
 ## Project Overview
 
@@ -107,6 +119,20 @@ Doc: `design-system/`. **Do not invent colors, components, or patterns outside t
 - Branches: `feature/phase-{N}-{short-name}`
 - PR required to merge into `develop`
 - Docs in the same commit as the code they describe
+
+**Phase start (mandatory):**
+1. `git checkout develop && git pull origin develop`
+2. `git checkout -b feature/phase-{N}-{short-name}`
+3. `git push -u origin feature/phase-{N}-{short-name}`
+
+**Commit triggers during phase:**
+- After backend complete (modules + migration + tests)
+- After frontend complete
+- After CI/lint fixes
+
+**Phase end:**
+- Open PR `feature/phase-{N}-*` → `develop` via GitHub MCP
+- Never merge directly to `main`
 
 ## Security
 
