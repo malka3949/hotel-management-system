@@ -57,8 +57,9 @@ services:
       REFRESH_TOKEN_HMAC_KEY: ${REFRESH_TOKEN_HMAC_KEY}
       FRONTEND_URL: ${FRONTEND_URL}
       N8N_BASE_URL: http://n8n:5678
-      RESEND_API_KEY: re_3WD3vmvB_5P76Ly3am3zfKheojS71YnDT
-      NODE_TLS_REJECT_UNAUTHORIZED: '0'
+      N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
@@ -79,12 +80,11 @@ services:
     networks:
       - hotel_internal
     environment:
-      N8N_ENCRYPTION_KEY: rmc3TEszEbar6xpXhnt1KaXt6G+qNQr9
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}
       N8N_USER_MANAGEMENT_DISABLED: 'false'
       N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: 'false'
       GENERIC_TIMEZONE: Asia/Jerusalem
       TZ: Asia/Jerusalem
-      NODE_TLS_REJECT_UNAUTHORIZED: '0'
       N8N_RUNNERS_ENABLED: 'false'
     volumes:
       - /home/runner/.n8n:/home/node/.n8n
