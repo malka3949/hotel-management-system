@@ -146,8 +146,8 @@ export class GuestsService {
   }
 
   async findOne(id: string, requester: JwtPayload) {
-    const guest = await this.prisma.guest.findUnique({
-      where: { id },
+    const guest = await this.prisma.guest.findFirst({
+      where: { id, isActive: true },
       select: GUEST_SELECT,
     });
     if (!guest) throw new NotFoundException('GUEST_NOT_FOUND');
@@ -189,13 +189,39 @@ export class GuestsService {
     if (!guest) throw new NotFoundException('GUEST_NOT_FOUND');
     this.assertBranchAccess(guest.branchId, requester);
 
-    const deleted = await this.prisma.guest.update({
-      where: { id },
-      data: { isActive: false },
-      select: GUEST_SELECT,
+    await this.prisma.$transaction([
+      // Anonymize PII on the guest row — right to erasure (Amendment 13 §14)
+      this.prisma.guest.update({
+        where: { id },
+        data: {
+          isActive: false,
+          fullName: '[deleted]',
+          email: null,
+          phone: '[deleted]',
+          passportId: null,
+          dateOfBirth: null,
+          nationality: null,
+          notes: null,
+        },
+      }),
+      // Erase PII copies in child tables
+      this.prisma.onlineCheckIn.deleteMany({ where: { guestId: id } }),
+      this.prisma.guestDocument.updateMany({
+        where: { guestId: id },
+        data: { documentNumber: '[deleted]', issuingCountry: '[deleted]' },
+      }),
+    ]);
+
+    await this.audit.log({
+      userId: requester.sub,
+      action: 'GUEST_DELETE',
+      entityType: 'guest',
+      entityId: id,
+      branchId: guest.branchId,
+      metadata: { anonymized: true },
     });
-    await this.audit.log({ userId: requester.sub, action: 'GUEST_DELETE', entityType: 'guest', entityId: deleted.id, branchId: deleted.branchId });
-    return deleted;
+
+    return { id, anonymized: true };
   }
 
   async addDocument(guestId: string, dto: CreateGuestDocumentDto, requester: JwtPayload) {
