@@ -4,12 +4,7 @@ let refreshPromise: Promise<boolean> | null = null;
 
 function getAccessToken(): string | null {
   if (typeof localStorage !== 'undefined') {
-    const t = localStorage.getItem('auth_token');
-    if (t) return t;
-  }
-  if (typeof document !== 'undefined') {
-    const m = /(?:^|; )access_token=([^;]*)/.exec(document.cookie);
-    if (m) return decodeURIComponent(m[1]);
+    return localStorage.getItem('auth_token');
   }
   return null;
 }

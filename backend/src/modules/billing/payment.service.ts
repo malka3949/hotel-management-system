@@ -247,8 +247,8 @@ export class PaymentService {
   async handleStripeWebhook(rawBody: Buffer, sig: string): Promise<void> {
     const webhookSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
     if (!webhookSecret) {
-      this.logger.warn('STRIPE_WEBHOOK_SECRET not set — skipping signature verification');
-      return;
+      this.logger.error('STRIPE_WEBHOOK_SECRET not configured — rejecting webhook');
+      throw new BadRequestException('WEBHOOK_SECRET_NOT_CONFIGURED');
     }
 
     let event: Stripe.Event;
