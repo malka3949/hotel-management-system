@@ -63,7 +63,7 @@ export class GuestPortalService {
       void this.sendPortalEmail(guestEmail, guestName, portalUrl);
     }
 
-    this.logger.log(`Portal link generated for reservation ${reservationId}: ${portalUrl}`);
+    this.logger.log(`Portal link generated for reservation ${reservationId}`);
     return { portalUrl, expiresAt };
   }
 
