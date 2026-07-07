@@ -198,6 +198,8 @@ model AuditLog {
   entityId    String?   @map("entity_id") @db.Uuid
   metadata    Json?
   branchId    String?   @map("branch_id")
+  ipAddress   String?   @map("ip_address") @db.VarChar(45)
+  userAgent   String?   @map("user_agent") @db.VarChar(500)
   createdAt   DateTime  @default(now()) @map("created_at")
 
   user        User?     @relation(fields: [userId], references: [id])

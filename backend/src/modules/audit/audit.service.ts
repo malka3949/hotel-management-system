@@ -9,6 +9,8 @@ interface AuditLogEntry {
   entityId?: string;
   metadata?: Prisma.InputJsonObject;
   branchId: string | null;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 @Injectable()
@@ -24,6 +26,8 @@ export class AuditService {
         entityId: entry.entityId,
         metadata: entry.metadata ?? {},
         branchId: entry.branchId,
+        ipAddress: entry.ipAddress,
+        userAgent: entry.userAgent,
       },
     });
   }
