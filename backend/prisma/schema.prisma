@@ -54,6 +54,7 @@ model Branch {
   charges            Charge[]
   refunds            Refund[]
   serviceCatalog     ServiceCatalogEntry[]
+  housekeepingTasks  HousekeepingTask[]
 
   @@map("branches")
 }
@@ -76,9 +77,11 @@ model User {
   createdReservations  Reservation[]   @relation("ReservationCreatedBy")
   checkIns             CheckIn[]       @relation("CheckedInBy")
   checkOuts            CheckOut[]      @relation("CheckedOutBy")
-  payments             Payment[]       @relation("PaymentCreatedBy")
-  charges              Charge[]        @relation("ChargeAddedBy")
-  refunds              Refund[]        @relation("RefundApprovedBy")
+  payments                    Payment[]           @relation("PaymentCreatedBy")
+  charges                     Charge[]            @relation("ChargeAddedBy")
+  refunds                     Refund[]            @relation("RefundApprovedBy")
+  assignedHousekeepingTasks   HousekeepingTask[]  @relation("HousekeepingAssignedTo")
+  createdHousekeepingTasks    HousekeepingTask[]  @relation("HousekeepingCreatedBy")
 
   @@map("users")
 }
@@ -126,9 +129,10 @@ model Room {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  branch         Branch         @relation(fields: [branchId], references: [id])
-  roomType       RoomType       @relation(fields: [roomTypeId], references: [id])
-  reservations   Reservation[]
+  branch            Branch              @relation(fields: [branchId], references: [id])
+  roomType          RoomType            @relation(fields: [roomTypeId], references: [id])
+  reservations      Reservation[]
+  housekeepingTasks HousekeepingTask[]
 
   @@unique([branchId, number])
   @@index([branchId, status])
@@ -255,6 +259,7 @@ model Reservation {
   payments           Payment[]
   guestAccessTokens  GuestAccessToken[]
   onlineCheckIn      OnlineCheckIn?
+  housekeepingTasks  HousekeepingTask[]
 
   @@index([branchId, checkInDate, checkOutDate])
   @@index([roomId, checkInDate, checkOutDate])
@@ -537,4 +542,45 @@ model OnlineCheckIn {
   guest                Guest       @relation(fields: [guestId], references: [id])
 
   @@map("online_check_ins")
+}
+
+// ── Phase 9: Housekeeping ─────────────────────────────────────────────────────
+
+enum HousekeepingTaskStatus {
+  pending
+  in_progress
+  completed
+  skipped
+}
+
+enum HousekeepingPriority {
+  normal
+  urgent
+}
+
+model HousekeepingTask {
+  id            String                 @id @default(uuid())
+  branchId      String                 @map("branch_id")
+  roomId        String                 @map("room_id")
+  reservationId String?                @map("reservation_id")
+  assignedTo    String?                @map("assigned_to")
+  status        HousekeepingTaskStatus @default(pending)
+  priority      HousekeepingPriority   @default(normal)
+  notes         String?                @db.Text
+  scheduledFor  DateTime               @db.Date @map("scheduled_for")
+  startedAt     DateTime?              @map("started_at")
+  completedAt   DateTime?              @map("completed_at")
+  createdBy     String?                @map("created_by")
+  createdAt     DateTime               @default(now()) @map("created_at")
+
+  branch      Branch       @relation(fields: [branchId], references: [id])
+  room        Room         @relation(fields: [roomId], references: [id])
+  reservation Reservation? @relation(fields: [reservationId], references: [id])
+  assignee    User?        @relation("HousekeepingAssignedTo", fields: [assignedTo], references: [id])
+  creator     User?        @relation("HousekeepingCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([branchId, status])
+  @@index([branchId, assignedTo, status])
+  @@index([branchId, scheduledFor])
+  @@map("housekeeping_tasks")
 }

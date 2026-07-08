@@ -17,6 +17,7 @@ import { ReservationsModule } from './modules/reservations/reservations.module';
 import { CheckInModule } from './modules/check-in/check-in.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { GuestPortalModule } from './modules/guest-portal/guest-portal.module';
+import { HousekeepingModule } from './modules/housekeeping/housekeeping.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { GuestPortalModule } from './modules/guest-portal/guest-portal.module';
     CheckInModule,
     BillingModule,
     GuestPortalModule,
+    HousekeepingModule,
   ],
   controllers: [HealthController],
 })

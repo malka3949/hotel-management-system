@@ -32,7 +32,12 @@ export class UsersService {
     private audit: AuditService,
   ) {}
 
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto, requester: JwtPayload) {
+    if (requester.role === 'hotel_manager') {
+      if (dto.role === 'chain_admin') throw new ForbiddenException('CANNOT_CREATE_CHAIN_ADMIN');
+      dto.branchId = requester.branchId ?? undefined;
+    }
+
     const existing = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
