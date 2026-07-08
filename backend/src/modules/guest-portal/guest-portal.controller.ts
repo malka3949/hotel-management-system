@@ -51,13 +51,7 @@ export class GuestPortalController {
   @Get('reservation/:token/invoice/pdf')
   async getInvoicePdf(@Req() req: GuestRequest, @Res() res: Response) {
     const invoice = await this.portalService.getInvoiceDetail(req.guestToken.reservationId);
-    const fakeRequester: JwtPayload = {
-      sub: 'portal',
-      email: '',
-      role: 'chain_admin',
-      branchId: null,
-    };
-    await this.pdfService.stream(invoice.id, fakeRequester, res);
+    await this.pdfService.stream(invoice.id, null, res, { guestPortal: true });
   }
 
   @UseGuards(GuestTokenGuard)
