@@ -4,6 +4,7 @@ import { Injectable, Logger } from '@nestjs/common';
 export class N8nService {
   private readonly logger = new Logger(N8nService.name);
   private readonly baseUrl = process.env.N8N_BASE_URL ?? 'http://localhost:5678';
+  private readonly webhookSecret = process.env.N8N_WEBHOOK_SECRET ?? '';
 
   private readonly webhooks: Record<string, string> = {
     'reservation.confirmed': '/webhook/vOZ77rpHCNDjHYrT/webhook/reservation-confirmation',
@@ -24,9 +25,13 @@ export class N8nService {
     }
 
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (this.webhookSecret) {
+        headers['X-Webhook-Secret'] = this.webhookSecret;
+      }
       const res = await fetch(`${this.baseUrl}${path}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ event, ...payload }),
       });
       if (!res.ok) {
