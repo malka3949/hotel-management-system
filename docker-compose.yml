@@ -60,6 +60,8 @@ services:
       N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:-}
       RESEND_API_KEY: ${RESEND_API_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      # DEV ONLY — Alpine containers lack system CA store; remove in production
+      NODE_TLS_REJECT_UNAUTHORIZED: '0'
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
