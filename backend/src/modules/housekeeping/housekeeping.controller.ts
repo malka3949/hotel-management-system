@@ -19,7 +19,7 @@ import { SkipHousekeepingTaskDto } from './dto/skip-task.dto';
 import { FilterHousekeepingTasksDto } from './dto/filter-tasks.dto';
 
 @UseGuards(JwtAuthGuard)
-@Controller('housekeeping')
+@Controller('v1/housekeeping')
 export class HousekeepingController {
   constructor(private readonly housekeepingService: HousekeepingService) {}
 

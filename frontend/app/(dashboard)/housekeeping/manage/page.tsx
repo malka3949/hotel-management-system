@@ -9,6 +9,7 @@ import {
   CreateTaskPayload,
 } from '@/lib/api/housekeeping';
 import { getUsers, User } from '@/lib/api/users';
+import { getRooms, Room } from '@/lib/api/rooms';
 import { PriorityBadge } from '@/components/shared/PriorityBadge';
 
 const statusLabels: Record<HousekeepingTaskStatus, string> = {
@@ -23,6 +24,7 @@ const priorityLabels: Record<HousekeepingPriority, string> = { urgent: 'דחוף
 export default function HousekeepingManagePage() {
   const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
   const [housekeepers, setHousekeepers] = useState<User[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,6 +66,9 @@ export default function HousekeepingManagePage() {
   useEffect(() => {
     getUsers()
       .then((users) => setHousekeepers(users.filter((u) => u.role === 'housekeeping' && u.isActive)))
+      .catch(() => {});
+    getRooms()
+      .then(setRooms)
       .catch(() => {});
   }, []);
 
@@ -123,14 +128,23 @@ export default function HousekeepingManagePage() {
         >
           <div className="col-span-2 font-medium text-[#0F172A] text-sm">משימה חדשה</div>
           <div>
-            <label className="text-xs text-[#475569] block mb-1">מזהה חדר (UUID)</label>
-            <input
-              className="w-full border border-[#E2E8F0] rounded px-2 py-1.5 text-sm"
-              placeholder="room id"
+            <label className="text-xs text-[#475569] block mb-1">חדר</label>
+            <select
+              className="w-full border border-[#E2E8F0] rounded px-2 py-1.5 text-sm bg-white"
               value={createForm.roomId ?? ''}
               onChange={(e) => setCreateForm((f) => ({ ...f, roomId: e.target.value }))}
               required
-            />
+            >
+              <option value="">— בחר חדר —</option>
+              {rooms
+                .filter((r) => r.isActive)
+                .sort((a, b) => a.number.localeCompare(b.number, undefined, { numeric: true }))
+                .map((r) => (
+                  <option key={r.id} value={r.id}>
+                    חדר {r.number}{r.floor != null ? ` · קומה ${r.floor}` : ''}
+                  </option>
+                ))}
+            </select>
           </div>
           <div>
             <label className="text-xs text-[#475569] block mb-1">תאריך מתוכנן</label>

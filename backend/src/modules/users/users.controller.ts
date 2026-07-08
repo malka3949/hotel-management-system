@@ -22,9 +22,9 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Post()
-  @Roles('chain_admin')
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  @Roles('chain_admin', 'hotel_manager')
+  create(@Body() dto: CreateUserDto, @CurrentUser() user: JwtPayload) {
+    return this.usersService.create(dto, user);
   }
 
   @Get()
