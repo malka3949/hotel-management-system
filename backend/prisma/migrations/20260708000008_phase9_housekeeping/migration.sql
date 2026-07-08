@@ -4,18 +4,18 @@ CREATE TYPE "HousekeepingTaskStatus" AS ENUM ('pending', 'in_progress', 'complet
 CREATE TYPE "HousekeepingPriority" AS ENUM ('normal', 'urgent');
 
 CREATE TABLE "housekeeping_tasks" (
-    "id"             UUID NOT NULL DEFAULT gen_random_uuid(),
-    "branch_id"      UUID NOT NULL,
-    "room_id"        UUID NOT NULL,
-    "reservation_id" UUID,
-    "assigned_to"    UUID,
+    "id"             TEXT NOT NULL,
+    "branch_id"      TEXT NOT NULL,
+    "room_id"        TEXT NOT NULL,
+    "reservation_id" TEXT,
+    "assigned_to"    TEXT,
     "status"         "HousekeepingTaskStatus" NOT NULL DEFAULT 'pending',
     "priority"       "HousekeepingPriority"   NOT NULL DEFAULT 'normal',
     "notes"          TEXT,
     "scheduled_for"  DATE NOT NULL,
     "started_at"     TIMESTAMP(3),
     "completed_at"   TIMESTAMP(3),
-    "created_by"     UUID,
+    "created_by"     TEXT,
     "created_at"     TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "housekeeping_tasks_pkey" PRIMARY KEY ("id")
