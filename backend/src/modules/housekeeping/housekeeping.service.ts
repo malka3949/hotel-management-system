@@ -59,7 +59,7 @@ export class HousekeepingService {
 
   async createTask(dto: CreateHousekeepingTaskDto, requester: JwtPayload) {
     this.requireManagerOrAbove(requester);
-    const branchId = this.requireBranchId(requester);
+    const branchId = this.resolveBranchId(dto.branchId, requester);
 
     const room = await this.prisma.room.findUnique({ where: { id: dto.roomId } });
     if (!room || room.branchId !== branchId) throw new NotFoundException('ROOM_NOT_FOUND');
@@ -236,9 +236,13 @@ export class HousekeepingService {
       throw new BadRequestException('TASK_ALREADY_TERMINAL');
     }
 
+    const skipNote = task.notes
+      ? `${task.notes}\n[דילוג] ${dto.reason}`
+      : `[דילוג] ${dto.reason}`;
+
     const updated = await this.prisma.housekeepingTask.update({
       where: { id },
-      data: { status: 'skipped', notes: dto.reason },
+      data: { status: 'skipped', notes: skipNote },
       include: TASK_INCLUDE,
     });
 

@@ -219,13 +219,14 @@ describe('Housekeeping (e2e)', () => {
     const tasks1 = (res1.body as ApiResponse<Array<{ assignedTo: string }>>).data ?? [];
     expect(tasks1.every((t) => t.assignedTo === housekeeperId)).toBe(true);
 
-    // housekeeper2 gets empty (no assigned tasks)
+    // housekeeper2 sees only their own tasks — should be empty since none are assigned to them
     const res2 = await request(app.getHttpServer())
       .get('/api/v1/housekeeping/tasks')
       .set('Authorization', `Bearer ${hk2Token}`)
       .expect(200);
 
     const tasks2 = (res2.body as ApiResponse<Array<{ assignedTo: string }>>).data ?? [];
+    expect(tasks2.length).toBe(0);
     expect(tasks2.every((t) => t.assignedTo === housekeeper2Id)).toBe(true);
   });
 

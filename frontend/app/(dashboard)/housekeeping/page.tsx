@@ -17,19 +17,24 @@ export default function HousekeepingPage() {
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-
     const params: { scheduledFor?: string; status?: HousekeepingTaskStatus } =
       filter === 'today'
         ? { scheduledFor: today }
         : { status: 'pending' };
 
-    housekeepingApi
-      .getTasks(params)
-      .then(setTasks)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'שגיאה'))
-      .finally(() => setLoading(false));
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await housekeepingApi.getTasks(params);
+        setTasks(data);
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'שגיאה');
+      } finally {
+        setLoading(false);
+      }
+    }
+    void load();
   }, [filter, today]);
 
   function handleTaskUpdate(updated: HousekeepingTask) {

@@ -19,6 +19,7 @@ const statusLabels: Record<string, string> = {
 export function HousekeepingTaskCard({ task, onUpdate }: Props) {
   const [loading, setLoading] = useState(false);
   const [confirmComplete, setConfirmComplete] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleStart() {
     setLoading(true);
@@ -32,10 +33,13 @@ export function HousekeepingTaskCard({ task, onUpdate }: Props) {
 
   async function handleComplete() {
     setLoading(true);
+    setError(null);
     try {
       const updated = await housekeepingApi.completeTask(task.id);
       onUpdate(updated);
       setConfirmComplete(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'שגיאה בעדכון');
     } finally {
       setLoading(false);
     }
@@ -67,6 +71,10 @@ export function HousekeepingTaskCard({ task, onUpdate }: Props) {
 
       {task.notes && (
         <p className="text-sm text-[#475569] mb-3 bg-[#F8FAFC] rounded p-2">{task.notes}</p>
+      )}
+
+      {error && (
+        <p className="text-xs text-red-600 mb-2">{error}</p>
       )}
 
       {confirmComplete ? (

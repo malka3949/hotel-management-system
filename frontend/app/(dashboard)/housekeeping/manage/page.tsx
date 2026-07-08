@@ -40,21 +40,26 @@ export default function HousekeepingManagePage() {
 
   const today = new Date().toISOString().split('T')[0];
 
-  const loadTasks = useCallback(() => {
+  const loadTasks = useCallback(async () => {
     setLoading(true);
-    housekeepingApi
-      .getTasks({
+    try {
+      const data = await housekeepingApi.getTasks({
         status: filterStatus || undefined,
         priority: filterPriority || undefined,
         assignedTo: filterAssigned || undefined,
         scheduledFor: filterDate || undefined,
-      })
-      .then(setTasks)
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'שגיאה'))
-      .finally(() => setLoading(false));
+      });
+      setTasks(data);
+      setError(null);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'שגיאה');
+    } finally {
+      setLoading(false);
+    }
   }, [filterStatus, filterPriority, filterAssigned, filterDate]);
 
-  useEffect(() => { loadTasks(); }, [loadTasks]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void loadTasks(); }, [loadTasks]);
 
   useEffect(() => {
     getUsers()

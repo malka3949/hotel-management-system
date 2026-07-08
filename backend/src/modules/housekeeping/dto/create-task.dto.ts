@@ -3,6 +3,10 @@ import { HousekeepingPriority } from '@prisma/client';
 
 export class CreateHousekeepingTaskDto {
   @IsUUID()
+  @IsOptional()
+  branchId?: string;
+
+  @IsUUID()
   roomId!: string;
 
   @IsUUID()
