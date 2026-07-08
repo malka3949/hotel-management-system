@@ -13,6 +13,7 @@ import { N8nService } from '../notifications/n8n.service';
 import { CheckInDto } from './dto/check-in.dto';
 import { CheckOutDto } from './dto/check-out.dto';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
+import { HousekeepingService } from '../housekeeping/housekeeping.service';
 
 const RESERVATION_INCLUDE = {
   guest: { select: { id: true, fullName: true, email: true, phone: true } },
@@ -41,6 +42,7 @@ export class CheckInService {
     private availability: AvailabilityService,
     private roomStatusGateway: RoomStatusGateway,
     private n8n: N8nService,
+    private housekeeping: HousekeepingService,
   ) {}
 
   async checkIn(reservationId: string, dto: CheckInDto, requester: JwtPayload) {
@@ -183,6 +185,15 @@ export class CheckInService {
         });
         invoice = { ...invoice, status: 'finalized', issuedAt: new Date() };
       }
+
+      await this.housekeeping.createTaskInTransaction(tx, {
+        branchId: reservation.branchId,
+        roomId: reservation.roomId,
+        reservationId,
+        priority: 'urgent',
+        scheduledFor: new Date(),
+        createdBy: null,
+      });
 
       return { reservation: res, invoice };
     });

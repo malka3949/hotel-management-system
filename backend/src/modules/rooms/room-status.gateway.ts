@@ -65,4 +65,8 @@ export class RoomStatusGateway implements OnGatewayConnection, OnGatewayDisconne
   emitReservationCreated(reservation: Record<string, unknown>, branchId: string) {
     this.server.to(`branch:${branchId}`).emit('reservation:created', reservation);
   }
+
+  emitHousekeepingTaskUpdated(task: Record<string, unknown>, branchId: string) {
+    this.server.to(`branch:${branchId}`).emit('housekeeping:task:updated', task);
+  }
 }
