@@ -21,7 +21,7 @@ export const envValidationSchema = Joi.object({
   STRIPE_WEBHOOK_SECRET: Joi.when('NODE_ENV', {
     is: 'production',
     then: Joi.string().required(),
-    otherwise: Joi.string().optional(),
+    otherwise: Joi.string().optional().allow(''),
   }),
   RESEND_API_KEY: Joi.string().optional(),
   N8N_BASE_URL: Joi.string().default('http://localhost:5678'),
