@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotImplementedException } from '@nestjs/common';
 import {
   IPaymentProvider,
   ChargeResult,
@@ -8,23 +8,15 @@ import {
 @Injectable()
 export class TranzilaProvider implements IPaymentProvider {
   async charge(
-    amount: number,
-    currency: string,
+    _amount: number,
+    _currency: string,
     _token: string,
-    idempotencyKey: string,
+    _idempotencyKey: string,
   ): Promise<ChargeResult> {
-    // Stub — real Tranzila integration requires an Israeli merchant account and terminal.
-    return {
-      providerPaymentId: `tranzila_${idempotencyKey}`,
-      status: 'succeeded',
-      metadata: { provider: 'tranzila', amount, currency },
-    };
+    throw new NotImplementedException('TRANZILA_NOT_IMPLEMENTED');
   }
 
-  async refund(providerPaymentId: string, _amount: number): Promise<RefundResult> {
-    return {
-      providerRefundId: `tranzila_refund_${providerPaymentId}`,
-      status: 'succeeded',
-    };
+  async refund(_providerPaymentId: string, _amount: number): Promise<RefundResult> {
+    throw new NotImplementedException('TRANZILA_REFUND_NOT_IMPLEMENTED');
   }
 }

@@ -32,6 +32,7 @@ export default function InvoicesListPage() {
   const limit = 20;
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     listInvoices({ status: statusFilter || undefined, page, limit })
       .then((res) => { setInvoices(res.items); setTotal(res.total); })
@@ -47,7 +48,7 @@ export default function InvoicesListPage() {
         <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>
           חשבוניות
         </h2>
-        <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{total} סה"כ</span>
+        <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{total} סה&quot;כ</span>
       </div>
 
       {/* Filters */}

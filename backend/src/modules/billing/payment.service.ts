@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  NotImplementedException,
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -247,8 +248,8 @@ export class PaymentService {
   async handleStripeWebhook(rawBody: Buffer, sig: string): Promise<void> {
     const webhookSecret = this.config.get<string>('STRIPE_WEBHOOK_SECRET');
     if (!webhookSecret) {
-      this.logger.warn('STRIPE_WEBHOOK_SECRET not set — skipping signature verification');
-      return;
+      this.logger.error('STRIPE_WEBHOOK_SECRET not configured — rejecting webhook');
+      throw new BadRequestException('WEBHOOK_SECRET_NOT_CONFIGURED');
     }
 
     let event: Stripe.Event;
@@ -286,8 +287,8 @@ export class PaymentService {
     return { sessionId, status: 'pending', invoiceId, amount: invoice.total };
   }
 
-  getPosStatus(sessionId: string) {
-    return { sessionId, status: 'succeeded' };
+  getPosStatus(_sessionId: string) {
+    throw new NotImplementedException('POS_NOT_IMPLEMENTED');
   }
 
   async getReconciliation(

@@ -8,7 +8,9 @@ import {
   Param,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { GuestsService } from './guests.service';
 import { ReservationsService } from '../reservations/reservations.service';
 import { CreateGuestDto } from './dto/create-guest.dto';
@@ -48,20 +50,20 @@ export class GuestsController {
 
   @Get('search')
   @Roles('chain_admin', 'hotel_manager', 'receptionist')
-  search(@Query() query: SearchGuestsDto, @CurrentUser() user: JwtPayload) {
-    return this.guestsService.search(query.q, user, query.branchId);
+  search(@Query() query: SearchGuestsDto, @CurrentUser() user: JwtPayload, @Req() req: Request) {
+    return this.guestsService.search(query.q, user, query.branchId, req.ip, req.headers['user-agent']);
   }
 
   @Get()
   @Roles('chain_admin', 'hotel_manager', 'receptionist')
-  findAll(@CurrentUser() user: JwtPayload, @Query() filters: FilterGuestsDto) {
-    return this.guestsService.findAll(user, filters);
+  findAll(@CurrentUser() user: JwtPayload, @Query() filters: FilterGuestsDto, @Req() req: Request) {
+    return this.guestsService.findAll(user, filters, req.ip, req.headers['user-agent']);
   }
 
   @Get(':id')
   @Roles('chain_admin', 'hotel_manager', 'receptionist')
-  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.guestsService.findOne(id, user);
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Req() req: Request) {
+    return this.guestsService.findOne(id, user, req.ip, req.headers['user-agent']);
   }
 
   @Patch(':id')
@@ -70,20 +72,21 @@ export class GuestsController {
     @Param('id') id: string,
     @Body() dto: UpdateGuestDto,
     @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
   ) {
-    return this.guestsService.update(id, dto, user);
+    return this.guestsService.update(id, dto, user, req.ip, req.headers['user-agent']);
   }
 
   @Delete(':id')
   @Roles('chain_admin', 'hotel_manager')
-  softDelete(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.guestsService.softDelete(id, user);
+  softDelete(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Req() req: Request) {
+    return this.guestsService.softDelete(id, user, req.ip, req.headers['user-agent']);
   }
 
   @Get(':id/documents')
   @Roles('chain_admin', 'hotel_manager', 'receptionist')
-  getDocuments(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.guestsService.getDocuments(id, user);
+  getDocuments(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Req() req: Request) {
+    return this.guestsService.getDocuments(id, user, req.ip, req.headers['user-agent']);
   }
 
   @Post(':id/documents')
@@ -92,8 +95,9 @@ export class GuestsController {
     @Param('id') id: string,
     @Body() dto: CreateGuestDocumentDto,
     @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
   ) {
-    return this.guestsService.addDocument(id, dto, user);
+    return this.guestsService.addDocument(id, dto, user, req.ip, req.headers['user-agent']);
   }
 
   @Get(':id/reservations')

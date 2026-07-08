@@ -1,154 +1,97 @@
-# Infrastructure Security Findings — Hotel Management System — 2026-06-17
+# Infrastructure Security Findings — Hotel Management System — 2026-07-07
 
 > Read-only audit of domain-2 infra config (proxy · ports · TLS/headers · containers · secrets/CI).
-> No config was modified. Scope: `hotel-management-system/`.
+> No config was modified. Scope: `/home/runner/hotel-management-system/`.
 > This audits *config*, not live behavior — confirm reachability with `runtime-verify`.
-
----
 
 ## Summary
 
 | Severity | Count |
 |---|---|
-| 🔴 critical | 10 |
-| 🟡 risk | 14 |
-| 🔵 nit | 6 |
+| 🔴 critical | 9 |
+| 🟡 risk | 6 |
+| 🔵 nit | 2 |
 
-**Top 3 to fix first:**
-1. 🔴 `backend/.env:5` + `docker-compose.yml:47` — JWT secrets committed in plaintext (rotate all immediately)
-2. 🔴 `docker-compose.yml:11` + `docker-compose.yml:25` — PostgreSQL and Redis published on 0.0.0.0 (DB directly internet-reachable)
-3. 🔴 `backend/Dockerfile.dev:10` — `NODE_TLS_REJECT_UNAUTHORIZED=0` baked into image (TLS disabled globally)
+Top 3 to fix first (rotate immediately — no runtime proof needed):
+1. 🔴 `docker-compose.yml: RESEND_API_KEY: re_3WD3vmvB_…` — live API key committed in git-tracked file
+2. 🔴 `docker-compose.yml: N8N_ENCRYPTION_KEY: rmc3TEszEbar6x…` — n8n encryption key committed in git-tracked file
+3. 🔴 `docker-compose.yml: NODE_TLS_REJECT_UNAUTHORIZED: '0'` — TLS verification disabled on backend + n8n at runtime
 
 ---
 
 ## Network exposure / ports / proxy — FAIL
 
-- 🔴 `docker-compose.yml: ports: '5432:5432'` — PostgreSQL published on `0.0.0.0:5432`; any host-level firewall gap makes the database directly internet-reachable with no proxy layer, no TLS, and credentials visible in the same file.
-  **Why:** `02-network-and-ports.md §published-ports`. **Fix:** remove the `ports:` block from the `postgres` service entirely — the backend reaches it over the internal compose network via `postgres:5432`; or at minimum bind to loopback: `'127.0.0.1:5432:5432'`.
+- 🔴 `docker-compose.yml: postgres: ports: '5432:5432'` — PostgreSQL binds on `0.0.0.0:5432`; any host-level network path (including a public IP if the host is internet-facing) can reach the database directly, bypassing all application authentication. The backend reaches Postgres via the internal `hotel_internal` network at `postgres:5432` — no host port is needed. **Why:** `02-network-and-ports.md §published-ports`. **Fix:** remove the `ports:` stanza from the `postgres` service entirely; or bind to `'127.0.0.1:5432:5432'` for local debugging only.
 
-- 🔴 `docker-compose.yml: ports: '6379:6379'` — Redis published on `0.0.0.0:6379` with no authentication (`command: redis-server --appendonly yes` — no `--requirepass`). Redis with no password on an exposed port is a well-known RCE vector via `CONFIG SET`.
-  **Why:** `02-network-and-ports.md §published-ports`. **Fix:** remove `ports:` from the `redis` service; add `--requirepass ${REDIS_PASSWORD}` to the `command:`.
+- 🔴 `docker-compose.yml: n8n: ports: '5678:5678'` — n8n workflow-automation admin UI and API is published on `0.0.0.0:5678` with no reverse-proxy auth guard or IP restriction. The n8n dashboard exposes stored workflow credentials, webhook endpoints, and arbitrary code-execution capability via function nodes. The backend references n8n only as an internal service (`N8N_BASE_URL: http://n8n:5678`). **Why:** `02-network-and-ports.md §published-ports`. **Fix:** remove the `ports:` stanza from the `n8n` service entirely.
 
-- 🟡 `docker-compose.yml: ports: '3001:3001'` (backend) — NestJS backend published on `0.0.0.0:3001` with no reverse proxy (nginx/Traefik) in front of it. The backend is directly internet-reachable with no TLS termination, no header-stripping, and no edge rate-limiting.
-  **Why:** `02-network-and-ports.md §front-proxy-nginx-routing`. **Fix:** add nginx/Traefik as the sole public-facing service; move the backend to an internal network with `expose:` only.
+- 🟡 `docker-compose.yml: backend: ports: '3001:3001'` — NestJS API published directly on `0.0.0.0:3001` with no reverse proxy in the compose stack. Rate-limiting, TLS termination, and path-based access control that a front proxy would normally provide are absent. **Why:** `02-network-and-ports.md §app-edge`. **Fix:** add an nginx/Traefik service as the single ingress; bind backend to `127.0.0.1:3001:3001` or use `expose:` only.
 
-- 🟡 `docker-compose.yml` (all services) — No explicit `networks:` block; all three services share Docker's default bridge network. Any container started on the host without explicit network assignment may land on the same network and reach the database.
-  **Why:** `02-network-and-ports.md §published-ports`. **Fix:** define a named internal network (e.g. `hotel_internal`); attach only the future proxy to a public-facing network.
+- 🟡 `docker-compose.yml` — no reverse proxy service (nginx, Traefik, or equivalent) exists anywhere in the compose stack. There is no single TLS-termination point, no central path-routing layer, and no place to enforce auth or IP restrictions at the network edge. **Why:** `02-network-and-ports.md §front-proxy`. **Fix:** introduce an nginx or Traefik service as the only `ports:`-bearing service; all other services use `expose:` only.
 
-- 🔵 `start.sh` — Launches backend and frontend as host processes (not Docker) with `fuser -k` + direct `node` invocation; no `--host 127.0.0.1` flag, so Node defaults to `0.0.0.0` binding even outside of Docker.
-  **Why:** `02-network-and-ports.md §cors-host-binding`. **Fix:** for any production-path scripts, pass explicit bind address or rely solely on the Docker compose path.
+- 🔵 `CLAUDE/services.md` — documentation states "Redis exposed on host only in dev", but `docker-compose.yml` has no `ports:` for the redis service (correctly internal-only). The inconsistency could cause a developer to inadvertently add the port to match the docs. **Why:** `02-network-and-ports.md §port-map-hygiene`. **Fix:** correct the `CLAUDE/services.md` note to reflect that Redis has no host port.
 
 ---
 
 ## TLS / HTTPS / security headers — FAIL
 
-- 🔴 `docker-compose.yml:49 FRONTEND_URL: http://localhost:3000` + `backend/src/main.ts: enableCors({ credentials: true })` — `FRONTEND_URL` is used as a CORS allowed-origin with `credentials: true`. The env validation schema (`env.validation.ts: FRONTEND_URL: Joi.string()`) accepts any value including plain HTTP and has a `http://localhost:3000` default. A production deploy without overriding `FRONTEND_URL` accepts cross-origin credentialed requests from a plain-HTTP origin, defeating cookie security.
-  **Why:** `03-tls-and-headers.md §HTTPS-enforced`. **Fix:** add `.uri({ scheme: ['https'] })` to the `FRONTEND_URL` Joi rule for `NODE_ENV=production`; make `FRONTEND_URL` `.required()` with no HTTP default.
+- 🔴 `docker-compose.yml: backend > environment: NODE_TLS_REJECT_UNAUTHORIZED: '0'` (line 61) — The backend container permanently disables TLS certificate validation at runtime. Every outbound HTTPS call (Resend email API, Stripe payments API) skips cert verification; an attacker with network position can intercept and mutate payment or email data without detection. **Why:** `03-tls-and-headers.md §cert-proxy-hygiene`. **Fix:** remove this env var; add the required CA cert to the container trust store via `NODE_EXTRA_CA_CERTS` or `apk add ca-certificates`.
 
-- 🟡 `docker-compose.yml` (entire file) — No nginx or TLS termination layer exists anywhere in the repository. The stack runs end-to-end over plain HTTP. There is no HTTP→HTTPS redirect, no TLS listener, and no certificate configuration.
-  **Why:** `03-tls-and-headers.md §HTTPS-enforced`. **Fix:** add an nginx service with `ssl_certificate`, redirect port 80 to 443, and reverse-proxy to the backend container.
+- 🔴 `docker-compose.yml: n8n > environment: NODE_TLS_REJECT_UNAUTHORIZED: '0'` (line 87) — The n8n container permanently disables TLS certificate validation; every webhook call or HTTP node that targets an HTTPS endpoint accepts any certificate, enabling MITM interception of automation payloads and credentials. **Why:** `03-tls-and-headers.md §cert-proxy-hygiene`. **Fix:** same as above — mount or install the trusted CA cert.
 
-- 🟡 `backend/src/main.ts: app.use(helmet())` — `helmet()` called with no arguments; HSTS (`Strict-Transport-Security`) is only meaningful over HTTPS and cannot be verified as present since no TLS layer exists. Once TLS is added, HSTS must be explicitly enabled.
-  **Why:** `03-tls-and-headers.md §HSTS`. **Fix:** after adding TLS, configure `helmet({ hsts: { maxAge: 31536000, includeSubDomains: true, preload: true } })`.
+- 🔴 `.env: FRONTEND_URL=http://192.168.1.166` (line 11) and no TLS-terminating proxy in `docker-compose.yml` — The application has no HTTPS/TLS termination configured. The frontend is served over plain HTTP (port 3000), the backend API over plain HTTP (port 3001). JWT auth cookies and CSRF tokens travel unencrypted on the wire. **Why:** `03-tls-and-headers.md §https-enforced`. **Fix:** add an nginx or Traefik service to `docker-compose.yml` that terminates TLS on port 443, mounts a valid certificate (Let's Encrypt or self-signed for dev), and issues a `301` redirect on port 80.
 
-- 🟡 `backend/src/config/env.validation.ts: FRONTEND_URL: Joi.string().default('http://localhost:3000')` — `FRONTEND_URL` has an HTTP localhost default, so a misconfigured production deploy silently accepts the wrong CORS origin rather than failing startup.
-  **Why:** `03-tls-and-headers.md §HTTPS-enforced`. **Fix:** make it `.required()` (no default) or add a conditional production rule.
+- 🟡 `backend/Dockerfile.dev: line 11: RUN NODE_TLS_REJECT_UNAUTHORIZED=0 npm run prisma:generate` — TLS verification is disabled during the Docker build step that runs Prisma client generation. **Why:** `03-tls-and-headers.md §cert-proxy-hygiene`. **Fix:** remove the prefix; `prisma generate` reads the schema file and makes no outbound HTTPS calls.
 
-- 🔵 `.github/workflows/ci.yml` — CI runs only lint and typecheck; no automated TLS/security-header validation step exists. A regression (removing helmet, adding an HTTP origin) would not be caught before merge.
-  **Why:** `03-tls-and-headers.md §cert-and-proxy-hygiene`. **Fix:** add a `curl -sI` or `observatory-cli` step against a staging URL asserting `Strict-Transport-Security` and `X-Content-Type-Options` headers.
+- 🟡 `frontend/next.config.ts` — no `headers()` export is defined; the Next.js frontend sends no `Strict-Transport-Security`, `Content-Security-Policy`, `X-Frame-Options`, `Referrer-Policy`, or `Permissions-Policy` headers. The app renders authenticated UI with auth cookies, making it vulnerable to clickjacking. **Why:** `03-tls-and-headers.md §security-headers`. **Fix:** add an `async headers()` export returning these headers on `source: '/**'`; add HSTS once TLS is in place.
+
+- 🟡 `docker-compose.yml` — no certificate auto-renewal mechanism (Certbot, cert-manager, Traefik ACME) configured anywhere. When TLS is eventually added, certs will silently expire. **Why:** `03-tls-and-headers.md §cert-proxy-hygiene`. **Fix:** plan cert renewal at the same time as TLS termination; use a Certbot sidecar or Traefik with ACME.
 
 ---
 
 ## Containers / images / compose — FAIL
 
-- 🔴 `backend/Dockerfile.dev:10 ENV NODE_TLS_REJECT_UNAUTHORIZED=0` — TLS certificate verification disabled globally at the Node.js process level, baked permanently into the image. Every outbound HTTPS call (Stripe, SendGrid, upstream APIs) silently accepts invalid/forged certificates — full MITM with no runtime warning. Cannot be overridden to `1` at runtime without explicit effort since it is an `ENV` layer.
-  **Why:** `04-containers-and-images.md §3-no-secrets-baked-into-the-image`. **Fix:** remove this line; if a dev self-signed CA is needed, add it via `NODE_EXTRA_CA_CERTS` pointing to the CA cert, never disable verification globally.
+- 🔴 `backend/Dockerfile.dev` — no `USER` directive; the backend process runs as UID 0 (root) inside the container. This service is published on host port 3001. An RCE vulnerability yields an in-container root process one container-escape away from host root. **Why:** `04-containers-and-images.md §1-run-as-non-root`. **Fix:** add `RUN chown -R node:node /app` after `COPY` steps, then `USER node` before `CMD`. The `node:alpine` base image ships the `node` user at UID 1000.
 
-- 🔴 `backend/Dockerfile.dev` (no `USER` directive) — Container runs as root (UID 0). A process escape or path-traversal in the NestJS app yields root inside the container, lowering the bar for host breakout.
-  **Why:** `04-containers-and-images.md §1-run-as-non-root`. **Fix:** add `RUN addgroup -S app && adduser -S app -G app` and `USER app` before `CMD`; adjust `/app` ownership.
+- 🔴 `frontend/Dockerfile.dev` — no `USER` directive; the Next.js dev server runs as UID 0 inside the container, published on port 3000. **Why:** `04-containers-and-images.md §1-run-as-non-root`. **Fix:** same pattern — `RUN chown -R node:node /app` + `USER node` before `CMD`.
 
-- 🟡 `backend/Dockerfile.dev:1 FROM node:20-alpine` — Image pinned to major version tag only; `node:20-alpine` resolves to a different layer on every upstream update, breaking build reproducibility.
-  **Why:** `04-containers-and-images.md §2-base-image-pinning`. **Fix:** pin to `node:20.19.1-alpine3.21` (or add `@sha256:…` digest).
+- 🟡 `backend/.dockerignore` — excludes `.env` and `.env.local` but not `.env.test`; the `Dockerfile.dev: COPY . .` instruction copies the entire build context including `backend/.env.test` (which contains JWT secrets) into the image layer. **Why:** `04-containers-and-images.md §3-no-secrets-baked-into-the-image`. **Fix:** add `.env*` (or `.env.test`) to `backend/.dockerignore`.
 
-- 🟡 `docker-compose.yml:3 image: postgres:16-alpine` — Same floating-tag issue; upstream patch updates pulled silently.
-  **Why:** `04-containers-and-images.md §2-base-image-pinning`. **Fix:** pin to `postgres:16.8-alpine3.21` or equivalent.
+- 🟡 `docker-compose.yml: n8n: image: n8nio/n8n:latest` — floating `latest` tag; the image pulled at `docker compose up` can change between deployments without review. **Why:** `04-containers-and-images.md §2-base-image-pinning`. **Fix:** pin to a specific release tag (e.g., `n8nio/n8n:1.94.1`) or a digest.
 
-- 🟡 `docker-compose.yml:21 image: redis:7-alpine` — Same floating-tag issue.
-  **Why:** `04-containers-and-images.md §2-base-image-pinning`. **Fix:** pin to `redis:7.4.3-alpine3.21` or equivalent.
+- 🔵 `docker-compose.yml` — no `deploy.resources.limits` (CPU/memory) on any of the five services. A runaway container can exhaust host resources and take down co-located services. **Why:** `04-containers-and-images.md §5-hardening-niceties`. **Fix:** add `deploy.resources.limits` per service.
 
-- 🟡 `(no prod Dockerfile exists)` — Only `Dockerfile.dev` is present. No `Dockerfile.prod` or multi-stage build exists; the same dev image that contains build tooling, source files, and all dev dependencies would be promoted to production.
-  **Why:** `04-containers-and-images.md §5-hardening-niceties`. **Fix:** add a multi-stage `Dockerfile`: stage 1 builds (`npm ci`, `tsc`); stage 2 copies only `dist/`, runs `npm ci --omit=dev`, and drops to a non-root user on a minimal alpine base.
-
-- 🟡 `docker-compose.yml: backend:` (no `security_opt`) — No `security_opt: ["no-new-privileges:true"]`; a setuid binary could escalate from the container user back to root.
-  **Why:** `04-containers-and-images.md §5-hardening-niceties`. **Fix:** add `security_opt: ["no-new-privileges:true"]` to the backend service block.
-
-- 🟡 `docker-compose.yml` (all services, no resource limits) — No `mem_limit`, `cpus`, or `pids_limit` on any service. A runaway query or traffic spike can exhaust host memory.
-  **Why:** `04-containers-and-images.md §5-hardening-niceties`. **Fix:** add `deploy.resources.limits` per service.
-
-- 🔵 `backend/.dockerignore` (missing `.env.test`) — `.dockerignore` excludes `.env` and `.env.local` but not `.env.test`; the `COPY . .` instruction in `Dockerfile.dev:8` copies `.env.test` (with test JWT secrets) into every built image.
-  **Why:** `04-containers-and-images.md §3-no-secrets-baked-into-the-image`. **Fix:** add `.env.test` (or `.env.*`) to `.dockerignore`.
-
-- 🔵 `backend/.dockerignore` (missing `.git`) — `.git` directory is not excluded from the build context, bloating it and potentially leaking commit history into the image layer.
-  **Why:** `04-containers-and-images.md §3-no-secrets-baked-into-the-image`. **Fix:** add `.git` to `.dockerignore`.
-
-- 🔵 `docker-compose.yml: backend:` (no `read_only`) — Root filesystem is writable; an attacker achieving code execution can write binaries or crontabs inside the container.
-  **Why:** `04-containers-and-images.md §5-hardening-niceties`. **Fix:** add `read_only: true` and mount `/tmp` as `tmpfs`.
+- 🔵 `docker-compose.yml` — no `read_only: true` on any service. A compromised process can write files anywhere in the container filesystem. **Why:** `04-containers-and-images.md §5-hardening-niceties`. **Fix:** enable `read_only: true` per service with `tmpfs` mounts for paths needing writes.
 
 ---
 
 ## Secrets in env & CI — FAIL
 
-> **Action required:** every secret value listed below must be treated as **compromised** — rotate before next use, regardless of "dev" label. Then purge git history (`git filter-repo --path backend/.env --invert-paths` + equivalents) and re-verify with `git check-ignore -v`.
+- 🔴 `docker-compose.yml:60: RESEND_API_KEY: re_3WD3vmvB_5P76Ly3am3zfKheojS71YnDT` — a live Resend email API key is hardcoded as a literal value in the `backend` service environment block. The file is git-tracked; the key is present in commit history and permanently exposed to anyone with repository read access. **Why:** `05-secrets-and-ci.md §2-secrets-in-docker-compose`. **Fix:** **rotate the key immediately** (it is compromised by virtue of being in git history); replace with `RESEND_API_KEY: ${RESEND_API_KEY}` sourced from the gitignored root `.env`.
 
-- 🔴 `docker-compose.yml:8 POSTGRES_PASSWORD: hotel_pass` — Database password hardcoded as literal value in committed compose file.
-  **Why:** `05-secrets-and-ci.md §secrets-in-docker-compose`. **Fix:** replace with `POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}`; supply from a gitignored `.env` or Docker Secrets.
+- 🔴 `docker-compose.yml:82: N8N_ENCRYPTION_KEY: rmc3TEszEbar6xpXhnt1KaXt6G+qNQr9` — the n8n credential-encryption key is hardcoded in the compose file; it protects all workflow credentials stored by n8n, so its exposure allows offline decryption of every stored integration secret. Present in git history. **Why:** `05-secrets-and-ci.md §2-secrets-in-docker-compose`. **Fix:** **rotate immediately** (rotation requires re-entering all n8n credentials following n8n migration docs); replace with `N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY}`.
 
-- 🔴 `docker-compose.yml:45 DATABASE_URL: postgresql://hotel_user:hotel_pass@postgres:5432/…` — DB credentials embedded in committed compose `environment:` block.
-  **Why:** `05-secrets-and-ci.md §secrets-in-docker-compose`. **Fix:** `DATABASE_URL: ${DATABASE_URL}`.
+- 🟡 `.github/workflows/ci.yml` — no secret-scanning step (gitleaks, trufflehog, or similar). The two live secrets already committed in `docker-compose.yml` would not have been caught by the pipeline. **Why:** `05-secrets-and-ci.md §3-ci-cd-pipeline`. **Fix:** add a `gitleaks/gitleaks-action` step to the CI workflow on every push and PR.
 
-- 🔴 `docker-compose.yml:47 JWT_SECRET: dev-secret-min-32-chars-change-in-prod` + `docker-compose.yml:48 JWT_REFRESH_SECRET: dev-refresh-secret-32-chars-change-prod` — Working JWT signing secrets hardcoded in committed compose. The label "change-in-prod" does not prevent any developer running this compose from using these exact values.
-  **Why:** `05-secrets-and-ci.md §secrets-in-docker-compose`. **Fix:** `JWT_SECRET: ${JWT_SECRET}`, `JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}`.
-
-- 🔴 `backend/.env:3` (`DATABASE_URL=postgresql://hotel_user:hotel_pass@…`) + `backend/.env:5` (`JWT_SECRET=hotel-jwt-secret-development-32chars!!`) + `backend/.env:6` (`JWT_REFRESH_SECRET=hotel-refresh-secret-dev-32chars!!`) — Three live credentials committed to the repository in `.env`. Once committed, git history preserves them permanently.
-  **Why:** `05-secrets-and-ci.md §committed-env-secret-files`. **Fix:** **rotate all three immediately**; purge history; `.env` must not be committed.
-
-- 🔴 `backend/.env.test:3` (`DATABASE_URL=postgresql://postgres:postgres@…`) + `backend/.env.test:5` (`JWT_SECRET=test-jwt-secret-32-chars-minimum!!`) + `backend/.env.test:6` (`JWT_REFRESH_SECRET=test-refresh-secret-32-chars-min!!`) — Working secrets committed in the test env file; these are functional JWT keys, not placeholders.
-  **Why:** `05-secrets-and-ci.md §committed-env-secret-files`. **Fix:** rotate; inject via CI secret variables; add `backend/.env.test` to `.gitignore`.
-
-- 🟡 `.gitignore: .env` pattern — Root `.gitignore` uses `.env` and `.env.local` patterns, but `backend/.env.test` is not covered (it doesn't match `.env`, `.env.local`, or `.env.*.local`). The file is live in the repo, confirming the exclusion is not working for test files.
-  **Why:** `05-secrets-and-ci.md §committed-env-secret-files`. **Fix:** add `**/.env.test` (or `**/.env.*`) to root `.gitignore`; verify with `git check-ignore -v backend/.env.test`.
-
-- 🟡 `backend/.env.example:3 DATABASE_URL=postgresql://hotel_user:hotel_pass@localhost:5432/hotel_management_dev` — Example file contains real credential values (`hotel_user:hotel_pass`), not generic placeholders. Anyone reading the example gets a working connection-string template.
-  **Why:** `05-secrets-and-ci.md §committed-env-secret-files`. **Fix:** replace with `postgresql://USER:PASSWORD@localhost:5432/DB_NAME`.
-
-- 🟡 `.github/workflows/ci.yml:18 uses: actions/checkout@v4` + `ci.yml:21 uses: actions/setup-node@v4` + `ci.yml:44` + `ci.yml:47` — All GitHub Actions pinned to floating semver tags (`@v4`); a compromised or hijacked tag runs arbitrary code in CI with access to all repo secrets.
-  **Why:** `05-secrets-and-ci.md §CI-CD-pipeline`. **Fix:** pin to full SHA (e.g. `actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af68`); use Dependabot to keep SHAs current.
-
-- 🟡 `.github/workflows/ci.yml` (no `permissions:` block) — Workflow runs with GitHub default `GITHUB_TOKEN` permissions (`contents: write`, `pull-requests: write` on private repos).
-  **Why:** `05-secrets-and-ci.md §CI-CD-pipeline`. **Fix:** add `permissions: contents: read` at workflow level; grant narrower scopes per job only as needed.
-
-- 🟡 `.github/workflows/ci.yml` (no secret-scanning step) — No gitleaks/trufflehog step in the pipeline; the committed secrets above would have been caught before merge had a scan been in place.
-  **Why:** `05-secrets-and-ci.md §CI-CD-pipeline`. **Fix:** add gitleaks or trufflehog as the first job.
+- 🔵 `backend/.env:28: STRIPE_SECRET_KEY=sk_test_51TnNM73K…` — a Stripe test-mode secret key is present on disk. The file is correctly gitignored and is not in git history; risk is limited to host-level access. **Why:** `05-secrets-and-ci.md §1-committed-env`. **Fix:** confirm test-only; rotate if it has been shared or is no longer needed.
 
 ---
 
 ## Low-confidence / needs human review
 
-- 🟡? `docker-compose.yml` — Whether an external cloud load balancer or firewall already blocks ports 5432/6379 before they reach the internet cannot be determined from config alone. The compose binding to `0.0.0.0` is confirmed; actual reachability requires `runtime-verify`.
-
----
+- 🟡? Redis host port — `CLAUDE/services.md` mentions Redis host exposure in dev, but `docker-compose.yml` shows no `ports:` for Redis. If a developer adds the port to match the doc, Redis would be exposed. Needs doc correction to prevent future misconfiguration.
 
 ## Coverage gaps & follow-ups
 
-- **App-code vulns** (IDOR, injection, authz) → see `security/SOFTWARE-SECURITY-FINDINGS.md` (already completed).
-- **Live reachability** (are ports 5432/6379 actually reachable from the internet right now?) → `runtime-verify`.
-- **Cloud IAM / firewall / VPC rules** → infra-ops, out of scope here.
-- **No nginx/proxy config exists** — TLS version (`ssl_protocols`) and cipher findings are N/A; absence of the proxy layer is itself the finding.
-- **Frontend container** — no `Dockerfile` or `.dockerignore` exists for the frontend; not audited.
-- **No port-map file** (`PORT_MAP.md`) found — intended exposure inferred from compose/proxy config.
+- **Live reachability** — findings above confirm config-level publication. Whether `0.0.0.0:5432` and `0.0.0.0:5678` are actually reachable from the internet depends on cloud firewall/LB rules. Run `runtime-verify` to confirm.
+- **App-code vulnerabilities** → `/secure-audit` (separate report: `SOFTWARE-SECURITY-FINDINGS.md`).
+- **Coding-agent config** → `/agent-harden-audit`.
+- **Cloud IAM / firewall / VPC rules** — out of scope; infra-ops must verify.
+- **nginx / Traefik config** — no proxy config found in the repo; not applicable until a proxy is added.
 
 ## Method
 
-- Auditors (read-only): `infra-auditor` ×4 (network-exposure · tls-headers · container-hardening · secrets-config) — parallel.
-- Baseline: `infra-security-review/references/`.
-- Every 🔴 spot-checked against actual config lines (`docker-compose.yml`, `backend/Dockerfile.dev`, `backend/.env`, `backend/.env.test`, `.github/workflows/ci.yml`).
+- Auditors (read-only): `infra-auditor` ×4 (network-exposure · tls-headers · container-hardening · secrets-config). Run in parallel.
+- Baseline: `infra-security-review/references/` (01–05).
+- Each 🔴 was spot-checked against actual docker-compose.yml and Dockerfile lines before listing.
+- Cross-check: no `PORT_MAP.md` found; intended exposure inferred from compose config.

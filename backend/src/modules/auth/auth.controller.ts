@@ -21,11 +21,11 @@ import { CsrfGuard } from '../../common/guards/csrf.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
-// access_token is non-HttpOnly so the browser JS can read it and send as Authorization: Bearer.
-// This ensures auth works even when proxy (Next.js rewrites) strips Cookie headers.
-// refresh_token stays HttpOnly since it must never be readable by JS.
+// access_token is HttpOnly — JS reads the token from the login JSON response body
+// and stores it in memory/localStorage. The cookie is a parallel delivery mechanism
+// but must not be JS-readable to prevent cookie-based XSS extraction.
 const ACCESS_TOKEN_COOKIE_OPTIONS = {
-  httpOnly: false,
+  httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
   path: '/',

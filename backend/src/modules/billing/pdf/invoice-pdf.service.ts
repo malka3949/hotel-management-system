@@ -35,7 +35,9 @@ export class InvoicePdfService {
     return invoice;
   }
 
-  private assertAccess(invoice: { branchId: string }, requester: JwtPayload) {
+  private assertAccess(invoice: { branchId: string }, requester: JwtPayload | null, options?: { guestPortal?: boolean }) {
+    if (options?.guestPortal) return;
+    if (!requester) throw new ForbiddenException('BRANCH_ACCESS_DENIED');
     if (requester.role !== 'chain_admin' && invoice.branchId !== requester.branchId) {
       throw new ForbiddenException('BRANCH_ACCESS_DENIED');
     }
@@ -148,9 +150,9 @@ export class InvoicePdfService {
     });
   }
 
-  async stream(invoiceId: string, requester: JwtPayload, res: Response): Promise<void> {
+  async stream(invoiceId: string, requester: JwtPayload | null, res: Response, options?: { guestPortal?: boolean }): Promise<void> {
     const invoice = await this.fetchInvoice(invoiceId);
-    this.assertAccess(invoice, requester);
+    this.assertAccess(invoice, requester, options);
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoiceId.slice(0, 8)}.pdf`);

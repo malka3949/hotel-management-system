@@ -3,6 +3,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
+  NotImplementedException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -10,6 +12,7 @@ import { AuditService } from '../audit/audit.service';
 import { OnlineCheckInDto } from './dto/online-check-in.dto';
 import { PortalPaymentDto } from './dto/portal-payment.dto';
 import { GuestTokenPayload } from './interfaces/guest-token-payload.interface';
+import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { Prisma } from '@prisma/client';
 import { ConfigService } from '@nestjs/config';
 
@@ -63,7 +66,7 @@ export class GuestPortalService {
       void this.sendPortalEmail(guestEmail, guestName, portalUrl);
     }
 
-    this.logger.log(`Portal link generated for reservation ${reservationId}: ${portalUrl}`);
+    this.logger.log(`Portal link generated for reservation ${reservationId}`);
     return { portalUrl, expiresAt };
   }
 
@@ -95,16 +98,20 @@ export class GuestPortalService {
     }
   }
 
-  async sendPortalLinkByStaff(reservationId: string): Promise<{ sent: boolean; portalUrl: string }> {
+  async sendPortalLinkByStaff(reservationId: string, requester: JwtPayload): Promise<{ sent: boolean; portalUrl: string }> {
     const reservation = await this.prisma.reservation.findUnique({
       where: { id: reservationId },
       select: {
         id: true,
+        branchId: true,
         checkOutDate: true,
         guest: { select: { id: true, fullName: true, email: true } },
       },
     });
     if (!reservation) throw new NotFoundException('RESERVATION_NOT_FOUND');
+    if (requester.role !== 'chain_admin' && reservation.branchId !== requester.branchId) {
+      throw new ForbiddenException('BRANCH_ACCESS_DENIED');
+    }
 
     const result = await this.generateAndSendPortalLink(
       reservation.id,
@@ -288,7 +295,16 @@ export class GuestPortalService {
 
     const payAmount = dto.amount ?? Number(invoice.total);
 
-    const succeeded = dto.provider !== 'stripe' || !dto.token?.includes('fail');
+    // Real payment provider integration required before enabling portal payments.
+    // The previous stub accepted non-Stripe providers unconditionally (succeeded = true).
+    if (dto.provider !== 'stripe') {
+      throw new NotImplementedException(`Payment provider '${dto.provider}' not supported via guest portal`);
+    }
+    if (!dto.token) {
+      throw new BadRequestException('STRIPE_TOKEN_REQUIRED');
+    }
+    // TODO: call real Stripe PaymentIntent confirm via PaymentService before recording success.
+    const succeeded = false; // fail-closed until real Stripe flow is wired
 
     const payment = await this.prisma.$transaction(async (tx) => {
       const p = await tx.payment.create({
@@ -346,7 +362,15 @@ export class GuestPortalService {
     return payment;
   }
 
-  async listActiveTokens(reservationId: string) {
+  async listActiveTokens(reservationId: string, requester: JwtPayload) {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { id: reservationId },
+      select: { branchId: true },
+    });
+    if (!reservation) throw new NotFoundException('RESERVATION_NOT_FOUND');
+    if (requester.role !== 'chain_admin' && reservation.branchId !== requester.branchId) {
+      throw new ForbiddenException('BRANCH_ACCESS_DENIED');
+    }
     return this.prisma.guestAccessToken.findMany({
       where: {
         reservationId,
@@ -363,7 +387,15 @@ export class GuestPortalService {
     });
   }
 
-  async revokeAllTokens(reservationId: string): Promise<{ count: number }> {
+  async revokeAllTokens(reservationId: string, requester: JwtPayload): Promise<{ count: number }> {
+    const reservation = await this.prisma.reservation.findUnique({
+      where: { id: reservationId },
+      select: { branchId: true },
+    });
+    if (!reservation) throw new NotFoundException('RESERVATION_NOT_FOUND');
+    if (requester.role !== 'chain_admin' && reservation.branchId !== requester.branchId) {
+      throw new ForbiddenException('BRANCH_ACCESS_DENIED');
+    }
     const result = await this.prisma.guestAccessToken.updateMany({
       where: { reservationId, revokedAt: null },
       data: { revokedAt: new Date() },

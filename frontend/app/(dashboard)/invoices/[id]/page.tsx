@@ -78,6 +78,7 @@ export default function InvoicePage() {
     }
   }, [invoiceId]);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { void loadData(); }, [loadData]);
 
   const handleDownloadPdf = async () => {
@@ -221,15 +222,15 @@ export default function InvoicePage() {
         <h2 className="font-semibold text-text-primary mb-3">סיכום</h2>
         <div className="space-y-1 text-sm">
           <div className="flex justify-between">
-            <span className="text-text-secondary">סכום לפני מע"מ</span>
+            <span className="text-text-secondary">סכום לפני מע&quot;מ</span>
             <span>₪{Number(invoice.subtotal).toFixed(2)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-text-secondary">מע"מ (17%)</span>
+            <span className="text-text-secondary">מע&quot;מ (17%)</span>
             <span>₪{Number(invoice.tax).toFixed(2)}</span>
           </div>
           <div className="flex justify-between font-semibold text-base pt-2 border-t border-border-default mt-2">
-            <span className="text-text-primary">סה"כ לתשלום</span>
+            <span className="text-text-primary">סה&quot;כ לתשלום</span>
             <span className="text-text-primary">₪{Number(invoice.total).toFixed(2)}</span>
           </div>
           <div className="flex justify-between text-green-700">

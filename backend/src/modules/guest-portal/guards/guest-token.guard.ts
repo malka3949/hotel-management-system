@@ -56,6 +56,10 @@ export class GuestPaymentTokenGuard implements CanActivate {
       throw new ForbiddenException('TOKEN_ALREADY_USED');
     }
 
+    if (payload.purpose !== 'payment') {
+      throw new ForbiddenException('TOKEN_WRONG_PURPOSE');
+    }
+
     req.guestToken = payload as GuestTokenPayload;
     return true;
   }
