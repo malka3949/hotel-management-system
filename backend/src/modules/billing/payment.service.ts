@@ -3,6 +3,7 @@ import {
   BadRequestException,
   ForbiddenException,
   NotFoundException,
+  NotImplementedException,
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -286,8 +287,8 @@ export class PaymentService {
     return { sessionId, status: 'pending', invoiceId, amount: invoice.total };
   }
 
-  getPosStatus(sessionId: string) {
-    return { sessionId, status: 'succeeded' };
+  getPosStatus(_sessionId: string) {
+    throw new NotImplementedException('POS_NOT_IMPLEMENTED');
   }
 
   async getReconciliation(

@@ -4,6 +4,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  NotImplementedException,
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -294,7 +295,16 @@ export class GuestPortalService {
 
     const payAmount = dto.amount ?? Number(invoice.total);
 
-    const succeeded = dto.provider !== 'stripe' || !dto.token?.includes('fail');
+    // Real payment provider integration required before enabling portal payments.
+    // The previous stub accepted non-Stripe providers unconditionally (succeeded = true).
+    if (dto.provider !== 'stripe') {
+      throw new NotImplementedException(`Payment provider '${dto.provider}' not supported via guest portal`);
+    }
+    if (!dto.token) {
+      throw new BadRequestException('STRIPE_TOKEN_REQUIRED');
+    }
+    // TODO: call real Stripe PaymentIntent confirm via PaymentService before recording success.
+    const succeeded = false; // fail-closed until real Stripe flow is wired
 
     const payment = await this.prisma.$transaction(async (tx) => {
       const p = await tx.payment.create({
