@@ -96,23 +96,29 @@ export class GuestPortalController {
   @HttpCode(HttpStatus.OK)
   async sendPortalLink(
     @Param('reservationId') reservationId: string,
-    @CurrentUser() _user: JwtPayload,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return this.portalService.sendPortalLinkByStaff(reservationId);
+    return this.portalService.sendPortalLinkByStaff(reservationId, user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('chain_admin', 'hotel_manager')
   @Get('tokens/:reservationId')
-  async listTokens(@Param('reservationId') reservationId: string) {
-    return this.portalService.listActiveTokens(reservationId);
+  async listTokens(
+    @Param('reservationId') reservationId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.portalService.listActiveTokens(reservationId, user);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('chain_admin', 'hotel_manager')
   @Post('tokens/:reservationId/revoke')
   @HttpCode(HttpStatus.OK)
-  async revokeTokens(@Param('reservationId') reservationId: string) {
-    return this.portalService.revokeAllTokens(reservationId);
+  async revokeTokens(
+    @Param('reservationId') reservationId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.portalService.revokeAllTokens(reservationId, user);
   }
 }
