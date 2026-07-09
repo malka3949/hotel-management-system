@@ -134,14 +134,25 @@ describe('Housekeeping (e2e)', () => {
   });
 
   afterAll(async () => {
+    const reservationWhere = { reservation: { branchId } };
     await prisma.housekeepingTask.deleteMany({ where: { branchId } });
     await prisma.housekeepingTask.deleteMany({ where: { branchId: branchBId } });
     await prisma.auditLog.deleteMany({ where: { branchId } });
     await prisma.auditLog.deleteMany({ where: { branchId: branchBId } });
+    await prisma.checkIn.deleteMany({ where: reservationWhere });
+    await prisma.checkOut.deleteMany({ where: reservationWhere });
+    await prisma.invoiceLineItem.deleteMany({ where: { invoice: reservationWhere } });
+    await prisma.charge.deleteMany({ where: { invoice: reservationWhere } });
+    await prisma.payment.deleteMany({ where: { reservation: { branchId } } });
+    await prisma.invoice.deleteMany({ where: reservationWhere });
+    await prisma.guestAccessToken.deleteMany({ where: reservationWhere });
+    await prisma.onlineCheckIn.deleteMany({ where: reservationWhere });
     await prisma.reservation.deleteMany({ where: { branchId } });
     await prisma.guest.deleteMany({ where: { branchId } });
     await prisma.room.deleteMany({ where: { branchId } });
     await prisma.roomType.deleteMany({ where: { branchId } });
+    await prisma.refreshToken.deleteMany({ where: { user: { branchId } } });
+    await prisma.refreshToken.deleteMany({ where: { user: { branchId: branchBId } } });
     await prisma.user.deleteMany({ where: { branchId } });
     await prisma.user.deleteMany({ where: { branchId: branchBId } });
     await prisma.branch.deleteMany({ where: { id: { in: [branchId, branchBId] } } });
@@ -248,6 +259,7 @@ describe('Housekeeping (e2e)', () => {
     const tasks = (res.body as ApiResponse<Array<{ branchId: string }>>).data ?? [];
     expect(tasks.every((t) => t.branchId === branchBId)).toBe(true);
 
+    await prisma.refreshToken.deleteMany({ where: { userId: managerB.id } });
     await prisma.user.delete({ where: { id: managerB.id } });
   });
 
@@ -385,6 +397,6 @@ describe('Housekeeping (e2e)', () => {
 
     const updated = (res.body as ApiResponse<{ status: string; notes: string }>).data!;
     expect(updated.status).toBe('skipped');
-    expect(updated.notes).toBe('Room already clean');
+    expect(updated.notes).toBe('[דילוג] Room already clean');
   });
 });
