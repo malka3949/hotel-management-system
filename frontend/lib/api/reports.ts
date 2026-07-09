@@ -124,45 +124,31 @@ export function getCrossBranch(): Promise<CrossBranchItem[]> {
   return apiFetch(`/v1/reports/cross-branch`);
 }
 
-export function downloadReservationsCsv(params: { from?: string; to?: string; branchId?: string } = {}): void {
-  const token = getAccessToken();
-  const qs = buildQuery(params);
-  const url = `${API_BASE}/v1/reports/export/reservations${qs}`;
-  const a = document.createElement('a');
-  a.href = url;
-  a.setAttribute('download', 'reservations.csv');
-  if (token) a.setAttribute('data-token', token);
-  // Use fetch for auth header
+function triggerXlsxDownload(url: string, filename: string, token: string | null): void {
   void fetch(url, {
     headers: { Authorization: `Bearer ${token ?? ''}` },
     credentials: 'include',
   })
-    .then((r) => r.blob())
-    .then((blob) => {
+    .then((r) => r.arrayBuffer())
+    .then((buf) => {
+      const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
       const blobUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = 'reservations.csv';
+      link.download = filename;
       link.click();
       URL.revokeObjectURL(blobUrl);
     });
 }
 
+export function downloadReservationsCsv(params: { from?: string; to?: string; branchId?: string } = {}): void {
+  const token = getAccessToken();
+  const url = `${API_BASE}/v1/reports/export/reservations${buildQuery(params)}`;
+  triggerXlsxDownload(url, 'reservations.xlsx', token);
+}
+
 export function downloadRevenueCsv(params: { from?: string; to?: string; branchId?: string } = {}): void {
   const token = getAccessToken();
-  const qs = buildQuery(params);
-  const url = `${API_BASE}/v1/reports/export/revenue${qs}`;
-  void fetch(url, {
-    headers: { Authorization: `Bearer ${token ?? ''}` },
-    credentials: 'include',
-  })
-    .then((r) => r.blob())
-    .then((blob) => {
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = 'revenue.csv';
-      link.click();
-      URL.revokeObjectURL(blobUrl);
-    });
+  const url = `${API_BASE}/v1/reports/export/revenue${buildQuery(params)}`;
+  triggerXlsxDownload(url, 'revenue.xlsx', token);
 }

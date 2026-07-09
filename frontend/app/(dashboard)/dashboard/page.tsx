@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { KPICard } from '@/components/shared/KPICard';
 import { OccupancyChart } from '@/components/shared/OccupancyChart';
@@ -30,6 +31,8 @@ function formatDate(iso: string) {
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const branchId = searchParams.get('branchId') ?? undefined;
 
   const [occupancy, setOccupancy] = useState<OccupancySummary | null>(null);
   const [revenue, setRevenue] = useState<RevenueSummary | null>(null);
@@ -41,19 +44,22 @@ export default function DashboardPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError('');
 
     const today = new Date().toISOString().split('T')[0];
 
     Promise.all([
-      getOccupancySummary(),
-      getRevenueSummary(),
-      getArrivalsDepartures(),
-      getOccupancyTrend(),
-      getReservationPipeline(),
-      getFutureReservations({ from: today, to: today }),
+      getOccupancySummary(branchId),
+      getRevenueSummary(branchId),
+      getArrivalsDepartures(branchId),
+      getOccupancyTrend(branchId),
+      getReservationPipeline(branchId),
+      getFutureReservations({ from: today, to: today, branchId }),
     ])
       .then(([occ, rev, arr, tr, pipe, futRes]) => {
         setOccupancy(occ);
@@ -65,7 +71,7 @@ export default function DashboardPage() {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [user, branchId]);
 
   return (
     <div dir="rtl" className="max-w-6xl">

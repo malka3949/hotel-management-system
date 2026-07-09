@@ -39,7 +39,10 @@ export default function ReportsPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     Promise.all([
       getOccupancySummary(),

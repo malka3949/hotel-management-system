@@ -1,5 +1,6 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { Decimal } from '@prisma/client/runtime/library';
+import * as ExcelJS from 'exceljs';
 import { PrismaService } from '../../prisma/prisma.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ReportsQueryDto } from './dto/reports-query.dto';
@@ -194,7 +195,7 @@ export class ReportsService {
         where: {
           ...branchFilter,
           status: 'cancelled',
-          cancelledAt: { gte: from, lte: to },
+          createdAt: { gte: from, lte: to },
         },
         select: {
           id: true,
@@ -283,102 +284,165 @@ export class ReportsService {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const results = await Promise.all(
-      branches.map(async (branch) => {
-        const totalRooms = branch.rooms.length;
-        const occupiedRooms = branch.rooms.filter((r) => r.status === 'occupied').length;
+    const revenueByBranch = await this.prisma.invoice.groupBy({
+      by: ['branchId'],
+      where: {
+        branchId: { in: branches.map((b) => b.id) },
+        status: { in: ['paid', 'finalized'] },
+        createdAt: { gte: monthStart },
+      },
+      _sum: { total: true },
+    });
 
-        const revenue = await this.prisma.invoice.aggregate({
-          where: {
-            branchId: branch.id,
-            status: { in: ['paid', 'finalized'] },
-            createdAt: { gte: monthStart },
-          },
-          _sum: { total: true },
-        });
-
-        return {
-          branchId: branch.id,
-          branchName: branch.name,
-          totalRooms,
-          occupiedRooms,
-          occupancyPct: totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0,
-          revenueThisMonth: this.toNum(revenue._sum.total),
-        };
-      }),
+    const revenueMap = new Map(
+      revenueByBranch.map((r) => [r.branchId, this.toNum(r._sum.total)]),
     );
 
-    return results;
+    return branches.map((branch) => {
+      const totalRooms = branch.rooms.length;
+      const occupiedRooms = branch.rooms.filter((r) => r.status === 'occupied').length;
+      return {
+        branchId: branch.id,
+        branchName: branch.name,
+        totalRooms,
+        occupiedRooms,
+        occupancyPct: totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0,
+        revenueThisMonth: revenueMap.get(branch.id) ?? 0,
+      };
+    });
   }
 
-  // ── CSV Exports ───────────────────────────────────────────────────────────
+  // ── XLSX Exports ──────────────────────────────────────────────────────────
 
-  async buildReservationsCsv(query: ReportsQueryDto, user: JwtPayload): Promise<string> {
+  async buildReservationsCsv(query: ReportsQueryDto, user: JwtPayload): Promise<Buffer> {
     const reservations = await this.getFutureReservations(query, user);
 
-    const header = 'מזהה,תאריך הגעה,תאריך עזיבה,שם אורח,טלפון,חדר,סטטוס,מחיר,מקור';
-    const rows = reservations.map((r) =>
-      [
-        r.id,
-        this.isoDate(r.checkInDate),
-        this.isoDate(r.checkOutDate),
-        r.guest.fullName,
-        r.guest.phone,
-        r.room.number,
-        r.status,
-        r.totalPrice,
-        r.source ?? '',
-      ].join(','),
-    );
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Hotel Manager';
+    const ws = wb.addWorksheet('הזמנות עתידיות', { views: [{ rightToLeft: true }] });
 
-    return [header, ...rows].join('\n');
+    ws.columns = [
+      { header: 'שם אורח', key: 'name', width: 22 },
+      { header: 'טלפון', key: 'phone', width: 14 },
+      { header: 'חדר', key: 'room', width: 8 },
+      { header: 'תאריך הגעה', key: 'checkIn', width: 14 },
+      { header: 'תאריך עזיבה', key: 'checkOut', width: 14 },
+      { header: 'לילות', key: 'nights', width: 8 },
+      { header: 'סטטוס', key: 'status', width: 12 },
+      { header: 'מחיר (₪)', key: 'price', width: 12 },
+      { header: 'מקור', key: 'source', width: 14 },
+    ];
+
+    this.styleHeaderRow(ws.getRow(1));
+
+    reservations.forEach((r, i) => {
+      const nights = Math.round(
+        (new Date(r.checkOutDate).getTime() - new Date(r.checkInDate).getTime()) / 86400000,
+      );
+      const status = r.status;
+      const row = ws.addRow({
+        name: r.guest.fullName,
+        phone: r.guest.phone ?? '',
+        room: r.room.number,
+        checkIn: this.heDate(r.checkInDate),
+        checkOut: this.heDate(r.checkOutDate),
+        nights,
+        status: this.translateStatus(status),
+        price: r.totalPrice,
+        source: this.translateSource(r.source ?? ''),
+      });
+      this.styleDataRow(row, i);
+      const statusColor =
+        status === 'confirmed' || status === 'checked_in' ? '059669' : status === 'cancelled' ? 'DC2626' : '475569';
+      row.getCell('status').font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF' + statusColor } };
+      row.getCell('price').numFmt = '#,##0.00';
+    });
+
+    ws.autoFilter = { from: 'A1', to: { row: 1, column: ws.columns.length } };
+    return wb.xlsx.writeBuffer() as unknown as Promise<Buffer>;
   }
 
-  async buildRevenueCsv(query: ReportsQueryDto, user: JwtPayload): Promise<string> {
+  async buildRevenueCsv(query: ReportsQueryDto, user: JwtPayload): Promise<Buffer> {
     const branchId = this.resolveBranchFilter(query.branchId, user);
     const branchFilter = branchId ? { branchId } : {};
-
     const { from, to } = this.defaultRange(query, 30);
 
     const invoices = await this.prisma.invoice.findMany({
-      where: {
-        ...branchFilter,
-        status: { in: ['paid', 'finalized'] },
-        createdAt: { gte: from, lte: to },
-      },
+      where: { ...branchFilter, status: { in: ['paid', 'finalized'] }, createdAt: { gte: from, lte: to } },
       select: {
         id: true,
         status: true,
         total: true,
         createdAt: true,
         reservation: {
-          select: {
-            id: true,
-            checkInDate: true,
-            checkOutDate: true,
-            room: { select: { number: true } },
-          },
+          select: { id: true, checkInDate: true, checkOutDate: true, room: { select: { number: true } } },
         },
         guest: { select: { fullName: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
 
-    const header = 'מזהה חשבונית,שם אורח,חדר,תאריך הגעה,תאריך עזיבה,סטטוס,סה"כ,תאריך יצירה';
-    const rows = invoices.map((inv) =>
-      [
-        inv.id,
-        inv.guest.fullName,
-        inv.reservation.room.number,
-        this.isoDate(inv.reservation.checkInDate),
-        this.isoDate(inv.reservation.checkOutDate),
-        inv.status,
-        this.toNum(inv.total),
-        inv.createdAt.toISOString().split('T')[0],
-      ].join(','),
-    );
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'Hotel Manager';
+    const ws = wb.addWorksheet('גבייה', { views: [{ rightToLeft: true }] });
 
-    return [header, ...rows].join('\n');
+    ws.columns = [
+      { header: 'שם אורח', key: 'name', width: 22 },
+      { header: 'חדר', key: 'room', width: 8 },
+      { header: 'תאריך הגעה', key: 'checkIn', width: 14 },
+      { header: 'תאריך עזיבה', key: 'checkOut', width: 14 },
+      { header: 'סטטוס חשבונית', key: 'status', width: 16 },
+      { header: 'סכום (₪)', key: 'total', width: 13 },
+      { header: 'תאריך גבייה', key: 'collected', width: 14 },
+    ];
+
+    this.styleHeaderRow(ws.getRow(1));
+
+    invoices.forEach((inv, i) => {
+      const isPaid = inv.status === 'paid';
+      const row = ws.addRow({
+        name: inv.guest.fullName,
+        room: inv.reservation.room.number,
+        checkIn: this.heDate(inv.reservation.checkInDate),
+        checkOut: this.heDate(inv.reservation.checkOutDate),
+        status: isPaid ? 'שולם' : 'סגור',
+        total: this.toNum(inv.total),
+        collected: this.heDate(inv.createdAt),
+      });
+      this.styleDataRow(row, i);
+      row.getCell('status').font = { name: 'Arial', size: 11, bold: true, color: { argb: isPaid ? 'FF059669' : 'FF475569' } };
+      row.getCell('total').numFmt = '#,##0.00';
+    });
+
+    ws.autoFilter = { from: 'A1', to: { row: 1, column: ws.columns.length } };
+    return wb.xlsx.writeBuffer() as unknown as Promise<Buffer>;
+  }
+
+  private styleHeaderRow(row: ExcelJS.Row): void {
+    row.height = 22;
+    row.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+      cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.alignment = { horizontal: 'right', vertical: 'middle', readingOrder: 'rtl' };
+      cell.border = {
+        bottom: { style: 'thin', color: { argb: 'FFC7D2FE' } },
+      };
+    });
+  }
+
+  private styleDataRow(row: ExcelJS.Row, index: number): void {
+    row.height = 18;
+    const bg = index % 2 === 0 ? 'FFFFFFFF' : 'FFEEF2FF';
+    row.eachCell((cell) => {
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
+      cell.font = { name: 'Arial', size: 11 };
+      cell.alignment = { horizontal: 'right', vertical: 'middle', readingOrder: 'rtl' };
+      cell.border = { bottom: { style: 'hair', color: { argb: 'FFE2E8F0' } } };
+    });
+  }
+
+  private esc(val: string): string {
+    return val.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
   // ── Helpers ───────────────────────────────────────────────────────────────
@@ -416,6 +480,42 @@ export class ReportsService {
     return new Date(date).toISOString().split('T')[0];
   }
 
+  private heDate(date: Date | string): string {
+    const d = new Date(date);
+    const dd = String(d.getUTCDate()).padStart(2, '0');
+    const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const yyyy = d.getUTCFullYear();
+    return `${dd}/${mm}/${yyyy}`;
+  }
+
+  private translateStatus(status: string): string {
+    const map: Record<string, string> = {
+      confirmed: 'מאושר',
+      checked_in: 'צ׳ק-אין',
+      checked_out: 'יצא',
+      cancelled: 'בוטל',
+      pending: 'ממתין',
+    };
+    return map[status] ?? status;
+  }
+
+  private translateSource(source: string): string {
+    const map: Record<string, string> = {
+      walk_in: 'כניסה ישירה',
+      phone: 'טלפון',
+      website: 'אתר',
+      ota: 'OTA',
+    };
+    return map[source] ?? source;
+  }
+
+  private csvField(val: string): string {
+    if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+      return `"${val.replace(/"/g, '""')}"`;
+    }
+    return val;
+  }
+
   private defaultRange(
     query: ReportsQueryDto,
     defaultDays: number,
@@ -424,6 +524,9 @@ export class ReportsService {
     const now = new Date();
     if (query.from && query.to) {
       return { from: new Date(query.from), to: new Date(query.to) };
+    }
+    if (query.from) {
+      return { from: new Date(query.from), to: this.dayEnd(now) };
     }
     if (future) {
       return {

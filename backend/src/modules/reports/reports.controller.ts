@@ -1,5 +1,6 @@
 import { Controller, Get, Query, UseGuards, Res } from '@nestjs/common';
 import { Response } from 'express';
+import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -28,11 +29,13 @@ export class ReportsController {
     return this.reportsService.getArrivalsDepartures(query, user);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Get('reservation-pipeline')
   getReservationPipeline(@Query() query: ReportsQueryDto, @CurrentUser() user: JwtPayload) {
     return this.reportsService.getReservationPipeline(query, user);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Get('occupancy-trend')
   getOccupancyTrend(@Query() query: ReportsQueryDto, @CurrentUser() user: JwtPayload) {
     return this.reportsService.getOccupancyTrend(query, user);
@@ -48,6 +51,7 @@ export class ReportsController {
     return this.reportsService.getFutureReservations(query, user);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(RolesGuard)
   @Roles('chain_admin')
   @Get('cross-branch')
@@ -55,27 +59,29 @@ export class ReportsController {
     return this.reportsService.getCrossBranch(user);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Get('export/reservations')
   async exportReservations(
     @Query() query: ReportsQueryDto,
     @CurrentUser() user: JwtPayload,
-    @Res({ passthrough: true }) res: Response,
+    @Res() res: Response,
   ) {
-    const csv = await this.reportsService.buildReservationsCsv(query, user);
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename=reservations.csv');
-    return csv;
+    const buf = await this.reportsService.buildReservationsCsv(query, user);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=reservations.xlsx');
+    res.send(buf);
   }
 
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Get('export/revenue')
   async exportRevenue(
     @Query() query: ReportsQueryDto,
     @CurrentUser() user: JwtPayload,
-    @Res({ passthrough: true }) res: Response,
+    @Res() res: Response,
   ) {
-    const csv = await this.reportsService.buildRevenueCsv(query, user);
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.setHeader('Content-Disposition', 'attachment; filename=revenue.csv');
-    return csv;
+    const buf = await this.reportsService.buildRevenueCsv(query, user);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=revenue.xlsx');
+    res.send(buf);
   }
 }

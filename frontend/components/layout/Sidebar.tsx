@@ -10,10 +10,11 @@ interface NavItem {
   href: string;
   icon: string;
   roles?: UserRole[];
+  exact?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'דשבורד', href: '/dashboard', icon: '⊞' },
+  { label: 'דשבורד', href: '/dashboard', icon: '⊞', exact: true },
   { label: 'חדרים', href: '/rooms', icon: '🛏', roles: ['chain_admin', 'hotel_manager', 'receptionist'] },
   { label: 'לוח סטטוס', href: '/rooms/status-board', icon: '📡', roles: ['chain_admin', 'hotel_manager', 'receptionist', 'housekeeping'] },
   { label: 'סוגי חדרים', href: '/room-types', icon: '🏷️', roles: ['chain_admin', 'hotel_manager'] },
@@ -58,7 +59,9 @@ export function Sidebar() {
       <nav className="flex-1 py-4 overflow-y-auto">
         <ul className="space-y-1 px-3">
           {visibleItems.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(item.href + '/');
+            const active = item.exact
+              ? pathname === item.href
+              : pathname === item.href || pathname.startsWith(item.href + '/');
             return (
               <li key={item.href}>
                 <Link

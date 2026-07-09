@@ -209,7 +209,9 @@ describe('Reports (e2e)', () => {
     await prisma.guest.deleteMany({ where: { branchId: { in: branchIds } } });
     await prisma.room.deleteMany({ where: { branchId: { in: branchIds } } });
     await prisma.roomType.deleteMany({ where: { branchId: { in: branchIds } } });
-    await prisma.refreshToken.deleteMany({ where: { user: { branchId: { in: [...branchIds, null] } } } });
+    await prisma.refreshToken.deleteMany({
+      where: { OR: [{ user: { branchId: { in: branchIds } } }, { user: { branchId: null } }] },
+    });
     await prisma.user.deleteMany({ where: { email: { in: [MANAGER_EMAIL, ADMIN_EMAIL] } } });
     await prisma.branch.deleteMany({ where: { id: { in: branchIds } } });
     await app.close();
@@ -342,25 +344,37 @@ describe('Reports (e2e)', () => {
 
   // ── Test 9: CSV Exports ───────────────────────────────────────────────────
 
-  it('GET /reports/export/reservations returns CSV with correct headers', async () => {
+  it('GET /reports/export/reservations returns XLSX', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/reports/export/reservations')
       .set('Authorization', `Bearer ${managerToken}`)
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => callback(null, Buffer.concat(chunks)));
+      })
       .expect(200);
 
-    expect(res.headers['content-type']).toMatch(/text\/csv/);
-    const csv = res.text;
-    expect(csv).toMatch(/מזהה,תאריך הגעה/);
+    expect(res.headers['content-type']).toMatch(/spreadsheetml/);
+    // XLSX magic bytes: PK (zip)
+    expect((res.body as Buffer).slice(0, 2).toString()).toBe('PK');
   });
 
-  it('GET /reports/export/revenue returns CSV', async () => {
+  it('GET /reports/export/revenue returns XLSX', async () => {
     const res = await request(app.getHttpServer())
       .get('/api/v1/reports/export/revenue')
       .set('Authorization', `Bearer ${managerToken}`)
+      .buffer(true)
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => callback(null, Buffer.concat(chunks)));
+      })
       .expect(200);
 
-    expect(res.headers['content-type']).toMatch(/text\/csv/);
-    expect(res.text).toMatch(/מזהה חשבונית/);
+    expect(res.headers['content-type']).toMatch(/spreadsheetml/);
+    expect((res.body as Buffer).slice(0, 2).toString()).toBe('PK');
   });
 
   // ── Test 10: Unauthenticated requests ─────────────────────────────────────
