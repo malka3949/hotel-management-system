@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { NotificationService } from '../notifications/notification.service';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { LoginDto } from './dto/login.dto';
@@ -31,6 +32,7 @@ export class AuthService {
     private jwtService: JwtService,
     private config: ConfigService,
     private auditService: AuditService,
+    private notificationService: NotificationService,
   ) {}
 
   async login(dto: LoginDto, ip: string, userAgent: string): Promise<LoginResult> {
@@ -156,6 +158,104 @@ export class AuthService {
     });
   }
 
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || !user.isActive) {
+      return; // silent — don't reveal whether email exists
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.prisma.passwordResetToken.create({
+      data: { userId: user.id, tokenHash, expiresAt },
+    });
+
+    void this.notificationService.sendEmail({
+      to: user.email,
+      subject: 'איפוס סיסמה',
+      body: `טוקן לאיפוס סיסמה: ${rawToken}\nתוקף: שעה אחת.`,
+    });
+
+    await this.auditService.log({
+      userId: user.id,
+      action: 'PASSWORD_RESET_REQUESTED',
+      metadata: { email },
+      branchId: user.branchId,
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('INVALID_RESET_TOKEN');
+    }
+    if (resetToken.usedAt) {
+      throw new BadRequestException('RESET_TOKEN_ALREADY_USED');
+    }
+    if (resetToken.expiresAt <= new Date()) {
+      throw new BadRequestException('RESET_TOKEN_EXPIRED');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: resetToken.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+
+    await this.auditService.log({
+      userId: resetToken.userId,
+      action: 'PASSWORD_RESET_COMPLETED',
+      metadata: {},
+      branchId: resetToken.user.branchId,
+    });
+  }
+
+  async getSessions(userId: string) {
+    return this.prisma.refreshToken.findMany({
+      where: {
+        userId,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      select: { id: true, createdAt: true, expiresAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async revokeSession(tokenId: string, userId: string): Promise<void> {
+    const token = await this.prisma.refreshToken.findFirst({
+      where: { id: tokenId, userId },
+    });
+
+    if (!token) {
+      throw new NotFoundException('SESSION_NOT_FOUND');
+    }
+
+    await this.prisma.refreshToken.update({
+      where: { id: tokenId },
+      data: { revokedAt: new Date() },
+    });
+  }
+
   private async issueTokens(
     userId: string,
     email: string,
@@ -200,3 +300,4 @@ export class AuthService {
     return value * (multipliers[unit] ?? 1000);
   }
 }
+// TEST_PHASE11_MARKER

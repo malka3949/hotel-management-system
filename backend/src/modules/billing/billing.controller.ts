@@ -197,7 +197,8 @@ export class BillingController {
   // ── Service Catalog ──────────────────────────────────────────────────────────
 
   @Get('v1/service-catalog')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   getCatalog(@Query('branchId') branchId: string, @CurrentUser() user: JwtPayload) {
     return this.serviceCatalogService.getCatalog(branchId, user);
   }

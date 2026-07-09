@@ -9,7 +9,8 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { ReportsService } from './reports.service';
 import { ReportsQueryDto } from './dto/reports-query.dto';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('chain_admin', 'hotel_manager')
 @Controller('v1/reports')
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
@@ -52,7 +53,6 @@ export class ReportsController {
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  @UseGuards(RolesGuard)
   @Roles('chain_admin')
   @Get('cross-branch')
   getCrossBranch(@CurrentUser() user: JwtPayload) {
