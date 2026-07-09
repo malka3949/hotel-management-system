@@ -88,6 +88,9 @@ services:
       GENERIC_TIMEZONE: Asia/Jerusalem
       TZ: Asia/Jerusalem
       N8N_RUNNERS_ENABLED: 'false'
+      # DEV ONLY — Alpine lacks system CA store; cookie not secure since no TLS
+      NODE_TLS_REJECT_UNAUTHORIZED: '0'
+      N8N_SECURE_COOKIE: 'false'
     volumes:
       - /home/runner/.n8n:/home/node/.n8n
     healthcheck:
