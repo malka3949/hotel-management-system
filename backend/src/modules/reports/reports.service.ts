@@ -420,7 +420,7 @@ export class ReportsService {
 
   private styleHeaderRow(row: ExcelJS.Row): void {
     row.height = 22;
-    row.eachCell((cell) => {
+    row.eachCell((cell: ExcelJS.Cell) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
       cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
       cell.alignment = { horizontal: 'right', vertical: 'middle', readingOrder: 'rtl' };
@@ -433,7 +433,7 @@ export class ReportsService {
   private styleDataRow(row: ExcelJS.Row, index: number): void {
     row.height = 18;
     const bg = index % 2 === 0 ? 'FFFFFFFF' : 'FFEEF2FF';
-    row.eachCell((cell) => {
+    row.eachCell((cell: ExcelJS.Cell) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
       cell.font = { name: 'Arial', size: 11 };
       cell.alignment = { horizontal: 'right', vertical: 'middle', readingOrder: 'rtl' };
