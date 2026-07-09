@@ -165,7 +165,6 @@ export class ReportsService {
 
     for (let i = 0; i < 30; i++) {
       const day = new Date(start.getTime() + i * 86400000);
-      const dayEnd = new Date(day.getTime() + 86400000);
 
       const occupied = reservations.filter(
         (r) => r.checkInDate <= day && r.checkOutDate > day,
@@ -268,7 +267,7 @@ export class ReportsService {
 
   // ── Cross-Branch (chain_admin only) ───────────────────────────────────────
 
-  async getCrossBranch(user: JwtPayload) {
+  async getCrossBranch(_user: JwtPayload) {
     const branches = await this.prisma.branch.findMany({
       where: { isActive: true },
       select: {
