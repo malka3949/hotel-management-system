@@ -25,6 +25,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'ניהול ניקיון', href: '/housekeeping/manage', icon: '📋', roles: ['chain_admin', 'hotel_manager'] },
   { label: 'חשבוניות', href: '/invoices', icon: '🧾', roles: ['chain_admin', 'hotel_manager', 'receptionist'] },
   { label: 'דוחות', href: '/reports', icon: '📊', roles: ['chain_admin', 'hotel_manager'] },
+  { label: 'דשבורד רשת', href: '/dashboard/chain', icon: '🌐', roles: ['chain_admin'] },
   { label: 'סניפים', href: '/admin/branches', icon: '🏢', roles: ['chain_admin'] },
   { label: 'משתמשים', href: '/admin/users', icon: '👥', roles: ['chain_admin', 'hotel_manager'] },
 ];

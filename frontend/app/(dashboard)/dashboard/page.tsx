@@ -1,19 +1,234 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { KPICard } from '@/components/shared/KPICard';
+import { OccupancyChart } from '@/components/shared/OccupancyChart';
+import { PipelineChart } from '@/components/shared/PipelineChart';
+import {
+  getOccupancySummary,
+  getRevenueSummary,
+  getArrivalsDepartures,
+  getOccupancyTrend,
+  getReservationPipeline,
+  getFutureReservations,
+  type OccupancySummary,
+  type RevenueSummary,
+  type ArrivalsDepartures,
+  type TrendPoint,
+  type PipelinePoint,
+  type FutureReservationItem,
+} from '@/lib/api/reports';
+
+function formatNIS(n: number) {
+  return `₪${n.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
+}
+
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
+}
+
 export default function DashboardPage() {
+  const { user } = useAuth();
+
+  const [occupancy, setOccupancy] = useState<OccupancySummary | null>(null);
+  const [revenue, setRevenue] = useState<RevenueSummary | null>(null);
+  const [arrivals, setArrivals] = useState<ArrivalsDepartures | null>(null);
+  const [trend, setTrend] = useState<TrendPoint[]>([]);
+  const [pipeline, setPipeline] = useState<PipelinePoint[]>([]);
+  const [todayArrivals, setTodayArrivals] = useState<FutureReservationItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!user) return;
+    setLoading(true);
+    setError('');
+
+    const today = new Date().toISOString().split('T')[0];
+
+    Promise.all([
+      getOccupancySummary(),
+      getRevenueSummary(),
+      getArrivalsDepartures(),
+      getOccupancyTrend(),
+      getReservationPipeline(),
+      getFutureReservations({ from: today, to: today }),
+    ])
+      .then(([occ, rev, arr, tr, pipe, futRes]) => {
+        setOccupancy(occ);
+        setRevenue(rev);
+        setArrivals(arr);
+        setTrend(tr);
+        setPipeline(pipe);
+        setTodayArrivals(futRes);
+      })
+      .catch((e: Error) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, [user]);
+
   return (
-    <div>
-      <h2
-        className="text-xl font-semibold mb-6"
-        style={{ color: 'var(--color-text-primary)' }}
-      >
-        דשבורד
-      </h2>
+    <div dir="rtl" className="max-w-6xl">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+          דשבורד
+        </h2>
+        {user?.role === 'chain_admin' && (
+          <a
+            href="/dashboard/chain"
+            className="text-sm font-medium px-3 py-1.5 rounded-md text-white"
+            style={{ backgroundColor: 'var(--color-primary)' }}
+          >
+            דשבורד רשת →
+          </a>
+        )}
+      </div>
+
+      {error && (
+        <div className="p-4 rounded-lg border border-red-200 bg-red-50 text-red-700 text-sm mb-6">
+          {error}
+        </div>
+      )}
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+        <KPICard
+          label="חדרים תפוסים"
+          value={loading ? '—' : `${occupancy?.occupied ?? 0}/${occupancy?.total ?? 0}`}
+          subValue={loading ? undefined : `${occupancy?.occupancyPct ?? 0}% תפיסה`}
+          color="var(--color-primary)"
+          loading={loading}
+        />
+        <KPICard
+          label="חדרים פנויים"
+          value={loading ? '—' : (occupancy?.available ?? 0)}
+          color="#059669"
+          loading={loading}
+        />
+        <KPICard
+          label="הגעות היום"
+          value={loading ? '—' : (arrivals?.arrivalsToday ?? 0)}
+          color="var(--color-accent)"
+          loading={loading}
+        />
+        <KPICard
+          label="עזיבות היום"
+          value={loading ? '—' : (arrivals?.departuresToday ?? 0)}
+          color="#7C3AED"
+          loading={loading}
+        />
+        <KPICard
+          label="הכנסות החודש"
+          value={loading ? '—' : formatNIS(revenue?.thisMonth ?? 0)}
+          subValue={
+            !loading && revenue
+              ? `חודש קודם: ${formatNIS(revenue.prevMonth)}`
+              : undefined
+          }
+          trend={
+            !loading && revenue
+              ? revenue.thisMonth >= revenue.prevMonth
+                ? 'up'
+                : 'down'
+              : undefined
+          }
+          color="var(--color-primary)"
+          loading={loading}
+        />
+        <KPICard
+          label="הגעות מחר"
+          value={loading ? '—' : (arrivals?.arrivalsTomorrow ?? 0)}
+          color="#475569"
+          loading={loading}
+        />
+      </div>
+
+      {/* Charts */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div
+          className="rounded-lg border p-4"
+          style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
+        >
+          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+            % תפיסה — 30 יום אחורה
+          </h3>
+          <OccupancyChart data={trend} loading={loading} />
+        </div>
+        <div
+          className="rounded-lg border p-4"
+          style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
+        >
+          <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text-primary)' }}>
+            צינור הזמנות — 30 יום קדימה
+          </h3>
+          <PipelineChart data={pipeline} loading={loading} />
+        </div>
+      </div>
+
+      {/* Today's Arrivals Table */}
       <div
-        className="rounded-lg border p-6 bg-surface text-center"
-        style={{ borderColor: 'var(--color-border-default)' }}
+        className="rounded-lg border"
+        style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
       >
-        <p style={{ color: 'var(--color-text-secondary)' }}>
-          Phase 0 — תשתית בלבד. תוכן יתווסף מ-Phase 1 ואילך.
-        </p>
+        <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--color-border-default)' }}>
+          <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+            הגעות היום ({arrivals?.arrivalsToday ?? 0})
+          </h3>
+        </div>
+        {loading ? (
+          <div className="p-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 rounded bg-gray-100 animate-pulse mb-2" />
+            ))}
+          </div>
+        ) : todayArrivals.length === 0 ? (
+          <div className="p-6 text-center text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+            אין הגעות מתוכננות להיום
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ backgroundColor: '#F8FAFC' }}>
+                {['שם אורח', 'חדר', 'הגעה', 'עזיבה', 'סטטוס'].map((h) => (
+                  <th
+                    key={h}
+                    className="px-4 py-2 text-right font-medium text-xs"
+                    style={{ color: 'var(--color-text-secondary)' }}
+                  >
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {todayArrivals.map((r) => (
+                <tr
+                  key={r.id}
+                  className="border-t hover:bg-gray-50"
+                  style={{ borderColor: 'var(--color-border-default)' }}
+                >
+                  <td className="px-4 py-2.5" style={{ color: 'var(--color-text-primary)' }}>
+                    {r.guest.fullName}
+                  </td>
+                  <td className="px-4 py-2.5" style={{ color: 'var(--color-text-secondary)' }}>
+                    {r.room.number}
+                  </td>
+                  <td className="px-4 py-2.5" style={{ color: 'var(--color-text-secondary)' }}>
+                    {formatDate(r.checkInDate)}
+                  </td>
+                  <td className="px-4 py-2.5" style={{ color: 'var(--color-text-secondary)' }}>
+                    {formatDate(r.checkOutDate)}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                      {r.status === 'confirmed' ? 'מאושר' : r.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
