@@ -2,8 +2,8 @@
 -- Adds password_reset_tokens table for forgot-password flow
 
 CREATE TABLE "password_reset_tokens" (
-    "id"         UUID         NOT NULL DEFAULT gen_random_uuid(),
-    "user_id"    UUID         NOT NULL,
+    "id"         TEXT         NOT NULL DEFAULT gen_random_uuid()::TEXT,
+    "user_id"    TEXT         NOT NULL,
     "token_hash" VARCHAR      NOT NULL,
     "expires_at" TIMESTAMPTZ  NOT NULL,
     "used_at"    TIMESTAMPTZ,

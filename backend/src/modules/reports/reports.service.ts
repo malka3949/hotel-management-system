@@ -165,7 +165,6 @@ export class ReportsService {
 
     for (let i = 0; i < 30; i++) {
       const day = new Date(start.getTime() + i * 86400000);
-      const dayEnd = new Date(day.getTime() + 86400000);
 
       const occupied = reservations.filter(
         (r) => r.checkInDate <= day && r.checkOutDate > day,
@@ -268,7 +267,7 @@ export class ReportsService {
 
   // ── Cross-Branch (chain_admin only) ───────────────────────────────────────
 
-  async getCrossBranch(user: JwtPayload) {
+  async getCrossBranch(_user: JwtPayload) {
     const branches = await this.prisma.branch.findMany({
       where: { isActive: true },
       select: {
@@ -421,6 +420,7 @@ export class ReportsService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private styleHeaderRow(row: any): void {
     row.height = 22;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     row.eachCell((cell: any) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
       cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
@@ -435,6 +435,7 @@ export class ReportsService {
   private styleDataRow(row: any, index: number): void {
     row.height = 18;
     const bg = index % 2 === 0 ? 'FFFFFFFF' : 'FFEEF2FF';
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     row.eachCell((cell: any) => {
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bg } };
       cell.font = { name: 'Arial', size: 11 };
