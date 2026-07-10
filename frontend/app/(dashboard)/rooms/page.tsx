@@ -70,7 +70,7 @@ export default function RoomsPage() {
     } finally {
       setLoading(false);
     }
-  }, [filters, isAdmin]);
+  }, [filters, isAdmin, user]);
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);

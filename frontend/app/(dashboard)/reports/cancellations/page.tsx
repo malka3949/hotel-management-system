@@ -36,9 +36,8 @@ export default function CancellationsPage() {
       .finally(() => setLoading(false));
   }, [from, to, user]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { load(); }, [load]);
 
   return (
     <div dir="rtl" className="max-w-5xl">

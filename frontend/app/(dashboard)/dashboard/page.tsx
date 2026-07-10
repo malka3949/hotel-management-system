@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { KPICard } from '@/components/shared/KPICard';
@@ -45,6 +46,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }
@@ -80,13 +82,13 @@ export default function DashboardPage() {
           דשבורד
         </h2>
         {user?.role === 'chain_admin' && (
-          <a
+          <Link
             href="/dashboard/chain"
             className="text-sm font-medium px-3 py-1.5 rounded-md text-white"
             style={{ backgroundColor: 'var(--color-primary)' }}
           >
             דשבורד רשת →
-          </a>
+          </Link>
         )}
       </div>
 
