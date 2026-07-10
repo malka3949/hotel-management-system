@@ -66,19 +66,22 @@ Security e2e test suite written at `backend/test/security.e2e-spec.ts`. Requires
 ## Lint Command / Result
 
 ```
-cd backend && npm run lint
+cd backend && npm run lint        # EXIT:0 — zero errors/warnings
+cd frontend && npm run lint       # EXIT:0 — zero errors/warnings
+cd frontend && npx tsc --noEmit  # EXIT:0 — zero TypeScript errors
 ```
-**Result: PASS (exit 0)** — no lint errors.
 
-```
-cd frontend && npx tsc --noEmit
-```
-**Result: PASS (exit 0)** — no TypeScript errors.
+Additional fixes applied (session 2026-07-10):
+- `schema.prisma` was never committed in first session (lost during git reset --hard). Added in fix commit `d14d470`.
+- Migration `id`/`user_id` columns changed UUID→TEXT to match `users.id TEXT` (FK type mismatch).
+- `reports.service.ts`: removed unused `dayEnd`, renamed `user`→`_user` in getCrossBranch, added per-line eslint-disable for ExcelJS `cell: any` callbacks.
+- Frontend: resolved 6 pre-existing lint errors (setState-in-effect, no-html-link-for-pages) and 2 warnings across Phase 10 report pages and rooms page.
 
-```
-cd backend && npm run build
-```
-**Result: PASS (exit 0)** — nest build clean.
+Backend runtime verified:
+- `GET /api/health` → 200
+- `POST /api/v1/auth/forgot-password` → 200
+- `GET /api/v1/auth/sessions` → 401 (correct — requires JWT)
+- NestJS watch mode: 0 compilation errors at 12:30:24, app restarted at 12:31:05.
 
 ---
 
