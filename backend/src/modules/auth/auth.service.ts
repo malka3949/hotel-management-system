@@ -172,10 +172,38 @@ export class AuthService {
       data: { userId: user.id, tokenHash, expiresAt },
     });
 
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
+    const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
+
     void this.notificationService.sendEmail({
       to: user.email,
-      subject: 'איפוס סיסמה',
-      body: `טוקן לאיפוס סיסמה: ${rawToken}\nתוקף: שעה אחת.`,
+      subject: 'איפוס סיסמה — מערכת ניהול מלון',
+      body: `
+<div dir="rtl" style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#f8fafc;padding:32px">
+  <div style="background:#ffffff;border-radius:12px;padding:32px;border:1px solid #e2e8f0">
+    <h2 style="color:#1e3a8a;margin:0 0 8px 0;font-size:22px">איפוס סיסמה</h2>
+    <p style="color:#475569;margin:0 0 24px 0;font-size:15px">שלום ${user.name},</p>
+    <p style="color:#0f172a;margin:0 0 28px 0;font-size:15px;line-height:1.6">
+      קיבלנו בקשה לאיפוס הסיסמה שלך. לחץ על הכפתור למטה כדי להגדיר סיסמה חדשה:
+    </p>
+    <div style="text-align:center;margin-bottom:28px">
+      <a href="${resetLink}"
+         style="display:inline-block;background:#1e3a8a;color:#ffffff;text-decoration:none;
+                padding:14px 32px;border-radius:8px;font-size:16px;font-weight:bold">
+        אפס סיסמה
+      </a>
+    </div>
+    <p style="color:#64748b;font-size:13px;margin:0 0 8px 0">
+      הקישור בתוקף לשעה אחת בלבד.
+    </p>
+    <p style="color:#64748b;font-size:13px;margin:0">
+      אם לא ביקשת איפוס סיסמה — התעלם מהמייל הזה.
+    </p>
+  </div>
+  <p style="color:#94a3b8;font-size:11px;text-align:center;margin-top:16px">
+    מערכת ניהול מלון
+  </p>
+</div>`,
     });
 
     await this.auditService.log({

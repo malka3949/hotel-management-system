@@ -18,7 +18,10 @@ export class NotificationService {
     }
 
     // No domain yet — Resend onboarding sender can only deliver to the account owner
-    const html = `<div dir="rtl" style="font-family:Arial,sans-serif">${options.body.replace(/\n/g, '<br>')}</div>`;
+    // body is already HTML when callers supply it; plain-text fallback wraps in <pre>
+    const html = options.body.trimStart().startsWith('<')
+      ? options.body
+      : `<div dir="rtl" style="font-family:Arial,sans-serif;white-space:pre-wrap">${options.body}</div>`;
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
