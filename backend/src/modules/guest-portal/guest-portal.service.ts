@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { NotificationService } from '../notifications/notification.service';
+import { NotificationService, wrapEmailHtml } from '../notifications/notification.service';
 import { OnlineCheckInDto } from './dto/online-check-in.dto';
 import { PortalPaymentDto } from './dto/portal-payment.dto';
 import { GuestTokenPayload } from './interfaces/guest-token-payload.interface';
@@ -74,31 +74,36 @@ export class GuestPortalService {
 
   private sendPortalEmail(to: string, guestName: string, portalUrl: string): void {
     const isDev = portalUrl.includes('localhost');
+
+    const linkContent = isDev ? `
+      <p style="color:#0F172A;font-size:14px;font-weight:bold;margin:0 0 10px 0;font-family:Arial,sans-serif">
+        קישור לפורטל <span style="color:#CA8A04;font-weight:normal">(סביבת פיתוח — העתק לדפדפן)</span>:
+      </p>
+      <div style="background-color:#F1F5F9;border:1px solid #E2E8F0;border-radius:8px;padding:16px 20px;margin-bottom:28px;direction:ltr;text-align:left">
+        <span style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#1E3A8A;word-break:break-all">${portalUrl}</span>
+      </div>` : `
+      <p style="color:#0F172A;font-size:15px;line-height:1.7;margin:0 0 24px 0;font-family:Arial,sans-serif">לחץ על הכפתור למטה כדי לגשת לפורטל:</p>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:28px">
+        <tr><td align="center">
+          <a href="${portalUrl}" style="display:inline-block;background-color:#1E3A8A;color:#FFFFFF;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:bold;font-family:Arial,sans-serif">כניסה לפורטל</a>
+        </td></tr>
+      </table>`;
+
     void this.notifications.sendEmail({
       to,
       subject: 'פורטל אורחים — גישה להזמנה שלך',
-      body: `
-<div dir="rtl" style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;background:#f8fafc;padding:32px">
-  <div style="background:#ffffff;border-radius:12px;padding:32px;border:1px solid #e2e8f0">
-    <h2 style="color:#1e3a8a;margin:0 0 8px 0;font-size:22px">פורטל אורחים</h2>
-    <p style="color:#475569;margin:0 0 24px 0;font-size:15px">שלום ${guestName},</p>
-    <p style="color:#0f172a;margin:0 0 20px 0;font-size:15px;line-height:1.6">
-      ניתן לצפות בהזמנתך, לבצע צ'ק-אין מקוון ולשלם חשבונית.
-    </p>
-    ${isDev ? `
-    <p style="color:#0f172a;margin:0 0 8px 0;font-size:14px"><strong>קישור לפורטל (סביבת פיתוח — העתק לדפדפן):</strong></p>
-    <div style="background:#f1f5f9;border-radius:6px;padding:12px 16px;margin-bottom:20px;font-size:12px;color:#1e3a8a;direction:ltr;text-align:left;word-break:break-all;font-family:monospace">
-      ${portalUrl}
-    </div>` : `
-    <div style="text-align:center;margin-bottom:28px">
-      <a href="${portalUrl}" style="display:inline-block;background:#1e3a8a;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:16px;font-weight:bold">
-        כניסה לפורטל
-      </a>
-    </div>`}
-    <p style="color:#64748b;font-size:13px;margin:0">הקישור בתוקף עד 24 שעות לאחר צ'ק-אאוט.</p>
-  </div>
-  <p style="color:#94a3b8;font-size:11px;text-align:center;margin-top:16px">מערכת ניהול מלון</p>
-</div>`,
+      text: `שלום ${guestName},\n\nניתן לצפות בהזמנתך, לבצע צ'ק-אין מקוון ולשלם חשבונית.\n\nקישור לפורטל:\n${portalUrl}\n\nהקישור בתוקף עד 24 שעות לאחר צ'ק-אאוט.\n\nמערכת ניהול מלון`,
+      body: wrapEmailHtml(`
+        <h2 style="color:#1E3A8A;font-size:22px;margin:0 0 6px 0;font-family:Arial,sans-serif">פורטל אורחים</h2>
+        <div style="width:40px;height:3px;background-color:#CA8A04;border-radius:2px;margin-bottom:28px"></div>
+        <p style="color:#475569;font-size:15px;margin:0 0 16px 0;font-family:Arial,sans-serif">שלום ${guestName},</p>
+        <p style="color:#0F172A;font-size:15px;line-height:1.7;margin:0 0 28px 0;font-family:Arial,sans-serif">
+          ניתן לצפות בהזמנתך, לבצע צ'ק-אין מקוון ולשלם את חשבוניתך דרך פורטל האורחים.
+        </p>
+        ${linkContent}
+        <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 20px 0">
+        <p style="color:#94A3B8;font-size:12px;margin:0;font-family:Arial,sans-serif">הקישור בתוקף עד 24 שעות לאחר צ'ק-אאוט.</p>
+      `),
     });
   }
 

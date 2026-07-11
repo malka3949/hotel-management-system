@@ -3,6 +3,7 @@ import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/commo
 import { Response } from 'express';
 import PDFDocument from 'pdfkit';
 import { PrismaService } from '../../../prisma/prisma.service';
+import { NotificationService, wrapEmailHtml } from '../../notifications/notification.service';
 import { JwtPayload } from '../../auth/interfaces/jwt-payload.interface';
 
 const FONT_PATH = path.join(process.cwd(), 'src/assets/fonts/DejaVuSans.ttf');
@@ -16,7 +17,10 @@ type InvoiceWithRelations = Awaited<ReturnType<InvoicePdfService['fetchInvoice']
 
 @Injectable()
 export class InvoicePdfService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notifications: NotificationService,
+  ) {}
 
   private async fetchInvoice(invoiceId: string) {
     const invoice = await this.prisma.invoice.findUnique({
@@ -167,51 +171,60 @@ export class InvoicePdfService {
     this.assertAccess(invoice, requester);
 
     const guestEmail = invoice.reservation.guest.email;
-    const resendKey = process.env.RESEND_API_KEY;
-    if (!resendKey) throw new Error('RESEND_API_KEY not configured');
-
     const pdfBuffer = await this.generateBuffer(invoice);
     const base64Pdf = pdfBuffer.toString('base64');
 
     const origTotal = Number(invoice.subtotal) + Number(invoice.tax);
     const discountAmt = origTotal - Number(invoice.total);
-    const discountRow = discountAmt > 0.009
-      ? `<tr><td style="padding:4px 8px;color:#dc2626;">הנחה / זיכוי</td><td style="padding:4px 8px;color:#dc2626;">−₪${discountAmt.toFixed(2)}</td></tr>`
-      : '';
+    const shortId = invoiceId.slice(0, 8).toUpperCase();
 
-    const body = {
-      from: 'onboarding@resend.dev',
-      to: 'malka.develop3949@gmail.com',
-      subject: `חשבונית מספר ${invoiceId.slice(0, 8).toUpperCase()}`,
-      html: `<div dir="rtl" style="font-family:Arial,sans-serif;max-width:500px">
-        <h2>חשבונית מספר ${invoiceId.slice(0, 8).toUpperCase()}</h2>
-        <p>שלום ${invoice.reservation.guest.fullName},</p>
-        <p>מצורפת חשבונית עבור שהותך.</p>
-        <table style="border-collapse:collapse;width:100%">
-          <tr><td style="padding:4px 8px;">סכום לפני מע"מ</td><td style="padding:4px 8px;">₪${Number(invoice.subtotal).toFixed(2)}</td></tr>
-          <tr><td style="padding:4px 8px;">מע"מ (17%)</td><td style="padding:4px 8px;">₪${Number(invoice.tax).toFixed(2)}</td></tr>
-          ${discountAmt > 0.009 ? `<tr><td style="padding:4px 8px;">לפני הנחה</td><td style="padding:4px 8px;">₪${origTotal.toFixed(2)}</td></tr>` : ''}
+    const discountRow = discountAmt > 0.009 ? `
+      <tr>
+        <td bgcolor="#FFFFFF" style="padding:10px 16px;font-size:13px;color:#DC2626;border-bottom:1px solid #E2E8F0">הנחה / זיכוי</td>
+        <td bgcolor="#FFFFFF" style="padding:10px 16px;font-size:13px;color:#DC2626;font-weight:bold;border-bottom:1px solid #E2E8F0">−&#8362;${discountAmt.toFixed(2)}</td>
+      </tr>` : '';
+
+    const origRow = discountAmt > 0.009 ? `
+      <tr>
+        <td bgcolor="#F8FAFC" style="padding:10px 16px;font-size:13px;color:#475569;border-bottom:1px solid #E2E8F0">סכום לפני הנחה</td>
+        <td bgcolor="#F8FAFC" style="padding:10px 16px;font-size:13px;color:#475569;border-bottom:1px solid #E2E8F0">&#8362;${origTotal.toFixed(2)}</td>
+      </tr>` : '';
+
+    await this.notifications.sendEmail({
+      to: guestEmail ?? 'malka.develop3949@gmail.com',
+      subject: `חשבונית מספר ${shortId} — ${invoice.branch.name}`,
+      text: `שלום ${invoice.reservation.guest.fullName},\n\nמצורפת חשבונית מספר ${shortId} עבור שהותך ב-${invoice.branch.name}.\n\nסכום לפני מע"מ: ₪${Number(invoice.subtotal).toFixed(2)}\nמע"מ (17%): ₪${Number(invoice.tax).toFixed(2)}${discountAmt > 0.009 ? `\nהנחה: −₪${discountAmt.toFixed(2)}` : ''}\nסה"כ: ₪${Number(invoice.total).toFixed(2)}\n\nתודה!\nמערכת ניהול מלון`,
+      body: wrapEmailHtml(`
+        <h2 style="color:#1E3A8A;font-size:22px;margin:0 0 6px 0;font-family:Arial,sans-serif">חשבונית מספר ${shortId}</h2>
+        <div style="width:40px;height:3px;background-color:#CA8A04;border-radius:2px;margin-bottom:28px"></div>
+        <p style="color:#475569;font-size:15px;margin:0 0 16px 0;font-family:Arial,sans-serif">שלום ${invoice.reservation.guest.fullName},</p>
+        <p style="color:#0F172A;font-size:15px;line-height:1.7;margin:0 0 24px 0;font-family:Arial,sans-serif">
+          מצורפת חשבונית עבור שהותך ב-${invoice.branch.name}. ניתן למצוא את הפירוט המלא בקובץ ה-PDF המצורף.
+        </p>
+        <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E2E8F0;border-radius:8px;margin-bottom:28px;font-family:Arial,sans-serif;border-collapse:collapse">
+          <tr>
+            <td bgcolor="#F8FAFC" style="padding:10px 16px;font-size:13px;color:#475569;width:55%;border-bottom:1px solid #E2E8F0">סכום לפני מע&quot;מ</td>
+            <td bgcolor="#F8FAFC" style="padding:10px 16px;font-size:13px;color:#0F172A;border-bottom:1px solid #E2E8F0">&#8362;${Number(invoice.subtotal).toFixed(2)}</td>
+          </tr>
+          <tr>
+            <td bgcolor="#FFFFFF" style="padding:10px 16px;font-size:13px;color:#475569;border-bottom:1px solid #E2E8F0">מע&quot;מ (17%)</td>
+            <td bgcolor="#FFFFFF" style="padding:10px 16px;font-size:13px;color:#0F172A;border-bottom:1px solid #E2E8F0">&#8362;${Number(invoice.tax).toFixed(2)}</td>
+          </tr>
+          ${origRow}
           ${discountRow}
-          <tr style="font-weight:bold;border-top:2px solid #000"><td style="padding:8px;">סה"כ לתשלום</td><td style="padding:8px;">₪${Number(invoice.total).toFixed(2)}</td></tr>
+          <tr>
+            <td bgcolor="#1E3A8A" style="padding:13px 16px;font-size:14px;color:#FFFFFF;font-weight:bold">סה&quot;כ לתשלום</td>
+            <td bgcolor="#1E3A8A" style="padding:13px 16px;font-size:14px;color:#FFFFFF;font-weight:bold">&#8362;${Number(invoice.total).toFixed(2)}</td>
+          </tr>
         </table>
-        <p>תודה!</p>
-      </div>`,
-      attachments: [{
-        filename: `invoice-${invoiceId.slice(0, 8)}.pdf`,
-        content: base64Pdf,
-      }],
-    };
-
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
+        <p style="color:#475569;font-size:14px;margin:0 0 20px 0;font-family:Arial,sans-serif">
+          קובץ ה-PDF המלא מצורף למייל זה.
+        </p>
+        <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 20px 0">
+        <p style="color:#94A3B8;font-size:12px;margin:0;font-family:Arial,sans-serif">תודה על שהותך!</p>
+      `),
+      attachments: [{ filename: `invoice-${shortId}.pdf`, content: base64Pdf }],
     });
-
-    if (!res.ok) {
-      const err = await res.json() as { message?: string };
-      throw new Error(err.message ?? 'Failed to send email');
-    }
 
     return { sent: true, to: guestEmail ?? 'malka.develop3949@gmail.com' };
   }
