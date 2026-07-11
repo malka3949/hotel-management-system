@@ -9,9 +9,12 @@ on:
 permissions:
   contents: read
 
+env:
+  DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
+
 jobs:
   backend:
-    name: Backend — lint & typecheck
+    name: Backend — build, lint & typecheck
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,14 +32,15 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-        env:
-          DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
 
       - name: Typecheck
         run: npm run typecheck
 
       - name: Lint
         run: npm run lint
+
+      - name: Build
+        run: npm run build
 
   frontend:
     name: Frontend — lint & typecheck
@@ -59,7 +63,7 @@ jobs:
         run: npm ci
 
       - name: Typecheck
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Lint
         run: npm run lint
