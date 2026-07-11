@@ -175,6 +175,8 @@ export class AuthService {
     const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
     const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
 
+    const isDev = frontendUrl.startsWith('http://localhost');
+
     void this.notificationService.sendEmail({
       to: user.email,
       subject: 'איפוס סיסמה — מערכת ניהול מלון',
@@ -184,25 +186,26 @@ export class AuthService {
     <h2 style="color:#1e3a8a;margin:0 0 8px 0;font-size:22px">איפוס סיסמה</h2>
     <p style="color:#475569;margin:0 0 24px 0;font-size:15px">שלום ${user.name},</p>
     <p style="color:#0f172a;margin:0 0 28px 0;font-size:15px;line-height:1.6">
-      קיבלנו בקשה לאיפוס הסיסמה שלך. לחץ על הכפתור למטה כדי להגדיר סיסמה חדשה:
+      קיבלנו בקשה לאיפוס הסיסמה שלך.
     </p>
+    ${isDev ? `
+    <p style="color:#0f172a;margin:0 0 12px 0;font-size:14px">
+      <strong>סביבת פיתוח</strong> — העתק את הקישור ידנית לדפדפן:
+    </p>
+    <div style="background:#f1f5f9;border-radius:6px;padding:12px 16px;margin-bottom:24px;word-break:break-all;font-size:13px;color:#1e3a8a;direction:ltr;text-align:left">
+      ${resetLink}
+    </div>` : `
     <div style="text-align:center;margin-bottom:28px">
       <a href="${resetLink}"
          style="display:inline-block;background:#1e3a8a;color:#ffffff;text-decoration:none;
                 padding:14px 32px;border-radius:8px;font-size:16px;font-weight:bold">
         אפס סיסמה
       </a>
-    </div>
-    <p style="color:#64748b;font-size:13px;margin:0 0 8px 0">
-      הקישור בתוקף לשעה אחת בלבד.
-    </p>
-    <p style="color:#64748b;font-size:13px;margin:0">
-      אם לא ביקשת איפוס סיסמה — התעלם מהמייל הזה.
-    </p>
+    </div>`}
+    <p style="color:#64748b;font-size:13px;margin:0 0 8px 0">הקישור בתוקף לשעה אחת בלבד.</p>
+    <p style="color:#64748b;font-size:13px;margin:0">אם לא ביקשת איפוס סיסמה — התעלם מהמייל הזה.</p>
   </div>
-  <p style="color:#94a3b8;font-size:11px;text-align:center;margin-top:16px">
-    מערכת ניהול מלון
-  </p>
+  <p style="color:#94a3b8;font-size:11px;text-align:center;margin-top:16px">מערכת ניהול מלון</p>
 </div>`,
     });
 
