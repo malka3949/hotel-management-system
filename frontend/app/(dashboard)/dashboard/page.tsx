@@ -44,6 +44,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const canSeeReports = user?.role === 'chain_admin' || user?.role === 'hotel_manager';
+
   useEffect(() => {
     if (!user) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -54,6 +56,12 @@ export default function DashboardPage() {
     setError('');
 
     const today = new Date().toISOString().split('T')[0];
+
+    if (!canSeeReports) {
+      // receptionist / housekeeping: no access to reports endpoints
+      setLoading(false);
+      return;
+    }
 
     Promise.all([
       getOccupancySummary(branchId),
@@ -73,7 +81,7 @@ export default function DashboardPage() {
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [user, branchId]);
+  }, [user, branchId, canSeeReports]);
 
   return (
     <div dir="rtl" className="max-w-6xl">
@@ -98,8 +106,14 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {!canSeeReports && (
+        <div className="p-4 rounded-lg border mb-6 text-sm" style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)' }}>
+          ברוך הבא! כדי לראות דוחות ונתוני תפיסה, פנה למנהל המלון.
+        </div>
+      )}
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      {canSeeReports && <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <KPICard
           label="חדרים תפוסים"
           value={loading ? '—' : `${occupancy?.occupied ?? 0}/${occupancy?.total ?? 0}`}
@@ -149,10 +163,10 @@ export default function DashboardPage() {
           color="#475569"
           loading={loading}
         />
-      </div>
+      </div>}
 
       {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      {canSeeReports && <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div
           className="rounded-lg border p-4"
           style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
@@ -171,9 +185,10 @@ export default function DashboardPage() {
           </h3>
           <PipelineChart data={pipeline} loading={loading} />
         </div>
-      </div>
+      </div>}
 
       {/* Today's Arrivals Table */}
+      {canSeeReports &&
       <div
         className="rounded-lg border"
         style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
@@ -237,7 +252,7 @@ export default function DashboardPage() {
             </tbody>
           </table>
         )}
-      </div>
+      </div>}
     </div>
   );
 }
