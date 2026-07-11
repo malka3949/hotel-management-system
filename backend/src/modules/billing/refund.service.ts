@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { N8nService } from '../notifications/n8n.service';
+import { NotificationService, wrapEmailHtml } from '../notifications/notification.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CreateRefundDto } from './dto/create-refund.dto';
 import { StripeProvider } from './providers/stripe.provider';
@@ -20,6 +21,7 @@ export class RefundService {
     private prisma: PrismaService,
     private audit: AuditService,
     private n8n: N8nService,
+    private notifications: NotificationService,
     private stripeProvider: StripeProvider,
     private manualProvider: ManualProvider,
     private tranzilaProvider: TranzilaProvider,
@@ -93,18 +95,36 @@ export class RefundService {
     });
 
     const guest = payment.invoice?.reservation?.guest;
-    void this.n8n.triggerEvent('refund.processed', {
-      refundId: refund.id,
-      paymentId: dto.paymentId,
-      invoiceId: payment.invoiceId,
-      branchId: payment.branchId,
-      amount: dto.amount,
-      currency: 'ILS',
-      reason: dto.reason,
-      status: result.status,
-      guestName: guest?.fullName ?? null,
-      guestEmail: guest?.email ?? null,
-    });
+    if (result.status === 'succeeded' && guest?.email) {
+      void this.notifications.sendEmail({
+        to: guest.email,
+        subject: 'אישור זיכוי — מערכת ניהול מלון',
+        text: `שלום ${guest.fullName},\n\nזיכוי בסך ₪${Number(dto.amount).toFixed(2)} בוצע בהצלחה.\n\nסיבה: ${dto.reason ?? 'לא צוינה'}\n\nהסכום יופיע בחשבונך בהתאם למדיניות ספק התשלום.\n\nמערכת ניהול מלון`,
+        body: wrapEmailHtml(`
+          <h2 style="color:#1E3A8A;font-size:22px;margin:0 0 6px 0;font-family:Arial,sans-serif">אישור זיכוי</h2>
+          <div style="width:40px;height:3px;background-color:#CA8A04;border-radius:2px;margin-bottom:28px"></div>
+          <p style="color:#475569;font-size:15px;margin:0 0 16px 0;font-family:Arial,sans-serif">שלום ${guest.fullName},</p>
+          <p style="color:#0F172A;font-size:15px;line-height:1.7;margin:0 0 24px 0;font-family:Arial,sans-serif">
+            זיכוי בגין הזמנתך בוצע בהצלחה.
+          </p>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E2E8F0;border-radius:8px;margin-bottom:28px;font-family:Arial,sans-serif;border-collapse:collapse">
+            <tr>
+              <td bgcolor="#F8FAFC" style="padding:11px 16px;font-size:13px;color:#475569;width:50%;border-bottom:1px solid #E2E8F0">סכום זיכוי</td>
+              <td bgcolor="#F8FAFC" style="padding:11px 16px;font-size:13px;color:#0F172A;font-weight:bold;border-bottom:1px solid #E2E8F0">&#8362;${Number(dto.amount).toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td bgcolor="#FFFFFF" style="padding:11px 16px;font-size:13px;color:#475569">סיבה</td>
+              <td bgcolor="#FFFFFF" style="padding:11px 16px;font-size:13px;color:#0F172A">${dto.reason ?? '—'}</td>
+            </tr>
+          </table>
+          <p style="color:#475569;font-size:14px;margin:0 0 20px 0;font-family:Arial,sans-serif">
+            הסכום יופיע בחשבונך בהתאם למדיניות ספק התשלום.
+          </p>
+          <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 20px 0">
+          <p style="color:#94A3B8;font-size:12px;margin:0;font-family:Arial,sans-serif">לשאלות, פנה לצוות הקבלה.</p>
+        `),
+      });
+    }
 
     return refund;
   }

@@ -169,17 +169,6 @@ export class ReservationsService {
       });
     }
 
-    void this.n8n.triggerEvent('reservation.confirmed', {
-      reservationId: reservation.id,
-      guestName: guest.fullName,
-      guestEmail: guest.email,
-      roomNumber: reservation.room.number,
-      checkIn: dto.checkInDate,
-      checkOut: dto.checkOutDate,
-      totalPrice: reservation.totalPrice,
-      branchId,
-    });
-
     void this.guestPortal.generateAndSendPortalLink(
       reservation.id,
       guest.id,
