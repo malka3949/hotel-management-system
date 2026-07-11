@@ -44,11 +44,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const canSeeReports = user?.role === 'chain_admin' || user?.role === 'hotel_manager';
+  const canSeeRevenue = user?.role === 'chain_admin' || user?.role === 'hotel_manager';
+  const canSeeReports = canSeeRevenue || user?.role === 'receptionist';
 
   useEffect(() => {
     if (!user) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoading(false);
+      return;
+    }
+    if (!canSeeReports) {
+      // housekeeping: no dashboard data
       setLoading(false);
       return;
     }
@@ -57,31 +63,28 @@ export default function DashboardPage() {
 
     const today = new Date().toISOString().split('T')[0];
 
-    if (!canSeeReports) {
-      // receptionist / housekeeping: no access to reports endpoints
-      setLoading(false);
-      return;
-    }
-
-    Promise.all([
+    const baseRequests = [
       getOccupancySummary(branchId),
-      getRevenueSummary(branchId),
       getArrivalsDepartures(branchId),
       getOccupancyTrend(branchId),
       getReservationPipeline(branchId),
       getFutureReservations({ from: today, to: today, branchId }),
-    ])
-      .then(([occ, rev, arr, tr, pipe, futRes]) => {
+    ] as const;
+
+    const revenueRequest = canSeeRevenue ? getRevenueSummary(branchId) : Promise.resolve(null);
+
+    Promise.all([...baseRequests, revenueRequest])
+      .then(([occ, arr, tr, pipe, futRes, rev]) => {
         setOccupancy(occ);
-        setRevenue(rev);
         setArrivals(arr);
         setTrend(tr);
         setPipeline(pipe);
         setTodayArrivals(futRes);
+        if (rev) setRevenue(rev);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [user, branchId, canSeeReports]);
+  }, [user, branchId, canSeeReports, canSeeRevenue]);
 
   return (
     <div dir="rtl" className="max-w-6xl">
@@ -108,7 +111,7 @@ export default function DashboardPage() {
 
       {!canSeeReports && (
         <div className="p-4 rounded-lg border mb-6 text-sm" style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)' }}>
-          ברוך הבא! כדי לראות דוחות ונתוני תפיסה, פנה למנהל המלון.
+          ברוך הבא! לצפייה בנתונים, פנה למנהל המלון.
         </div>
       )}
 
@@ -139,24 +142,26 @@ export default function DashboardPage() {
           color="#7C3AED"
           loading={loading}
         />
-        <KPICard
-          label="הכנסות החודש"
-          value={loading ? '—' : formatNIS(revenue?.thisMonth ?? 0)}
-          subValue={
-            !loading && revenue
-              ? `חודש קודם: ${formatNIS(revenue.prevMonth)}`
-              : undefined
-          }
-          trend={
-            !loading && revenue
-              ? revenue.thisMonth >= revenue.prevMonth
-                ? 'up'
-                : 'down'
-              : undefined
-          }
-          color="var(--color-primary)"
-          loading={loading}
-        />
+        {canSeeRevenue && (
+          <KPICard
+            label="הכנסות החודש"
+            value={loading ? '—' : formatNIS(revenue?.thisMonth ?? 0)}
+            subValue={
+              !loading && revenue
+                ? `חודש קודם: ${formatNIS(revenue.prevMonth)}`
+                : undefined
+            }
+            trend={
+              !loading && revenue
+                ? revenue.thisMonth >= revenue.prevMonth
+                  ? 'up'
+                  : 'down'
+                : undefined
+            }
+            color="var(--color-primary)"
+            loading={loading}
+          />
+        )}
         <KPICard
           label="הגעות מחר"
           value={loading ? '—' : (arrivals?.arrivalsTomorrow ?? 0)}

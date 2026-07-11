@@ -15,6 +15,7 @@ import { ReportsQueryDto } from './dto/reports-query.dto';
 export class ReportsController {
   constructor(private readonly reportsService: ReportsService) {}
 
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   @Get('occupancy-summary')
   getOccupancySummary(@Query() query: ReportsQueryDto, @CurrentUser() user: JwtPayload) {
     return this.reportsService.getOccupancySummary(query, user);
@@ -25,18 +26,21 @@ export class ReportsController {
     return this.reportsService.getRevenueSummary(query, user);
   }
 
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   @Get('arrivals-departures')
   getArrivalsDepartures(@Query() query: ReportsQueryDto, @CurrentUser() user: JwtPayload) {
     return this.reportsService.getArrivalsDepartures(query, user);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   @Get('reservation-pipeline')
   getReservationPipeline(@Query() query: ReportsQueryDto, @CurrentUser() user: JwtPayload) {
     return this.reportsService.getReservationPipeline(query, user);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   @Get('occupancy-trend')
   getOccupancyTrend(@Query() query: ReportsQueryDto, @CurrentUser() user: JwtPayload) {
     return this.reportsService.getOccupancyTrend(query, user);
@@ -47,6 +51,7 @@ export class ReportsController {
     return this.reportsService.getCancellations(query, user);
   }
 
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
   @Get('future-reservations')
   getFutureReservations(@Query() query: ReportsQueryDto, @CurrentUser() user: JwtPayload) {
     return this.reportsService.getFutureReservations(query, user);
