@@ -8,7 +8,7 @@ import {
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AvailabilityService } from '../availability/availability.service';
-import { NotificationService } from '../notifications/notification.service';
+import { NotificationService, wrapEmailHtml } from '../notifications/notification.service';
 import { N8nService } from '../notifications/n8n.service';
 import { GuestPortalService } from '../guest-portal/guest-portal.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
@@ -124,23 +124,50 @@ export class ReservationsService {
     await this.availability.invalidateAvailabilityCache(branchId);
 
     if (guest.email) {
+      const fmtDate = (d: Date) =>
+        `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+
       void this.notifications.sendEmail({
         to: guest.email,
-        subject: 'אישור הזמנה',
-        body: `שלום ${guest.fullName}, הזמנתך מספר ${reservation.id} אושרה.`,
+        subject: `אישור הזמנה — חדר ${reservation.room.number}`,
+        text: `שלום ${guest.fullName},\n\nהזמנתך אושרה!\n\nמספר הזמנה: ${reservation.id.slice(0, 8).toUpperCase()}\nחדר: ${reservation.room.number} — ${reservation.room.roomType.name}\nהגעה: ${fmtDate(checkIn)}\nעזיבה: ${fmtDate(checkOut)} (${nights} לילות)\nסה"כ: ₪${Number(totalPrice).toLocaleString('he-IL')}\n\nנשמח לארח אותך!\nמערכת ניהול מלון`,
+        body: wrapEmailHtml(`
+          <h2 style="color:#1E3A8A;font-size:22px;margin:0 0 6px 0;font-family:Arial,sans-serif">ההזמנה אושרה!</h2>
+          <div style="width:40px;height:3px;background-color:#CA8A04;border-radius:2px;margin-bottom:28px"></div>
+          <p style="color:#475569;font-size:15px;margin:0 0 16px 0;font-family:Arial,sans-serif">שלום ${guest.fullName},</p>
+          <p style="color:#0F172A;font-size:15px;line-height:1.7;margin:0 0 24px 0;font-family:Arial,sans-serif">
+            הזמנתך נקלטה בהצלחה. להלן פרטי ההזמנה:
+          </p>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E2E8F0;border-radius:8px;margin-bottom:28px;font-family:Arial,sans-serif;border-collapse:collapse">
+            <tr>
+              <td bgcolor="#F8FAFC" style="padding:11px 16px;font-size:13px;color:#475569;width:45%;border-bottom:1px solid #E2E8F0">מספר הזמנה</td>
+              <td bgcolor="#F8FAFC" style="padding:11px 16px;font-size:13px;color:#0F172A;font-weight:bold;border-bottom:1px solid #E2E8F0">${reservation.id.slice(0, 8).toUpperCase()}</td>
+            </tr>
+            <tr>
+              <td bgcolor="#FFFFFF" style="padding:11px 16px;font-size:13px;color:#475569;border-bottom:1px solid #E2E8F0">חדר</td>
+              <td bgcolor="#FFFFFF" style="padding:11px 16px;font-size:13px;color:#0F172A;border-bottom:1px solid #E2E8F0">${reservation.room.number} &mdash; ${reservation.room.roomType.name}</td>
+            </tr>
+            <tr>
+              <td bgcolor="#F8FAFC" style="padding:11px 16px;font-size:13px;color:#475569;border-bottom:1px solid #E2E8F0">תאריך הגעה</td>
+              <td bgcolor="#F8FAFC" style="padding:11px 16px;font-size:13px;color:#0F172A;border-bottom:1px solid #E2E8F0">${fmtDate(checkIn)}</td>
+            </tr>
+            <tr>
+              <td bgcolor="#FFFFFF" style="padding:11px 16px;font-size:13px;color:#475569;border-bottom:1px solid #E2E8F0">תאריך עזיבה</td>
+              <td bgcolor="#FFFFFF" style="padding:11px 16px;font-size:13px;color:#0F172A;border-bottom:1px solid #E2E8F0">${fmtDate(checkOut)} &nbsp;<span style="color:#94A3B8;font-size:12px">(${nights} לילות)</span></td>
+            </tr>
+            <tr>
+              <td bgcolor="#1E3A8A" style="padding:13px 16px;font-size:14px;color:#FFFFFF;font-weight:bold">סה&quot;כ לתשלום</td>
+              <td bgcolor="#1E3A8A" style="padding:13px 16px;font-size:14px;color:#FFFFFF;font-weight:bold">&#8362;${Number(totalPrice).toLocaleString('he-IL')}</td>
+            </tr>
+          </table>
+          <p style="color:#475569;font-size:14px;line-height:1.6;margin:0 0 20px 0;font-family:Arial,sans-serif">
+            נשמח לארח אותך! לשאלות, אנא פנה לצוות הקבלה.
+          </p>
+          <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 20px 0">
+          <p style="color:#94A3B8;font-size:12px;margin:0;font-family:Arial,sans-serif">קיבלת מייל זה כי נרשמה הזמנה עבור כתובת המייל שלך.</p>
+        `),
       });
     }
-
-    void this.n8n.triggerEvent('reservation.confirmed', {
-      reservationId: reservation.id,
-      guestName: guest.fullName,
-      guestEmail: guest.email,
-      roomNumber: reservation.room.number,
-      checkIn: dto.checkInDate,
-      checkOut: dto.checkOutDate,
-      totalPrice: reservation.totalPrice,
-      branchId,
-    });
 
     void this.guestPortal.generateAndSendPortalLink(
       reservation.id,

@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { NotificationService, wrapEmailHtml } from '../notifications/notification.service';
 import { OnlineCheckInDto } from './dto/online-check-in.dto';
 import { PortalPaymentDto } from './dto/portal-payment.dto';
 import { GuestTokenPayload } from './interfaces/guest-token-payload.interface';
@@ -34,6 +35,7 @@ export class GuestPortalService {
     private prisma: PrismaService,
     private audit: AuditService,
     private config: ConfigService,
+    private notifications: NotificationService,
   ) {}
 
   async generateAndSendPortalLink(
@@ -70,32 +72,39 @@ export class GuestPortalService {
     return { portalUrl, expiresAt };
   }
 
-  private async sendPortalEmail(to: string, guestName: string, portalUrl: string): Promise<void> {
-    const resendKey = process.env.RESEND_API_KEY;
-    if (!resendKey) {
-      this.logger.warn('RESEND_API_KEY not set — portal email not sent');
-      return;
-    }
-    try {
-      await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: 'onboarding@resend.dev',
-          to: 'malka.develop3949@gmail.com',
-          subject: 'פורטל אורחים — גישה להזמנה שלך',
-          html: `<div dir="rtl" style="font-family:Arial,sans-serif;max-width:500px">
-            <h2>פורטל אורחים</h2>
-            <p>שלום ${guestName},</p>
-            <p>ניתן לצפות בהזמנתך, לבצע צ'ק-אין מקוון ולשלם חשבונית כאן:</p>
-            <p><a href="${portalUrl}" style="font-size:16px;color:#1E3A8A">${portalUrl}</a></p>
-            <p style="color:#64748B;font-size:12px">הקישור בתוקף עד 24 שעות לאחר צ'ק-אאוט.</p>
-          </div>`,
-        }),
-      });
-    } catch (err) {
-      this.logger.error(`Portal email failed: ${(err as Error).message}`);
-    }
+  private sendPortalEmail(to: string, guestName: string, portalUrl: string): void {
+    const isDev = portalUrl.includes('localhost');
+
+    const linkContent = isDev ? `
+      <p style="color:#0F172A;font-size:14px;font-weight:bold;margin:0 0 10px 0;font-family:Arial,sans-serif">
+        קישור לפורטל <span style="color:#CA8A04;font-weight:normal">(סביבת פיתוח — העתק לדפדפן)</span>:
+      </p>
+      <div style="background-color:#F1F5F9;border:1px solid #E2E8F0;border-radius:8px;padding:16px 20px;margin-bottom:28px;direction:ltr;text-align:left">
+        <span style="font-family:'Courier New',Courier,monospace;font-size:11px;color:#1E3A8A;word-break:break-all">${portalUrl}</span>
+      </div>` : `
+      <p style="color:#0F172A;font-size:15px;line-height:1.7;margin:0 0 24px 0;font-family:Arial,sans-serif">לחץ על הכפתור למטה כדי לגשת לפורטל:</p>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:28px">
+        <tr><td align="center">
+          <a href="${portalUrl}" style="display:inline-block;background-color:#1E3A8A;color:#FFFFFF;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:bold;font-family:Arial,sans-serif">כניסה לפורטל</a>
+        </td></tr>
+      </table>`;
+
+    void this.notifications.sendEmail({
+      to,
+      subject: 'פורטל אורחים — גישה להזמנה שלך',
+      text: `שלום ${guestName},\n\nניתן לצפות בהזמנתך, לבצע צ'ק-אין מקוון ולשלם חשבונית.\n\nקישור לפורטל:\n${portalUrl}\n\nהקישור בתוקף עד 24 שעות לאחר צ'ק-אאוט.\n\nמערכת ניהול מלון`,
+      body: wrapEmailHtml(`
+        <h2 style="color:#1E3A8A;font-size:22px;margin:0 0 6px 0;font-family:Arial,sans-serif">פורטל אורחים</h2>
+        <div style="width:40px;height:3px;background-color:#CA8A04;border-radius:2px;margin-bottom:28px"></div>
+        <p style="color:#475569;font-size:15px;margin:0 0 16px 0;font-family:Arial,sans-serif">שלום ${guestName},</p>
+        <p style="color:#0F172A;font-size:15px;line-height:1.7;margin:0 0 28px 0;font-family:Arial,sans-serif">
+          ניתן לצפות בהזמנתך, לבצע צ'ק-אין מקוון ולשלם את חשבוניתך דרך פורטל האורחים.
+        </p>
+        ${linkContent}
+        <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 20px 0">
+        <p style="color:#94A3B8;font-size:12px;margin:0;font-family:Arial,sans-serif">הקישור בתוקף עד 24 שעות לאחר צ'ק-אאוט.</p>
+      `),
+    });
   }
 
   async sendPortalLinkByStaff(reservationId: string, requester: JwtPayload): Promise<{ sent: boolean; portalUrl: string }> {

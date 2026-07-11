@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { login } from '@/lib/api/auth';
 import { useAuthStore } from '@/lib/store/auth.store';
 
@@ -112,6 +113,16 @@ export default function LoginPage() {
         >
           {loading ? 'מתחבר...' : 'התחבר'}
         </button>
+
+        <div className="text-center">
+          <Link
+            href="/forgot-password"
+            className="text-sm transition-colors"
+            style={{ color: 'var(--color-primary-light)' }}
+          >
+            שכחתי סיסמה
+          </Link>
+        </div>
       </form>
     </div>
   );

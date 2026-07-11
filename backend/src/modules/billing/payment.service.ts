@@ -11,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { N8nService } from '../notifications/n8n.service';
+import { NotificationService, wrapEmailHtml } from '../notifications/notification.service';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PrePaymentDto } from './dto/pre-payment.dto';
@@ -27,6 +28,7 @@ export class PaymentService {
     private prisma: PrismaService,
     private audit: AuditService,
     private n8n: N8nService,
+    private notifications: NotificationService,
     private config: ConfigService,
     private stripeProvider: StripeProvider,
     private manualProvider: ManualProvider,
@@ -120,22 +122,40 @@ export class PaymentService {
     });
 
     const guest = invoice.reservation.guest;
-    void this.n8n.triggerEvent(
-      chargeResult.status === 'succeeded' ? 'payment.succeeded' : 'payment.failed',
-      {
-        paymentId: payment.id,
-        invoiceId: dto.invoiceId,
-        reservationId: invoice.reservationId,
-        branchId: invoice.branchId,
-        amount: payAmount,
-        currency: 'ILS',
-        paymentMethod: dto.paymentMethod,
-        provider: dto.provider,
-        guestName: guest?.fullName ?? null,
-        guestEmail: guest?.email ?? null,
-        errorCode: chargeResult.errorCode ?? null,
-      },
-    );
+    if (chargeResult.status === 'succeeded' && guest?.email) {
+      void this.notifications.sendEmail({
+        to: guest.email,
+        subject: 'קבלת תשלום — מערכת ניהול מלון',
+        text: `שלום ${guest.fullName},\n\nתשלום בסך ₪${payAmount.toFixed(2)} התקבל בהצלחה.\n\nמזהה חשבונית: ${dto.invoiceId.slice(0, 8).toUpperCase()}\n\nתודה!\nמערכת ניהול מלון`,
+        body: wrapEmailHtml(`
+          <h2 style="color:#1E3A8A;font-size:22px;margin:0 0 6px 0;font-family:Arial,sans-serif">קבלת תשלום</h2>
+          <div style="width:40px;height:3px;background-color:#CA8A04;border-radius:2px;margin-bottom:28px"></div>
+          <p style="color:#475569;font-size:15px;margin:0 0 16px 0;font-family:Arial,sans-serif">שלום ${guest.fullName},</p>
+          <p style="color:#0F172A;font-size:15px;line-height:1.7;margin:0 0 24px 0;font-family:Arial,sans-serif">
+            תשלומך התקבל בהצלחה.
+          </p>
+          <table cellpadding="0" cellspacing="0" border="0" width="100%" style="border:1px solid #E2E8F0;border-radius:8px;margin-bottom:28px;font-family:Arial,sans-serif;border-collapse:collapse">
+            <tr>
+              <td bgcolor="#F8FAFC" style="padding:11px 16px;font-size:13px;color:#475569;width:50%;border-bottom:1px solid #E2E8F0">מזהה חשבונית</td>
+              <td bgcolor="#F8FAFC" style="padding:11px 16px;font-size:13px;color:#0F172A;font-weight:bold;border-bottom:1px solid #E2E8F0">${dto.invoiceId.slice(0, 8).toUpperCase()}</td>
+            </tr>
+            <tr>
+              <td bgcolor="#FFFFFF" style="padding:11px 16px;font-size:13px;color:#475569;border-bottom:1px solid #E2E8F0">אמצעי תשלום</td>
+              <td bgcolor="#FFFFFF" style="padding:11px 16px;font-size:13px;color:#0F172A;border-bottom:1px solid #E2E8F0">${dto.paymentMethod}</td>
+            </tr>
+            <tr>
+              <td bgcolor="#1E3A8A" style="padding:13px 16px;font-size:14px;color:#FFFFFF;font-weight:bold">סכום ששולם</td>
+              <td bgcolor="#1E3A8A" style="padding:13px 16px;font-size:14px;color:#FFFFFF;font-weight:bold">&#8362;${payAmount.toFixed(2)}</td>
+            </tr>
+          </table>
+          <p style="color:#475569;font-size:14px;margin:0 0 20px 0;font-family:Arial,sans-serif">
+            חשבונית PDF תשלח בנפרד לאחר אישור התשלום.
+          </p>
+          <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 20px 0">
+          <p style="color:#94A3B8;font-size:12px;margin:0;font-family:Arial,sans-serif">תודה על הסדרת התשלום!</p>
+        `),
+      });
+    }
 
     return payment;
   }

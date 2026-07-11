@@ -16,7 +16,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const reservationId = searchParams.get('reservationId') ?? '';
-  const invoiceId = searchParams.get('invoiceId') ?? '';
+
 
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [method, setMethod] = useState<PaymentMethod>('cash');

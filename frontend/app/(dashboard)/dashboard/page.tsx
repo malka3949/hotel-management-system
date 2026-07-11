@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { KPICard } from '@/components/shared/KPICard';
@@ -43,8 +44,17 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const canSeeRevenue = user?.role === 'chain_admin' || user?.role === 'hotel_manager';
+  const canSeeReports = canSeeRevenue || user?.role === 'receptionist';
+
   useEffect(() => {
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLoading(false);
+      return;
+    }
+    if (!canSeeReports) {
+      // housekeeping: no dashboard data
       setLoading(false);
       return;
     }
@@ -53,25 +63,28 @@ export default function DashboardPage() {
 
     const today = new Date().toISOString().split('T')[0];
 
-    Promise.all([
+    const baseRequests = [
       getOccupancySummary(branchId),
-      getRevenueSummary(branchId),
       getArrivalsDepartures(branchId),
       getOccupancyTrend(branchId),
       getReservationPipeline(branchId),
       getFutureReservations({ from: today, to: today, branchId }),
-    ])
-      .then(([occ, rev, arr, tr, pipe, futRes]) => {
+    ] as const;
+
+    const revenueRequest = canSeeRevenue ? getRevenueSummary(branchId) : Promise.resolve(null);
+
+    Promise.all([...baseRequests, revenueRequest])
+      .then(([occ, arr, tr, pipe, futRes, rev]) => {
         setOccupancy(occ);
-        setRevenue(rev);
         setArrivals(arr);
         setTrend(tr);
         setPipeline(pipe);
         setTodayArrivals(futRes);
+        if (rev) setRevenue(rev);
       })
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [user, branchId]);
+  }, [user, branchId, canSeeReports, canSeeRevenue]);
 
   return (
     <div dir="rtl" className="max-w-6xl">
@@ -80,13 +93,13 @@ export default function DashboardPage() {
           דשבורד
         </h2>
         {user?.role === 'chain_admin' && (
-          <a
+          <Link
             href="/dashboard/chain"
             className="text-sm font-medium px-3 py-1.5 rounded-md text-white"
             style={{ backgroundColor: 'var(--color-primary)' }}
           >
             דשבורד רשת →
-          </a>
+          </Link>
         )}
       </div>
 
@@ -96,8 +109,14 @@ export default function DashboardPage() {
         </div>
       )}
 
+      {!canSeeReports && (
+        <div className="p-4 rounded-lg border mb-6 text-sm" style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)' }}>
+          ברוך הבא! לצפייה בנתונים, פנה למנהל המלון.
+        </div>
+      )}
+
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+      {canSeeReports && <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <KPICard
           label="חדרים תפוסים"
           value={loading ? '—' : `${occupancy?.occupied ?? 0}/${occupancy?.total ?? 0}`}
@@ -123,34 +142,36 @@ export default function DashboardPage() {
           color="#7C3AED"
           loading={loading}
         />
-        <KPICard
-          label="הכנסות החודש"
-          value={loading ? '—' : formatNIS(revenue?.thisMonth ?? 0)}
-          subValue={
-            !loading && revenue
-              ? `חודש קודם: ${formatNIS(revenue.prevMonth)}`
-              : undefined
-          }
-          trend={
-            !loading && revenue
-              ? revenue.thisMonth >= revenue.prevMonth
-                ? 'up'
-                : 'down'
-              : undefined
-          }
-          color="var(--color-primary)"
-          loading={loading}
-        />
+        {canSeeRevenue && (
+          <KPICard
+            label="הכנסות החודש"
+            value={loading ? '—' : formatNIS(revenue?.thisMonth ?? 0)}
+            subValue={
+              !loading && revenue
+                ? `חודש קודם: ${formatNIS(revenue.prevMonth)}`
+                : undefined
+            }
+            trend={
+              !loading && revenue
+                ? revenue.thisMonth >= revenue.prevMonth
+                  ? 'up'
+                  : 'down'
+                : undefined
+            }
+            color="var(--color-primary)"
+            loading={loading}
+          />
+        )}
         <KPICard
           label="הגעות מחר"
           value={loading ? '—' : (arrivals?.arrivalsTomorrow ?? 0)}
           color="#475569"
           loading={loading}
         />
-      </div>
+      </div>}
 
       {/* Charts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+      {canSeeReports && <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div
           className="rounded-lg border p-4"
           style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
@@ -169,9 +190,10 @@ export default function DashboardPage() {
           </h3>
           <PipelineChart data={pipeline} loading={loading} />
         </div>
-      </div>
+      </div>}
 
       {/* Today's Arrivals Table */}
+      {canSeeReports &&
       <div
         className="rounded-lg border"
         style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
@@ -235,7 +257,7 @@ export default function DashboardPage() {
             </tbody>
           </table>
         )}
-      </div>
+      </div>}
     </div>
   );
 }

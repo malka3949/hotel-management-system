@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { NotificationService, wrapEmailHtml } from '../notifications/notification.service';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import { LoginDto } from './dto/login.dto';
@@ -31,6 +32,7 @@ export class AuthService {
     private jwtService: JwtService,
     private config: ConfigService,
     private auditService: AuditService,
+    private notificationService: NotificationService,
   ) {}
 
   async login(dto: LoginDto, ip: string, userAgent: string): Promise<LoginResult> {
@@ -156,6 +158,132 @@ export class AuthService {
     });
   }
 
+  async forgotPassword(email: string): Promise<void> {
+    const user = await this.prisma.user.findUnique({ where: { email } });
+    if (!user || !user.isActive) {
+      return; // silent — don't reveal whether email exists
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+    await this.prisma.passwordResetToken.create({
+      data: { userId: user.id, tokenHash, expiresAt },
+    });
+
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
+    const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
+
+    const isDev = frontendUrl.startsWith('http://localhost');
+
+    const tokenContent = isDev ? `
+      <p style="color:#0F172A;font-size:14px;font-weight:bold;margin:0 0 10px 0;font-family:Arial,sans-serif">קוד לאיפוס סיסמה:</p>
+      <div style="background-color:#F1F5F9;border:1px solid #E2E8F0;border-radius:8px;padding:16px 20px;margin-bottom:24px;direction:ltr;text-align:left">
+        <span style="font-family:'Courier New',Courier,monospace;font-size:13px;color:#1E3A8A;letter-spacing:0.5px;word-break:break-all">${rawToken}</span>
+      </div>
+      <p style="color:#475569;font-size:14px;margin:0 0 28px 0;font-family:Arial,sans-serif">כנס לדף איפוס הסיסמה במערכת והדבק את הקוד.</p>` : `
+      <p style="color:#0F172A;font-size:15px;line-height:1.7;margin:0 0 24px 0;font-family:Arial,sans-serif">לחץ על הכפתור למטה כדי לאפס את סיסמאתך:</p>
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom:28px">
+        <tr><td align="center">
+          <a href="${resetLink}" style="display:inline-block;background-color:#CA8A04;color:#FFFFFF;text-decoration:none;padding:14px 36px;border-radius:8px;font-size:16px;font-weight:bold;font-family:Arial,sans-serif">אפס סיסמה</a>
+        </td></tr>
+      </table>`;
+
+    void this.notificationService.sendEmail({
+      to: user.email,
+      subject: 'איפוס סיסמה — מערכת ניהול מלון',
+      text: `שלום ${user.name},\n\nקיבלנו בקשה לאיפוס הסיסמה עבור חשבונך.\n\n${isDev ? `קוד לאיפוס:\n${rawToken}\n\nכנס לדף איפוס הסיסמה במערכת והדבק את הקוד.` : `לאיפוס הסיסמה: ${resetLink}`}\n\nהקוד/קישור בתוקף לשעה אחת.\nאם לא ביקשת איפוס — התעלם ממייל זה.\n\nמערכת ניהול מלון`,
+      body: wrapEmailHtml(`
+        <h2 style="color:#1E3A8A;font-size:22px;margin:0 0 6px 0;font-family:Arial,sans-serif">איפוס סיסמה</h2>
+        <div style="width:40px;height:3px;background-color:#CA8A04;border-radius:2px;margin-bottom:28px"></div>
+        <p style="color:#475569;font-size:15px;margin:0 0 16px 0;font-family:Arial,sans-serif">שלום ${user.name},</p>
+        <p style="color:#0F172A;font-size:15px;line-height:1.7;margin:0 0 28px 0;font-family:Arial,sans-serif">קיבלנו בקשה לאיפוס הסיסמה עבור חשבונך.</p>
+        ${tokenContent}
+        <hr style="border:none;border-top:1px solid #E2E8F0;margin:0 0 20px 0">
+        <p style="color:#94A3B8;font-size:12px;margin:0 0 6px 0;font-family:Arial,sans-serif">הקוד בתוקף לשעה אחת בלבד.</p>
+        <p style="color:#94A3B8;font-size:12px;margin:0;font-family:Arial,sans-serif">אם לא ביקשת איפוס סיסמה — התעלם ממייל זה.</p>
+      `),
+    });
+
+    await this.auditService.log({
+      userId: user.id,
+      action: 'PASSWORD_RESET_REQUESTED',
+      metadata: { email },
+      branchId: user.branchId,
+    });
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+      include: { user: true },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('INVALID_RESET_TOKEN');
+    }
+    if (resetToken.usedAt) {
+      throw new BadRequestException('RESET_TOKEN_ALREADY_USED');
+    }
+    if (resetToken.expiresAt <= new Date()) {
+      throw new BadRequestException('RESET_TOKEN_EXPIRED');
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: resetToken.userId },
+        data: { passwordHash },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: resetToken.id },
+        data: { usedAt: new Date() },
+      }),
+      this.prisma.refreshToken.updateMany({
+        where: { userId: resetToken.userId, revokedAt: null },
+        data: { revokedAt: new Date() },
+      }),
+    ]);
+
+    await this.auditService.log({
+      userId: resetToken.userId,
+      action: 'PASSWORD_RESET_COMPLETED',
+      metadata: {},
+      branchId: resetToken.user.branchId,
+    });
+  }
+
+  async getSessions(userId: string) {
+    return this.prisma.refreshToken.findMany({
+      where: {
+        userId,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      select: { id: true, createdAt: true, expiresAt: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async revokeSession(tokenId: string, userId: string): Promise<void> {
+    const token = await this.prisma.refreshToken.findFirst({
+      where: { id: tokenId, userId },
+    });
+
+    if (!token) {
+      throw new NotFoundException('SESSION_NOT_FOUND');
+    }
+
+    await this.prisma.refreshToken.update({
+      where: { id: tokenId },
+      data: { revokedAt: new Date() },
+    });
+  }
+
   private async issueTokens(
     userId: string,
     email: string,
@@ -200,3 +328,4 @@ export class AuthService {
     return value * (multipliers[unit] ?? 1000);
   }
 }
+// TEST_PHASE11_MARKER

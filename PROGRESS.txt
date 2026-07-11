@@ -69,3 +69,40 @@ Files changed (key):
   frontend/lib/api/reservations.ts (onlineCheckIn field added)
   frontend/app/(dashboard)/reservations/[id]/page.tsx (online check-in badge)
 ================================================================================
+
+================================================================================
+2026-07-10 | Session: phase-11-security | Phase 11 — Security Audit & Hardening
+Branch: feature/phase-11-security
+Commits: fa5d379 (backend), e004461 (frontend)
+================================================================================
+
+Tasks completed:
+  1. RBAC audit — fixed 3 gaps: reports (any auth), housekeeping (any auth), billing service-catalog (any auth)
+  2. Password reset flow — forgotPassword + resetPassword (SHA-256 hash, 1h TTL, single-use, revokes sessions)
+  3. Session management — GET/DELETE sessions with ownership enforcement
+  4. Security e2e test suite — RBAC, DTO validation, password reset, session isolation
+  5. Frontend — forgot-password page, reset-password page, SessionsPanel in Topbar, auth.ts API
+
+Files changed (key):
+  backend/prisma/schema.prisma (PasswordResetToken model)
+  backend/prisma/migrations/20260710000010_phase11_security/migration.sql (new)
+  backend/src/modules/auth/auth.service.ts (4 new methods)
+  backend/src/modules/auth/auth.controller.ts (4 new endpoints)
+  backend/src/modules/auth/dto/forgot-password.dto.ts (new)
+  backend/src/modules/auth/dto/reset-password.dto.ts (new)
+  backend/src/modules/reports/reports.controller.ts (RBAC fix)
+  backend/src/modules/housekeeping/housekeeping.controller.ts (RBAC fix)
+  backend/src/modules/billing/billing.controller.ts (RBAC fix)
+  backend/src/types/exceljs.d.ts (new — TS7016 workaround)
+  backend/test/security.e2e-spec.ts (new — regression suite)
+  frontend/lib/api/auth.ts (5 new functions + Session interface)
+  frontend/app/(auth)/forgot-password/page.tsx (new)
+  frontend/app/(auth)/reset-password/page.tsx (new)
+  frontend/app/(auth)/login/page.tsx (forgot-password link)
+  frontend/components/layout/Topbar.tsx (SessionsPanel)
+
+Verification:
+  npm run build → PASS (exit 0)
+  npm run lint  → PASS (exit 0)
+  npx tsc --noEmit (frontend) → PASS (exit 0)
+================================================================================

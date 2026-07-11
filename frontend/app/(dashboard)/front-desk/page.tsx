@@ -17,7 +17,8 @@ import { ReservationStatusBadge } from '@/components/shared/ReservationStatusBad
 import { InvoiceSummary } from '@/components/shared/InvoiceSummary';
 import { AddChargeModal } from '@/components/shared/AddChargeModal';
 
-const TODAY = new Date().toISOString().slice(0, 10);
+// Use local date (not UTC) to match reservation dates entered by Israeli staff
+const TODAY = new Date().toLocaleDateString('sv'); // sv locale gives YYYY-MM-DD in local tz
 
 type Tab = 'arrivals' | 'departures' | 'active';
 

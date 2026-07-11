@@ -82,6 +82,7 @@ model User {
   refunds                     Refund[]            @relation("RefundApprovedBy")
   assignedHousekeepingTasks   HousekeepingTask[]  @relation("HousekeepingAssignedTo")
   createdHousekeepingTasks    HousekeepingTask[]  @relation("HousekeepingCreatedBy")
+  passwordResetTokens         PasswordResetToken[]
 
   @@map("users")
 }
@@ -583,4 +584,20 @@ model HousekeepingTask {
   @@index([branchId, assignedTo, status])
   @@index([branchId, scheduledFor])
   @@map("housekeeping_tasks")
+}
+
+// ── Phase 11: Security ────────────────────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash") @db.VarChar
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
