@@ -190,11 +190,14 @@ export class AuthService {
     </p>
     ${isDev ? `
     <p style="color:#0f172a;margin:0 0 12px 0;font-size:14px">
-      <strong>סביבת פיתוח</strong> — העתק את הקישור ידנית לדפדפן:
+      <strong>קוד לאיפוס סיסמה:</strong>
     </p>
-    <div style="background:#f1f5f9;border-radius:6px;padding:12px 16px;margin-bottom:24px;word-break:break-all;font-size:13px;color:#1e3a8a;direction:ltr;text-align:left">
-      ${resetLink}
-    </div>` : `
+    <div style="background:#f1f5f9;border-radius:6px;padding:12px 16px;margin-bottom:24px;font-size:13px;color:#1e3a8a;direction:ltr;text-align:left;letter-spacing:0.5px;font-family:monospace">
+      ${rawToken}
+    </div>
+    <p style="color:#64748b;font-size:13px;margin:0 0 20px 0">
+      כנס לדף איפוס הסיסמה במערכת והדבק את הקוד.
+    </p>` : `
     <div style="text-align:center;margin-bottom:28px">
       <a href="${resetLink}"
          style="display:inline-block;background:#1e3a8a;color:#ffffff;text-decoration:none;
