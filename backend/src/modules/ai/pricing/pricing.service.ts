@@ -69,14 +69,6 @@ ${JSON.stringify(occupancyData, null, 2)}
 ענה בפורמט טבלה עברית עם עמודות: סוג חדר | מחיר בסיס | תפוסה % | מחיר מומלץ | הסבר קצר.
 הסבר את ההמלצות בקצרה בסוף.`;
 
-    const client = this.ai.getClient();
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const textBlock = response.content.find((b) => b.type === 'text');
-    return textBlock?.type === 'text' ? textBlock.text : '';
+    return this.ai.generateText(prompt);
   }
 }

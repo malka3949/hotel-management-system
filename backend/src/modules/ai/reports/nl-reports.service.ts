@@ -63,14 +63,6 @@ ${JSON.stringify(data, null, 2)}
 
 ענה ישירות על השאלה. אם הנתונים אינם מספיקים לענות, אמור זאת בכנות.`;
 
-    const client = this.ai.getClient();
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const textBlock = response.content.find((b) => b.type === 'text');
-    return textBlock?.type === 'text' ? textBlock.text : '';
+    return this.ai.generateText(prompt);
   }
 }

@@ -39,14 +39,7 @@ export class AiEmailService {
 כתוב רק את גוף האימייל, ללא שורת נושא. סגנון חם, מקצועי, קצר (עד 150 מילה).`;
 
     try {
-      const client = this.ai.getClient();
-      const response = await client.messages.create({
-        model: 'claude-haiku-4-5',
-        max_tokens: 512,
-        messages: [{ role: 'user', content: prompt }],
-      });
-      const textBlock = response.content.find((b) => b.type === 'text');
-      return textBlock?.type === 'text' ? textBlock.text : null;
+      return await this.ai.generateText(prompt);
     } catch (err) {
       this.logger.warn('AI email draft failed', err);
       return null;

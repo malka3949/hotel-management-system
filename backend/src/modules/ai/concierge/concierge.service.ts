@@ -54,15 +54,6 @@ export class ConciergeService {
       content: m.content,
     }));
 
-    const client = this.ai.getClient();
-    const response = await client.messages.create({
-      model: 'claude-haiku-4-5',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: [...history, { role: 'user', content: dto.message }],
-    });
-
-    const textBlock = response.content.find((b) => b.type === 'text');
-    return textBlock?.type === 'text' ? textBlock.text : '';
+    return this.ai.chat(systemPrompt, history, dto.message);
   }
 }
