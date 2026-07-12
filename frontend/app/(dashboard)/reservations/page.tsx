@@ -198,6 +198,17 @@ export default function ReservationsPage() {
                     <td className="px-4 py-3">
                       <div className="flex flex-col gap-1">
                         <ReservationStatusBadge status={r.status} />
+                        {r.riskScore !== undefined && r.riskScore >= 40 && (
+                          <span
+                            className="inline-block px-2 py-0.5 rounded text-xs font-medium"
+                            style={{
+                              backgroundColor: r.riskScore >= 70 ? '#FEE2E2' : '#FEF9C3',
+                              color: r.riskScore >= 70 ? '#B91C1C' : '#92400E',
+                            }}
+                          >
+                            ⚠ סיכון ביטול {r.riskScore}%
+                          </span>
+                        )}
                         {r.onlineCheckIn && r.status === 'confirmed' && (
                           <span className="inline-block px-2 py-0.5 rounded text-xs font-medium" style={{ backgroundColor: '#DCFCE7', color: '#15803D' }}>
                             צ&apos;ק-אין מקוון ✓

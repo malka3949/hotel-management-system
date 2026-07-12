@@ -5,6 +5,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { KPICard } from '@/components/shared/KPICard';
 import { OccupancyChart } from '@/components/shared/OccupancyChart';
 import { PipelineChart } from '@/components/shared/PipelineChart';
+import { PricingSuggestions } from '@/components/shared/PricingSuggestions';
+import { NlReportQuery } from '@/components/shared/NlReportQuery';
 import {
   getOccupancySummary,
   getRevenueSummary,
@@ -40,9 +42,11 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (!user) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false);
       return;
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     Promise.all([
       getOccupancySummary(),
@@ -123,6 +127,12 @@ export default function ReportsPage() {
           </h3>
           <PipelineChart data={pipeline} loading={loading} />
         </div>
+      </div>
+
+      {/* AI Features */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <NlReportQuery />
+        <PricingSuggestions />
       </div>
 
       {/* Quick Links */}
