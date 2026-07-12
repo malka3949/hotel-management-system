@@ -22,6 +22,7 @@ import { BillingModule } from './modules/billing/billing.module';
 import { GuestPortalModule } from './modules/guest-portal/guest-portal.module';
 import { HousekeepingModule } from './modules/housekeeping/housekeeping.module';
 import { ReportsModule } from './modules/reports/reports.module';
+import { AiModule } from './modules/ai/ai.module';
 
 @Module({
   providers: [HealthService],
@@ -57,6 +58,7 @@ import { ReportsModule } from './modules/reports/reports.module';
     GuestPortalModule,
     HousekeepingModule,
     ReportsModule,
+    AiModule,
   ],
   controllers: [HealthController],
 })

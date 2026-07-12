@@ -112,3 +112,7 @@ Verification:
 Tasks: backend observability, Dockerfile, health endpoints, Sentry, CI/CD, Render IaC, k6, deployment docs
 Files changed: backend/Dockerfile, src/middleware/*, src/health/*, src/main.ts, src/app.module.ts, global-exception.filter.ts, frontend/sentry.*.ts, next.config.ts, render.yaml, .github/workflows/ci.yml, .github/workflows/deploy.yml, k6/scenarios/*, docs/deployment/*, team-Yuri/arch-phase12.md, team-Yuri/dev-phase12.md
 Status: 2 commits on feature/phase-12-production-deployment. Build: PASS. Lint: PASS. Frontend tsc: PASS. Render deploy: pending live secrets.
+
+[2026-07-12] Phase 13 AI Features — backend + frontend complete
+Tasks: AiModule, ConciergeService (haiku-4-5), PricingService (sonnet-4-6), NlReportsService, AiEmailService, CancellationRiskService (rule-based), ScheduleOptimizerService (rule-based)
+Files: backend/src/modules/ai/**, reservations service+module, housekeeping service+controller, frontend AI components

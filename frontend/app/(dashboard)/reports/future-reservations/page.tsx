@@ -43,9 +43,8 @@ export default function FutureReservationsPage() {
       .finally(() => setLoading(false));
   }, [from, to, user]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
 
   function handleExport() {
     downloadReservationsCsv({ from, to });

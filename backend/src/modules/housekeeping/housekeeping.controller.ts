@@ -15,6 +15,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { HousekeepingService } from './housekeeping.service';
+import { ScheduleOptimizerService } from './services/schedule-optimizer.service';
 import { CreateHousekeepingTaskDto } from './dto/create-task.dto';
 import { AssignHousekeepingTaskDto } from './dto/assign-task.dto';
 import { SkipHousekeepingTaskDto } from './dto/skip-task.dto';
@@ -23,7 +24,10 @@ import { FilterHousekeepingTasksDto } from './dto/filter-tasks.dto';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('v1/housekeeping')
 export class HousekeepingController {
-  constructor(private readonly housekeepingService: HousekeepingService) {}
+  constructor(
+    private readonly housekeepingService: HousekeepingService,
+    private readonly scheduleOptimizer: ScheduleOptimizerService,
+  ) {}
 
   @Get('tasks')
   @Roles('chain_admin', 'hotel_manager', 'housekeeping')
@@ -67,5 +71,17 @@ export class HousekeepingController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.housekeepingService.skipTask(id, dto, user);
+  }
+
+  @Get('optimized-schedule')
+  @Roles('chain_admin', 'hotel_manager', 'housekeeping')
+  getOptimizedSchedule(
+    @Query('branchId') branchId: string,
+    @Query('date') date: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const resolvedBranchId = branchId ?? user.branchId;
+    const resolvedDate = date ? new Date(date) : new Date();
+    return this.scheduleOptimizer.optimizeSchedule(resolvedBranchId, resolvedDate);
   }
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { portalApi, ReservationDetail } from '@/lib/api/portal';
+import { AiConcierge } from '@/components/guest-portal/AiConcierge';
 
 function StatusBadge({ status }: { status: string }) {
   const labels: Record<string, string> = {
@@ -172,6 +173,8 @@ export default function PortalLandingPage() {
           </a>
         )}
       </div>
+
+      <AiConcierge token={token} />
     </div>
   );
 }

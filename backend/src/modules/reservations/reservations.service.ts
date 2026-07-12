@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
   ForbiddenException,
+  Optional,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -11,6 +12,8 @@ import { AvailabilityService } from '../availability/availability.service';
 import { NotificationService, wrapEmailHtml } from '../notifications/notification.service';
 import { N8nService } from '../notifications/n8n.service';
 import { GuestPortalService } from '../guest-portal/guest-portal.service';
+import { AiEmailService } from '../ai/email/ai-email.service';
+import { CancellationRiskService } from './services/cancellation-risk.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
@@ -65,6 +68,8 @@ export class ReservationsService {
     private notifications: NotificationService,
     private n8n: N8nService,
     private guestPortal: GuestPortalService,
+    private cancellationRisk: CancellationRiskService,
+    @Optional() private aiEmail: AiEmailService | null,
   ) {}
 
   async create(dto: CreateReservationDto, requester: JwtPayload) {
@@ -177,6 +182,33 @@ export class ReservationsService {
       guest.fullName,
     );
 
+    if (this.aiEmail && guest.email) {
+      void (async () => {
+        try {
+          const branchName = await this.prisma.branch
+            .findUnique({ where: { id: branchId }, select: { name: true } })
+            .then((b) => b?.name ?? 'המלון');
+          const aiBody = await this.aiEmail!.draftWelcomeEmail({
+            guestName: guest.fullName,
+            hotelName: branchName,
+            roomType: room.roomType.name,
+            roomNumber: room.number,
+            checkInDate: checkIn,
+            checkOutDate: checkOut,
+            totalPrice: Number(totalPrice),
+          });
+          if (aiBody) {
+            await this.notifications.sendEmail({
+              to: guest.email!,
+              subject: `ברוך הבא ל${branchName}!`,
+              text: aiBody,
+              body: wrapEmailHtml(`<p style="white-space:pre-line;font-family:Arial,sans-serif;font-size:15px;color:#0F172A;line-height:1.8">${aiBody.replace(/\n/g, '<br>')}</p>`),
+            });
+          }
+        } catch { /* fire-and-forget */ }
+      })();
+    }
+
     return reservation;
   }
 
@@ -221,7 +253,12 @@ export class ReservationsService {
       this.prisma.reservation.count({ where }),
     ]);
 
-    return { items, total, page, limit };
+    const itemsWithRisk = items.map((r) => ({
+      ...r,
+      riskScore: this.cancellationRisk.calculateRisk(r),
+    }));
+
+    return { items: itemsWithRisk, total, page, limit };
   }
 
   async findOne(id: string, requester: JwtPayload) {
@@ -231,7 +268,7 @@ export class ReservationsService {
     });
     if (!reservation) throw new NotFoundException('RESERVATION_NOT_FOUND');
     this.assertBranchAccess(reservation.branchId, requester);
-    return reservation;
+    return { ...reservation, riskScore: this.cancellationRisk.calculateRisk(reservation) };
   }
 
   async getCalendar(requester: JwtPayload, filters: CalendarFiltersDto) {

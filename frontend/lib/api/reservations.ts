@@ -60,6 +60,7 @@ export interface Reservation {
     total: string;
     payments: Array<{ amount: string }>;
   } | null;
+  riskScore?: number;
 }
 
 export interface CalendarReservation {
