@@ -10,6 +10,6 @@ import { BillingModule } from '../billing/billing.module';
   imports: [AuditModule, NotificationModule, BillingModule],
   providers: [GuestPortalService, GuestTokenGuard, GuestPaymentTokenGuard],
   controllers: [GuestPortalController],
-  exports: [GuestPortalService],
+  exports: [GuestPortalService, GuestTokenGuard],
 })
 export class GuestPortalModule {}
