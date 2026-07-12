@@ -1,8 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { envValidationSchema } from './config/env.validation';
 import { HealthController } from './health/health.controller';
+import { HealthService } from './health/health.service';
+import { RequestIdMiddleware } from './middleware/request-id.middleware';
+import { ResponseTimingMiddleware } from './middleware/response-timing.middleware';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -21,6 +24,7 @@ import { HousekeepingModule } from './modules/housekeeping/housekeeping.module';
 import { ReportsModule } from './modules/reports/reports.module';
 
 @Module({
+  providers: [HealthService],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
@@ -56,4 +60,10 @@ import { ReportsModule } from './modules/reports/reports.module';
   ],
   controllers: [HealthController],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(RequestIdMiddleware, ResponseTimingMiddleware)
+      .forRoutes('*');
+  }
+}

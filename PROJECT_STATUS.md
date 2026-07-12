@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md — Hotel Management System
 
-Last updated: 2026-07-02
+Last updated: 2026-07-12
 
 ---
 
@@ -19,12 +19,12 @@ Last updated: 2026-07-02
 | Phase 8 | Guest Portal | `PHASE-08-guest-portal.md` | 🟢 Complete |
 | Phase 9 | Housekeeping Module | `PHASE-09-housekeeping.md` | 🟢 Complete |
 | Phase 10 | Dashboard & Reporting | `PHASE-10-dashboard.md` | 🟢 Complete |
-| Phase 11 | Security Audit & Hardening | `PHASE-11-security.md` | 🟡 In Progress |
-| Phase 12 | Production Deployment | `PHASE-12-deployment.md` | ⏳ Pending |
+| Phase 11 | Security Audit & Hardening | `PHASE-11-security.md` | 🟢 Complete |
+| Phase 12 | Production Deployment | `PHASE-12-deployment.md` | 🟡 In Progress |
 
-**Active phase: Phase 11 — Security Audit & Hardening (🟡 In Progress)**
-**Last completed: Phase 10 — Dashboard & Reporting**
-**Overall progress: 10/13 phases complete**
+**Active phase: Phase 12 — Production Deployment (🟡 In Progress)**
+**Last completed: Phase 11 — Security Audit & Hardening**
+**Overall progress: 11/13 phases complete**
 
 ---
 

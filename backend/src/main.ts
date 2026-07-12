@@ -1,3 +1,12 @@
+import * as Sentry from '@sentry/node';
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN,
+  environment: process.env.NODE_ENV ?? 'development',
+  enabled: !!process.env.SENTRY_DSN,
+  tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.1 : 1.0,
+});
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
@@ -8,6 +17,8 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+
+  app.enableShutdownHooks();
 
   app.use(helmet());
   app.use(cookieParser());
@@ -39,8 +50,15 @@ async function bootstrap(): Promise<void> {
   });
 
   const port = process.env.PORT ?? 3001;
-  await app.listen(port);
+  const server = await app.listen(port);
+
   console.log(`Backend running on http://localhost:${port}/api`);
+
+  process.on('SIGTERM', () => {
+    server.close(() => {
+      void app.close();
+    });
+  });
 }
 
 bootstrap().catch(console.error);
