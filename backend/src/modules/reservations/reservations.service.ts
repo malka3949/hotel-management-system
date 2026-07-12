@@ -11,6 +11,7 @@ import { AvailabilityService } from '../availability/availability.service';
 import { NotificationService, wrapEmailHtml } from '../notifications/notification.service';
 import { N8nService } from '../notifications/n8n.service';
 import { GuestPortalService } from '../guest-portal/guest-portal.service';
+import { CancellationRiskService } from './services/cancellation-risk.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
 import { UpdateReservationStatusDto } from './dto/update-reservation-status.dto';
@@ -65,6 +66,7 @@ export class ReservationsService {
     private notifications: NotificationService,
     private n8n: N8nService,
     private guestPortal: GuestPortalService,
+    private cancellationRisk: CancellationRiskService,
   ) {}
 
   async create(dto: CreateReservationDto, requester: JwtPayload) {
@@ -221,7 +223,12 @@ export class ReservationsService {
       this.prisma.reservation.count({ where }),
     ]);
 
-    return { items, total, page, limit };
+    const itemsWithRisk = items.map((r) => ({
+      ...r,
+      riskScore: this.cancellationRisk.calculateRisk(r),
+    }));
+
+    return { items: itemsWithRisk, total, page, limit };
   }
 
   async findOne(id: string, requester: JwtPayload) {
@@ -231,7 +238,7 @@ export class ReservationsService {
     });
     if (!reservation) throw new NotFoundException('RESERVATION_NOT_FOUND');
     this.assertBranchAccess(reservation.branchId, requester);
-    return reservation;
+    return { ...reservation, riskScore: this.cancellationRisk.calculateRisk(reservation) };
   }
 
   async getCalendar(requester: JwtPayload, filters: CalendarFiltersDto) {
