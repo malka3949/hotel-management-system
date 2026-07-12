@@ -60,6 +60,7 @@ services:
       N8N_WEBHOOK_SECRET: ${N8N_WEBHOOK_SECRET:-}
       RESEND_API_KEY: ${RESEND_API_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       # DEV ONLY — Alpine containers lack system CA store; remove in production
       NODE_TLS_REJECT_UNAUTHORIZED: '0'
     volumes:
