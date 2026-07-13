@@ -15,6 +15,6 @@ export class PricingController {
   @Roles('chain_admin', 'hotel_manager')
   async getSuggestions(@CurrentUser() user: JwtPayload) {
     const suggestions = await this.pricingService.getSuggestions(user);
-    return { success: true, data: { suggestions } };
+    return { suggestions };
   }
 }

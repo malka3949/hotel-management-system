@@ -8,7 +8,7 @@ export class DailyDigestCron {
 
   constructor(private readonly digestService: DailyDigestService) {}
 
-  @Cron('0 8 * * *')
+  @Cron('0 8 * * *', { timeZone: 'Asia/Jerusalem' })
   async handleDailyDigest(): Promise<void> {
     this.logger.log('Running daily digest cron');
     await this.digestService.sendDigestForAllBranches();

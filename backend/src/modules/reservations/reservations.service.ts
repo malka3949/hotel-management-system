@@ -5,7 +5,9 @@ import {
   BadRequestException,
   ForbiddenException,
   Optional,
+  OnModuleInit,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AvailabilityService } from '../availability/availability.service';
@@ -61,7 +63,9 @@ const RESERVATION_INCLUDE = {
 } as const;
 
 @Injectable()
-export class ReservationsService {
+export class ReservationsService implements OnModuleInit {
+  private cancellationResponseSvc: CancellationResponseService | null = null;
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
@@ -70,9 +74,17 @@ export class ReservationsService {
     private n8n: N8nService,
     private guestPortal: GuestPortalService,
     private cancellationRisk: CancellationRiskService,
+    private moduleRef: ModuleRef,
     @Optional() private aiEmail: AiEmailService | null,
-    @Optional() private cancellationResponse: CancellationResponseService | null,
   ) {}
+
+  onModuleInit() {
+    try {
+      this.cancellationResponseSvc = this.moduleRef.get(CancellationResponseService, { strict: false });
+    } catch {
+      this.cancellationResponseSvc = null;
+    }
+  }
 
   async create(dto: CreateReservationDto, requester: JwtPayload) {
     const branchId = this.resolveBranchId(dto.branchId, requester);
@@ -467,7 +479,7 @@ export class ReservationsService {
       branchId: existing.branchId,
     });
 
-    void this.cancellationResponse?.sendCancellationOffer(id);
+    void this.cancellationResponseSvc?.sendCancellationOffer(id);
 
     return result;
   }

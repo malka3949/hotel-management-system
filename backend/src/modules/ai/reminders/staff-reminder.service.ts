@@ -15,7 +15,13 @@ export class StaffReminderService {
 
   async sendRemindersForAllBranches(): Promise<void> {
     const branches = await this.prisma.branch.findMany({ select: { id: true, name: true } });
-    await Promise.all(branches.map((b) => this.sendRemindersForBranch(b.id, b.name)));
+    await Promise.all(
+      branches.map((b) =>
+        this.sendRemindersForBranch(b.id, b.name).catch((err) =>
+          this.logger.error(`Reminders failed for branch ${b.id}: ${String(err)}`),
+        ),
+      ),
+    );
   }
 
   async sendRemindersForBranch(branchId: string, branchName: string): Promise<void> {

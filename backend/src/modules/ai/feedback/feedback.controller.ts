@@ -20,6 +20,6 @@ export class FeedbackController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('chain_admin', 'hotel_manager')
   async getInsights(@CurrentUser() user: JwtPayload) {
-    return this.feedbackService.getInsights(user.branchId ?? '');
+    return this.feedbackService.getInsights(user.role === 'chain_admin' ? undefined : (user.branchId ?? undefined));
   }
 }

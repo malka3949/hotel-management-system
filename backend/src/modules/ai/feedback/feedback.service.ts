@@ -42,7 +42,7 @@ export class FeedbackService {
 
       try {
         const raw = await this.ai.generateText(prompt);
-        const jsonMatch = raw.match(/\{[^}]+\}/);
+        const jsonMatch = raw.match(/\{[\s\S]*?\}/);
         if (jsonMatch) {
           const parsed = JSON.parse(jsonMatch[0]) as { sentiment?: string; summary?: string };
           sentiment = parsed.sentiment ?? null;
@@ -64,9 +64,9 @@ export class FeedbackService {
     });
   }
 
-  async getInsights(branchId: string) {
+  async getInsights(branchId: string | undefined) {
     const feedback = await this.prisma.guestFeedback.findMany({
-      where: { branchId },
+      where: branchId ? { branchId } : {},
       select: { rating: true, comment: true, sentiment: true, aiSummary: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
       take: 100,

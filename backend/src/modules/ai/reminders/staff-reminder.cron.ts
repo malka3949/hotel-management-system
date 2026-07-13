@@ -8,7 +8,7 @@ export class StaffReminderCron {
 
   constructor(private readonly reminderService: StaffReminderService) {}
 
-  @Cron('0 20 * * *')
+  @Cron('0 20 * * *', { timeZone: 'Asia/Jerusalem' })
   async handleStaffReminder(): Promise<void> {
     this.logger.log('Running staff reminder cron');
     await this.reminderService.sendRemindersForAllBranches();

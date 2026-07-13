@@ -8,7 +8,7 @@ export class RoomUpgradeCron {
 
   constructor(private readonly upgradeService: RoomUpgradeService) {}
 
-  @Cron('0 14 * * *')
+  @Cron('0 14 * * *', { timeZone: 'Asia/Jerusalem' })
   async handleRoomUpgrade(): Promise<void> {
     this.logger.log('Running room upgrade cron');
     await this.upgradeService.sendUpgradeOffersForAllBranches();

@@ -34,9 +34,13 @@ export class CancellationResponseService {
       (reservation.checkOutDate.getTime() - reservation.checkInDate.getTime()) / 86400000,
     );
 
+    const safeReason = reservation.cancellationReason
+      ? reservation.cancellationReason.replace(/[\r\n]/g, ' ').slice(0, 200)
+      : '';
+
     const prompt = `אתה נציג שירות לקוחות של מלון בשם "${reservation.branch.name}".
-האורח ${reservation.guest.fullName} ביטל הזמנה לחדר ${reservation.room.roomType.name} מ-${reservation.checkInDate.toLocaleDateString('he-IL')} ל-${reservation.checkOutDate.toLocaleDateString('he-IL')} (${nights} לילות).
-${reservation.cancellationReason ? `סיבת הביטול: ${reservation.cancellationReason}` : ''}
+האורח ביטל הזמנה לחדר ${reservation.room.roomType.name} מ-${reservation.checkInDate.toLocaleDateString('he-IL')} ל-${reservation.checkOutDate.toLocaleDateString('he-IL')} (${nights} לילות).
+${safeReason ? `סיבת הביטול: ${safeReason}` : ''}
 
 כתוב אימייל קצר ואישי בעברית (3-4 משפטים):
 1. הבעת אכזבה שהאורח לא יגיע
@@ -45,14 +49,18 @@ ${reservation.cancellationReason ? `סיבת הביטול: ${reservation.cancell
 
 אל תכלול שורת נושא — רק גוף האימייל.`;
 
-    const body = await this.ai.generateText(prompt);
+    try {
+      const body = await this.ai.generateText(prompt);
 
-    await this.notification.sendEmail({
-      to: reservation.guest.email,
-      subject: `מקווים לראותך שוב — ${reservation.branch.name}`,
-      body: body.replace(/\n/g, '<br>'),
-    });
+      await this.notification.sendEmail({
+        to: reservation.guest.email,
+        subject: `מקווים לראותך שוב — ${reservation.branch.name}`,
+        body: body.replace(/\n/g, '<br>'),
+      });
 
-    this.logger.log(`Cancellation offer sent to ${reservation.guest.email} for reservation ${reservationId}`);
+      this.logger.log(`Cancellation offer sent to ${reservation.guest.email} for reservation ${reservationId}`);
+    } catch (err) {
+      this.logger.error(`Failed to send cancellation offer for ${reservationId}: ${String(err)}`);
+    }
   }
 }

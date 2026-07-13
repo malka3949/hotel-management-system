@@ -16,6 +16,6 @@ export class NlReportsController {
   @Roles('chain_admin', 'hotel_manager')
   async query(@Body() dto: NlQueryDto, @CurrentUser() user: JwtPayload) {
     const answer = await this.nlReportsService.query(dto.query, user);
-    return { success: true, data: { answer } };
+    return { answer };
   }
 }

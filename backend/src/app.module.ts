@@ -29,6 +29,7 @@ import { CancellationResponseModule } from './modules/ai/cancellation/cancellati
 import { StaffReminderModule } from './modules/ai/reminders/staff-reminder.module';
 import { RoomUpgradeModule } from './modules/ai/upgrade/room-upgrade.module';
 import { FeedbackModule } from './modules/ai/feedback/feedback.module';
+import { AiTriggersModule } from './modules/ai/triggers/ai-triggers.module';
 
 @Module({
   providers: [HealthService],
@@ -71,6 +72,7 @@ import { FeedbackModule } from './modules/ai/feedback/feedback.module';
     StaffReminderModule,
     RoomUpgradeModule,
     FeedbackModule,
+    AiTriggersModule,
   ],
   controllers: [HealthController],
 })

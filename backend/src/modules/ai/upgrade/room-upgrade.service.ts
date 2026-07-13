@@ -17,7 +17,13 @@ export class RoomUpgradeService {
 
   async sendUpgradeOffersForAllBranches(): Promise<void> {
     const branches = await this.prisma.branch.findMany({ select: { id: true, name: true } });
-    await Promise.all(branches.map((b) => this.sendUpgradeOffersForBranch(b.id, b.name)));
+    await Promise.all(
+      branches.map((b) =>
+        this.sendUpgradeOffersForBranch(b.id, b.name).catch((err) =>
+          this.logger.error(`Upgrade offers failed for branch ${b.id}: ${String(err)}`),
+        ),
+      ),
+    );
   }
 
   async sendUpgradeOffersForBranch(branchId: string, branchName: string): Promise<void> {
@@ -53,9 +59,10 @@ export class RoomUpgradeService {
       });
 
       const currentPrice = Number(reservation.room.roomType.basePrice);
-      const upgrades = (availableRooms as Array<{ number: string; roomType: { id: string; name: string; basePrice: unknown; maxOccupancy: number } }>).filter(
-        (r) => Number(r.roomType.basePrice) > currentPrice && r.roomType.id !== reservation.room.roomType.id,
-      );
+      type AvailableRoom = { number: string; roomType: { id: string; name: string; basePrice: unknown; maxOccupancy: number } };
+      const upgrades = (availableRooms as AvailableRoom[])
+        .filter((r) => Number(r.roomType.basePrice) > currentPrice && r.roomType.id !== reservation.room.roomType.id)
+        .sort((a, b) => Number(a.roomType.basePrice) - Number(b.roomType.basePrice));
 
       if (upgrades.length === 0) continue;
 
@@ -66,10 +73,12 @@ export class RoomUpgradeService {
       );
       const priceDiff = (upgradePrice - currentPrice) * nights;
 
-      const prompt = `אתה נציג שירות לקוחות של מלון בשם "${branchName}".
-שלח הצעת שדרוג חדר לאורח ${reservation.guest.fullName}.
+      const safeName = reservation.guest.fullName.replace(/[\r\n]/g, ' ').slice(0, 100);
+      const prompt = `אתה נציג שירות לקוחות של מלון.
+שלח הצעת שדרוג חדר לאורח.
 הוא הזמין חדר ${reservation.room.roomType.name} ב-${currentPrice} ₪ ללילה.
 יש לנו חדר ${bestUpgrade.roomType.name} פנוי ב-${upgradePrice} ₪ ללילה — שדרוג של ${priceDiff} ₪ ל-${nights} לילות.
+פנה לאורח בשם ${safeName}.
 כתוב אימייל קצר ומפתה בעברית (3-4 משפטים) עם הצעת השדרוג. אל תכלול שורת נושא.`;
 
       const body = await this.ai.generateText(prompt);

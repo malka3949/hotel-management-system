@@ -17,7 +17,13 @@ export class DailyDigestService {
     const branches = await this.prisma.branch.findMany({
       select: { id: true, name: true },
     });
-    await Promise.all(branches.map((b) => this.sendDigestForBranch(b.id, b.name)));
+    await Promise.all(
+      branches.map((b) =>
+        this.sendDigestForBranch(b.id, b.name).catch((err) =>
+          this.logger.error(`Digest failed for branch ${b.id}: ${String(err)}`),
+        ),
+      ),
+    );
   }
 
   async sendDigestForBranch(branchId: string, branchName: string): Promise<void> {

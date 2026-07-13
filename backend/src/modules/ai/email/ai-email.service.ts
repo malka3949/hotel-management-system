@@ -41,7 +41,7 @@ export class AiEmailService {
     try {
       return await this.ai.generateText(prompt);
     } catch (err) {
-      this.logger.warn('AI email draft failed', err);
+      this.logger.warn(`AI email draft failed: ${String(err)}`);
       return null;
     }
   }

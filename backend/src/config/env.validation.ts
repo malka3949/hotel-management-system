@@ -27,4 +27,5 @@ export const envValidationSchema = Joi.object({
   N8N_BASE_URL: Joi.string().default('http://localhost:5678'),
   N8N_WEBHOOK_SECRET: Joi.string().optional().allow(''),
   GOOGLE_AI_API_KEY: Joi.string().optional().allow(''),
+  COHERE_API_KEY: Joi.string().optional().allow(''),
 });
