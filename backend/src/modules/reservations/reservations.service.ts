@@ -13,6 +13,7 @@ import { NotificationService, wrapEmailHtml } from '../notifications/notificatio
 import { N8nService } from '../notifications/n8n.service';
 import { GuestPortalService } from '../guest-portal/guest-portal.service';
 import { AiEmailService } from '../ai/email/ai-email.service';
+import { CancellationResponseService } from '../ai/cancellation/cancellation-response.service';
 import { CancellationRiskService } from './services/cancellation-risk.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
@@ -70,6 +71,7 @@ export class ReservationsService {
     private guestPortal: GuestPortalService,
     private cancellationRisk: CancellationRiskService,
     @Optional() private aiEmail: AiEmailService | null,
+    @Optional() private cancellationResponse: CancellationResponseService | null,
   ) {}
 
   async create(dto: CreateReservationDto, requester: JwtPayload) {
@@ -464,6 +466,8 @@ export class ReservationsService {
       reason: dto.reason,
       branchId: existing.branchId,
     });
+
+    void this.cancellationResponse?.sendCancellationOffer(id);
 
     return result;
   }

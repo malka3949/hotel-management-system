@@ -1,0 +1,76 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { AiService } from '../ai.service';
+import { NotificationService } from '../../notifications/notification.service';
+
+@Injectable()
+export class StaffReminderService {
+  private readonly logger = new Logger(StaffReminderService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private ai: AiService,
+    private notification: NotificationService,
+  ) {}
+
+  async sendRemindersForAllBranches(): Promise<void> {
+    const branches = await this.prisma.branch.findMany({ select: { id: true, name: true } });
+    await Promise.all(branches.map((b) => this.sendRemindersForBranch(b.id, b.name)));
+  }
+
+  async sendRemindersForBranch(branchId: string, branchName: string): Promise<void> {
+    const now = new Date();
+    const tomorrowStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+    const dayAfter = new Date(tomorrowStart.getTime() + 86400000);
+
+    const arrivals = await this.prisma.reservation.findMany({
+      where: {
+        branchId,
+        checkInDate: { gte: tomorrowStart, lt: dayAfter },
+        status: 'confirmed',
+        notes: { not: null },
+      },
+      select: {
+        guest: { select: { fullName: true } },
+        room: { select: { number: true, roomType: { select: { name: true } } } },
+        checkInDate: true,
+        checkOutDate: true,
+        notes: true,
+      },
+    });
+
+    if (arrivals.length === 0) return;
+
+    const manager = await this.prisma.user.findFirst({
+      where: { branchId, role: 'hotel_manager', isActive: true },
+      select: { email: true },
+    });
+    if (!manager) return;
+    if (!this.ai.isAvailable()) return;
+
+    const prompt = `אתה מנהל תפעול מלון. כתוב תזכורת לצוות לפני שתנועה מחר.
+הדגש הערות מיוחדות שדורשות הכנה (אלרגיות, יום הולדת, נגישות, בקשות מיוחדות).
+תכלית: הצוות יודע מה להכין. סגנון: רשימה תמציתית, עברית.
+
+אורחים מגיעים מחר עם הערות מיוחדות:
+${JSON.stringify(
+  arrivals.map((r) => ({
+    אורח: r.guest.fullName,
+    חדר: `${r.room.number} (${r.room.roomType.name})`,
+    הערה: r.notes,
+  })),
+  null,
+  2,
+)}`;
+
+    const body = await this.ai.generateText(prompt);
+
+    await this.notification.sendEmail({
+      to: manager.email,
+      subject: `תזכורת צוות — הגעות מחר — ${branchName}`,
+      body: body.replace(/\n/g, '<br>'),
+    });
+
+    this.logger.log(`Staff reminder sent for branch ${branchId}, ${arrivals.length} arrivals with notes`);
+  }
+}
