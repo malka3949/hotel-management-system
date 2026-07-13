@@ -13,6 +13,6 @@ export class ConciergeController {
   @UseGuards(GuestTokenGuard)
   async chat(@Req() req: GuestRequest, @Body() dto: ChatMessageDto) {
     const reply = await this.conciergeService.chat(req.guestToken, dto);
-    return { success: true, data: { reply } };
+    return { reply };
   }
 }

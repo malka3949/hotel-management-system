@@ -1,11 +1,12 @@
-import { IsString, IsNotEmpty, MaxLength, IsOptional, IsArray, ValidateNested } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsOptional, IsArray, ValidateNested, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ConversationMessageDto {
-  @IsString()
+  @IsIn(['user', 'assistant'])
   role!: 'user' | 'assistant';
 
   @IsString()
+  @MaxLength(4000)
   content!: string;
 }
 

@@ -1,6 +1,7 @@
 import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { envValidationSchema } from './config/env.validation';
 import { HealthController } from './health/health.controller';
 import { HealthService } from './health/health.service';
@@ -23,6 +24,12 @@ import { GuestPortalModule } from './modules/guest-portal/guest-portal.module';
 import { HousekeepingModule } from './modules/housekeeping/housekeeping.module';
 import { ReportsModule } from './modules/reports/reports.module';
 import { AiModule } from './modules/ai/ai.module';
+import { DailyDigestModule } from './modules/ai/digest/daily-digest.module';
+import { CancellationResponseModule } from './modules/ai/cancellation/cancellation-response.module';
+import { StaffReminderModule } from './modules/ai/reminders/staff-reminder.module';
+import { RoomUpgradeModule } from './modules/ai/upgrade/room-upgrade.module';
+import { FeedbackModule } from './modules/ai/feedback/feedback.module';
+import { AiTriggersModule } from './modules/ai/triggers/ai-triggers.module';
 
 @Module({
   providers: [HealthService],
@@ -35,6 +42,7 @@ import { AiModule } from './modules/ai/ai.module';
         abortEarly: true,
       },
     }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         name: 'default',
@@ -59,6 +67,12 @@ import { AiModule } from './modules/ai/ai.module';
     HousekeepingModule,
     ReportsModule,
     AiModule,
+    DailyDigestModule,
+    CancellationResponseModule,
+    StaffReminderModule,
+    RoomUpgradeModule,
+    FeedbackModule,
+    AiTriggersModule,
   ],
   controllers: [HealthController],
 })

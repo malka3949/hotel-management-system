@@ -5,7 +5,9 @@ import {
   BadRequestException,
   ForbiddenException,
   Optional,
+  OnModuleInit,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { AvailabilityService } from '../availability/availability.service';
@@ -13,6 +15,7 @@ import { NotificationService, wrapEmailHtml } from '../notifications/notificatio
 import { N8nService } from '../notifications/n8n.service';
 import { GuestPortalService } from '../guest-portal/guest-portal.service';
 import { AiEmailService } from '../ai/email/ai-email.service';
+import { CancellationResponseService } from '../ai/cancellation/cancellation-response.service';
 import { CancellationRiskService } from './services/cancellation-risk.service';
 import { CreateReservationDto } from './dto/create-reservation.dto';
 import { UpdateReservationDto } from './dto/update-reservation.dto';
@@ -60,7 +63,9 @@ const RESERVATION_INCLUDE = {
 } as const;
 
 @Injectable()
-export class ReservationsService {
+export class ReservationsService implements OnModuleInit {
+  private cancellationResponseSvc: CancellationResponseService | null = null;
+
   constructor(
     private prisma: PrismaService,
     private audit: AuditService,
@@ -69,8 +74,17 @@ export class ReservationsService {
     private n8n: N8nService,
     private guestPortal: GuestPortalService,
     private cancellationRisk: CancellationRiskService,
+    private moduleRef: ModuleRef,
     @Optional() private aiEmail: AiEmailService | null,
   ) {}
+
+  onModuleInit() {
+    try {
+      this.cancellationResponseSvc = this.moduleRef.get(CancellationResponseService, { strict: false });
+    } catch {
+      this.cancellationResponseSvc = null;
+    }
+  }
 
   async create(dto: CreateReservationDto, requester: JwtPayload) {
     const branchId = this.resolveBranchId(dto.branchId, requester);
@@ -464,6 +478,8 @@ export class ReservationsService {
       reason: dto.reason,
       branchId: existing.branchId,
     });
+
+    void this.cancellationResponseSvc?.sendCancellationOffer(id);
 
     return result;
   }

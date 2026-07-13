@@ -50,7 +50,9 @@ export class NotificationService {
       return;
     }
 
-    const html = options.body.trimStart().startsWith('<')
+    const trimmed = options.body.trimStart();
+    const isFullHtml = trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html');
+    const html = isFullHtml
       ? options.body
       : wrapEmailHtml(`<p style="color:#0F172A;font-size:15px;line-height:1.7;font-family:Arial,sans-serif">${options.body}</p>`);
 

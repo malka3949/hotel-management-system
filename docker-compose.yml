@@ -61,6 +61,7 @@ services:
       RESEND_API_KEY: ${RESEND_API_KEY}
       STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
       GOOGLE_AI_API_KEY: ${GOOGLE_AI_API_KEY:-}
+      COHERE_API_KEY: ${COHERE_API_KEY:-}
       # DEV ONLY — Alpine containers lack system CA store; remove in production
       NODE_TLS_REJECT_UNAUTHORIZED: '0'
     volumes:

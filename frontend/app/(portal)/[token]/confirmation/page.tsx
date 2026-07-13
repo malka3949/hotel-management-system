@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { portalApi } from '@/lib/api/portal';
+import FeedbackForm from '@/components/guest-portal/FeedbackForm';
 
 function ConfirmationContent() {
   const { token } = useParams<{ token: string }>();
@@ -43,6 +44,10 @@ function ConfirmationContent() {
         >
           חזרה לפרטי ההזמנה
         </Link>
+      </div>
+
+      <div className="max-w-sm mx-auto">
+        <FeedbackForm token={token} />
       </div>
     </div>
   );
