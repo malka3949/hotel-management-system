@@ -28,6 +28,7 @@ import { DailyDigestModule } from './modules/ai/digest/daily-digest.module';
 import { CancellationResponseModule } from './modules/ai/cancellation/cancellation-response.module';
 import { StaffReminderModule } from './modules/ai/reminders/staff-reminder.module';
 import { RoomUpgradeModule } from './modules/ai/upgrade/room-upgrade.module';
+import { FeedbackModule } from './modules/ai/feedback/feedback.module';
 
 @Module({
   providers: [HealthService],
@@ -69,6 +70,7 @@ import { RoomUpgradeModule } from './modules/ai/upgrade/room-upgrade.module';
     CancellationResponseModule,
     StaffReminderModule,
     RoomUpgradeModule,
+    FeedbackModule,
   ],
   controllers: [HealthController],
 })

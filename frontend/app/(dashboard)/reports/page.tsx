@@ -7,6 +7,7 @@ import { OccupancyChart } from '@/components/shared/OccupancyChart';
 import { PipelineChart } from '@/components/shared/PipelineChart';
 import { PricingSuggestions } from '@/components/shared/PricingSuggestions';
 import { NlReportQuery } from '@/components/shared/NlReportQuery';
+import FeedbackInsights from '@/components/shared/FeedbackInsights';
 import {
   getOccupancySummary,
   getRevenueSummary,
@@ -133,6 +134,10 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <NlReportQuery />
         <PricingSuggestions />
+        <div className="mt-6">
+          <h3 className="text-[#0F172A] font-semibold text-lg mb-3">ביקורות אורחים</h3>
+          <FeedbackInsights />
+        </div>
       </div>
 
       {/* Quick Links */}

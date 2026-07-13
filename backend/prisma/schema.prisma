@@ -55,6 +55,7 @@ model Branch {
   refunds            Refund[]
   serviceCatalog     ServiceCatalogEntry[]
   housekeepingTasks  HousekeepingTask[]
+  guestFeedback      GuestFeedback[]
 
   @@map("branches")
 }
@@ -169,6 +170,7 @@ model Guest {
   invoices           Invoice[]
   guestAccessTokens  GuestAccessToken[]
   onlineCheckIns     OnlineCheckIn[]
+  feedback           GuestFeedback[]
 
   @@index([branchId, email])
   @@index([branchId, phone])
@@ -261,6 +263,7 @@ model Reservation {
   guestAccessTokens  GuestAccessToken[]
   onlineCheckIn      OnlineCheckIn?
   housekeepingTasks  HousekeepingTask[]
+  feedback           GuestFeedback?
 
   @@index([branchId, checkInDate, checkOutDate])
   @@index([roomId, checkInDate, checkOutDate])
@@ -600,4 +603,26 @@ model PasswordResetToken {
 
   @@index([userId])
   @@map("password_reset_tokens")
+}
+
+// ── Phase 14: Guest Feedback ──────────────────────────────────────────────────
+
+model GuestFeedback {
+  id            String   @id @default(uuid())
+  reservationId String   @unique @map("reservation_id")
+  guestId       String   @map("guest_id")
+  branchId      String   @map("branch_id")
+  rating        Int
+  comment       String?  @db.Text
+  sentiment     String?  @db.VarChar(20)
+  aiSummary     String?  @db.Text @map("ai_summary")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  guest         Guest       @relation(fields: [guestId], references: [id])
+  branch        Branch      @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@index([branchId, rating])
+  @@map("guest_feedback")
 }
