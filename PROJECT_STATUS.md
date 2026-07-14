@@ -1,6 +1,6 @@
 # PROJECT_STATUS.md — Hotel Management System
 
-Last updated: 2026-07-12
+Last updated: 2026-07-14
 
 ---
 
@@ -22,10 +22,11 @@ Last updated: 2026-07-12
 | Phase 11 | Security Audit & Hardening | `PHASE-11-security.md` | 🟢 Complete |
 | Phase 12 | Production Deployment | `PHASE-12-deployment.md` | 🟢 Complete |
 | Phase 13 | AI Features | `PHASE-13-ai-features.md` | 🟢 Complete |
+| Phase 14 | AI Extended Features | `PHASE-14-ai-extended.md` | 🟢 Complete |
 
 **Active phase: —**
-**Last completed: Phase 13 — AI Features**
-**Overall progress: 13/13 phases complete ✅**
+**Last completed: Phase 14 — AI Extended Features**
+**Overall progress: 14/14 phases complete ✅**
 
 ---
 
