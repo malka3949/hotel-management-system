@@ -9,6 +9,8 @@ export interface Branch {
   contactPerson: string | null;
   timezone: string;
   isActive: boolean;
+  description: string | null;
+  coverPhoto: string | null;
   createdAt: string;
 }
 
