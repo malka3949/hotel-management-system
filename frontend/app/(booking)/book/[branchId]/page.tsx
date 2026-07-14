@@ -45,13 +45,40 @@ export default function BranchLandingPage() {
         )}
         <div className="relative p-8 space-y-1">
           <h1 className="text-3xl font-bold">{branch.name}</h1>
-          <p className="text-blue-200 text-sm">{branch.address}</p>
+          <a
+            href={`https://maps.google.com/?q=${encodeURIComponent(branch.address)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-200 text-sm hover:text-white underline underline-offset-2"
+          >
+            📍 {branch.address}
+          </a>
           {branch.phone && <p className="text-blue-200 text-sm">{branch.phone}</p>}
         </div>
       </div>
 
       {branch.description && (
         <p className="text-[#475569] text-base leading-relaxed">{branch.description}</p>
+      )}
+
+      {branch.amenities.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {branch.amenities.map((a) => (
+            <span key={a} className="bg-blue-50 text-[#1E3A8A] text-sm px-3 py-1 rounded-full border border-blue-100">
+              ✓ {a}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {branch.cancellationPolicy && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
+          <span className="text-xl">🔄</span>
+          <div>
+            <p className="font-semibold text-[#0F172A] text-sm mb-1">מדיניות ביטול</p>
+            <p className="text-[#475569] text-sm leading-relaxed">{branch.cancellationPolicy}</p>
+          </div>
+        </div>
       )}
 
       {/* Date picker */}

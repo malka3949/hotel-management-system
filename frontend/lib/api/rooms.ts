@@ -12,6 +12,8 @@ export interface RoomType {
   description: string | null;
   photos: string[];
   amenities: string[];
+  bedType: string | null;
+  roomSize: number | null;
   createdAt: string;
 }
 

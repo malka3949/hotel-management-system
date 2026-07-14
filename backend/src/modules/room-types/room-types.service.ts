@@ -21,6 +21,10 @@ export class RoomTypesService {
         basePrice: dto.basePrice,
         maxOccupancy: dto.maxOccupancy,
         description: dto.description ?? null,
+        photos: dto.photos ?? [],
+        amenities: dto.amenities ?? [],
+        ...(dto.bedType !== undefined && { bedType: dto.bedType }),
+        ...(dto.roomSize !== undefined && { roomSize: dto.roomSize }),
       },
     });
   }
@@ -46,6 +50,10 @@ export class RoomTypesService {
         ...(dto.basePrice !== undefined ? { basePrice: dto.basePrice } : {}),
         ...(dto.maxOccupancy !== undefined ? { maxOccupancy: dto.maxOccupancy } : {}),
         ...(dto.description !== undefined ? { description: dto.description ?? null } : {}),
+        ...(dto.photos !== undefined ? { photos: dto.photos } : {}),
+        ...(dto.amenities !== undefined ? { amenities: dto.amenities } : {}),
+        ...(dto.bedType !== undefined ? { bedType: dto.bedType } : {}),
+        ...(dto.roomSize !== undefined ? { roomSize: dto.roomSize } : {}),
       },
     });
   }

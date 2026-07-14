@@ -43,6 +43,10 @@ export class BranchesService {
         ...(dto.phone !== undefined && { phone: dto.phone }),
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.contactPerson !== undefined && { contactPerson: dto.contactPerson }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.coverPhoto !== undefined && { coverPhoto: dto.coverPhoto }),
+        ...(dto.amenities !== undefined && { amenities: dto.amenities }),
+        ...(dto.cancellationPolicy !== undefined && { cancellationPolicy: dto.cancellationPolicy }),
       },
     });
   }

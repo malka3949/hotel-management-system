@@ -9,6 +9,7 @@ export default function ConfirmationPage() {
   const checkIn = sp.get('checkIn') ?? '';
   const checkOut = sp.get('checkOut') ?? '';
   const total = Number(sp.get('total') ?? 0);
+  const photo = sp.get('photo') ?? '';
 
   const formatDate = (d: string) => new Date(d).toLocaleDateString('he-IL');
   const nights = checkIn && checkOut
@@ -25,6 +26,11 @@ export default function ConfirmationPage() {
       </div>
 
       <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 max-w-sm mx-auto text-right space-y-3">
+        {photo && (
+          <div className="flex justify-center mb-1">
+            <img src={photo} alt={roomType} className="w-20 h-20 object-cover rounded-xl border border-[#E2E8F0]" />
+          </div>
+        )}
         <div>
           <p className="text-xs text-[#475569]">מספר הזמנה</p>
           <p className="font-mono text-sm text-[#0F172A] break-all">{reservationId}</p>

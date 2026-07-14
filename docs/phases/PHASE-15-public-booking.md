@@ -49,6 +49,15 @@ ALTER TABLE room_types ADD COLUMN amenities TEXT[] NOT NULL DEFAULT '{}';
 ALTER TABLE reservations ALTER COLUMN created_by DROP NOT NULL;
 ```
 
+### Schema additions (migration `20260714000016_phase15_guest_enhancements`)
+
+```sql
+ALTER TABLE room_types ADD COLUMN bed_type VARCHAR(50);
+ALTER TABLE room_types ADD COLUMN room_size INTEGER;
+ALTER TABLE branches ADD COLUMN amenities TEXT[] NOT NULL DEFAULT '{}';
+ALTER TABLE branches ADD COLUMN cancellation_policy TEXT;
+```
+
 ---
 
 ## Frontend
@@ -69,8 +78,8 @@ Plain `fetch` (no JWT/CSRF) — public endpoints.
 
 ### Staff admin additions
 
-- Room types page: photos (URL paste + file upload) + amenities tags
-- Branches page: `description` textarea + `coverPhoto` URL/upload
+- Room types page: photos (URL paste + file upload) + amenities tags + `bedType` select + `roomSize` number input
+- Branches page: `description` textarea + `coverPhoto` URL/upload + amenities tags + `cancellationPolicy` textarea
 
 ---
 
@@ -86,11 +95,37 @@ Plain `fetch` (no JWT/CSRF) — public endpoints.
 
 ---
 
+## Guest Experience Enhancements (Extension)
+
+### Public booking portal — guest-facing additions
+
+| Feature | Location | Details |
+|---|---|---|
+| Photo gallery | `rooms/page.tsx` | ← → arrows + dot indicators; per-card state |
+| Bed type badge | `rooms/page.tsx` | 🛏 badge (בודד/זוגית/טווין/קינג/שתי מיטות) |
+| Room size badge | `rooms/page.tsx` | 📐 Xמ״ר badge |
+| Urgency indicator | `rooms/page.tsx` | ⚡ "נותרו X חדרים בלבד!" when ≤3 available |
+| Google Maps link | `book/[branchId]/page.tsx` | Address links to `maps.google.com/?q=...` |
+| Branch amenities | `book/[branchId]/page.tsx` | ✓ badges below description |
+| Cancellation policy | `book/[branchId]/page.tsx` | Amber box with 🔄 icon |
+| Room thumbnail | `confirmation/page.tsx` | 80×80 rounded image at top of summary card |
+
+### Admin additions
+
+| Feature | Location |
+|---|---|
+| Bed type select | `room-types/page.tsx` create + edit forms |
+| Room size input | `room-types/page.tsx` create + edit forms |
+| Branch amenities tags | `admin/branches/page.tsx` create + edit forms |
+| Cancellation policy textarea | `admin/branches/page.tsx` create + edit forms |
+
+---
+
 ## Exit Criteria
 
-- [ ] `GET /api/v1/public/branches/:id` returns branch info
-- [ ] Room types with photos/amenities visible on public page
-- [ ] Date picker → room grid → checkout form → confirmation flow works end-to-end
+- [ ] `GET /api/v1/public/branches/:id` returns branch info (including amenities, cancellationPolicy)
+- [ ] Room types with photos/amenities/bedType/roomSize visible on public page
+- [ ] Date picker → room grid (gallery + badges + urgency) → checkout → confirmation (thumbnail) flow works
 - [ ] Reservation appears in staff dashboard with `source: website`
 - [ ] Guest receives portal link email
 - [ ] Photo upload works (file upload + URL paste)

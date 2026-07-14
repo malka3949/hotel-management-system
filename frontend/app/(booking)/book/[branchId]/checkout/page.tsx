@@ -14,6 +14,7 @@ export default function CheckoutPage() {
   const roomTypeId = sp.get('roomTypeId') ?? '';
   const roomTypeName = sp.get('roomTypeName') ?? '';
   const pricePerNight = Number(sp.get('price') ?? 0);
+  const roomPhoto = sp.get('photo') ?? '';
 
   const nights = checkIn && checkOut
     ? Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000)
@@ -40,7 +41,7 @@ export default function CheckoutPage() {
         checkInDate: checkIn,
         checkOutDate: checkOut,
       });
-      router.push(`/book/${branchId}/confirmation?reservationId=${result.reservationId}&roomType=${encodeURIComponent(result.roomType)}&checkIn=${checkIn}&checkOut=${checkOut}&total=${result.totalPrice}`);
+      router.push(`/book/${branchId}/confirmation?reservationId=${result.reservationId}&roomType=${encodeURIComponent(result.roomType)}&checkIn=${checkIn}&checkOut=${checkOut}&total=${result.totalPrice}${roomPhoto ? `&photo=${encodeURIComponent(roomPhoto)}` : ''}`);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'שגיאה ביצירת ההזמנה');
     } finally {

@@ -30,6 +30,8 @@ export class PublicBookingService {
         email: true,
         description: true,
         coverPhoto: true,
+        amenities: true,
+        cancellationPolicy: true,
         isActive: true,
       },
     });
@@ -49,6 +51,8 @@ export class PublicBookingService {
         description: true,
         photos: true,
         amenities: true,
+        bedType: true,
+        roomSize: true,
       },
       orderBy: { basePrice: 'asc' },
     });

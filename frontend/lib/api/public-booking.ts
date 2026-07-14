@@ -8,6 +8,8 @@ export interface PublicBranch {
   email: string | null;
   description: string | null;
   coverPhoto: string | null;
+  amenities: string[];
+  cancellationPolicy: string | null;
 }
 
 export interface PublicRoomType {
@@ -18,6 +20,8 @@ export interface PublicRoomType {
   description: string | null;
   photos: string[];
   amenities: string[];
+  bedType: string | null;
+  roomSize: number | null;
 }
 
 export interface CreatePublicReservationPayload {

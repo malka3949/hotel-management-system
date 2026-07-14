@@ -37,4 +37,14 @@ export class CreateRoomTypeDto {
   @ArrayMaxSize(20)
   @IsOptional()
   amenities?: string[];
+
+  @IsString()
+  @MaxLength(50)
+  @IsOptional()
+  bedType?: string;
+
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  roomSize?: number;
 }

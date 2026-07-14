@@ -5,6 +5,40 @@ import { getBranches, createBranch, updateBranch, type Branch } from '@/lib/api/
 import { uploadPhoto } from '@/lib/api/uploads';
 import { RoleGate } from '@/components/shared/RoleGate';
 
+function AmenitiesInput({ amenities, onChange }: { amenities: string[]; onChange: (a: string[]) => void }) {
+  const [input, setInput] = useState('');
+  function add() {
+    const v = input.trim();
+    if (!v || amenities.includes(v)) return;
+    onChange([...amenities, v]);
+    setInput('');
+  }
+  return (
+    <div className="space-y-2">
+      <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>שירותי הסניף (amenities)</p>
+      <div className="flex gap-2">
+        <input
+          placeholder="בריכה, חניה, חדר כושר..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), add())}
+          className="flex-1 rounded-md border px-2 py-1 text-xs"
+          style={{ borderColor: 'var(--color-border-default)' }}
+        />
+        <button type="button" onClick={add} className="text-xs px-2 py-1 rounded border" style={{ borderColor: 'var(--color-border-default)' }}>הוסף</button>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {amenities.map((a) => (
+          <span key={a} className="flex items-center gap-1 bg-blue-50 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+            {a}
+            <button type="button" onClick={() => onChange(amenities.filter((x) => x !== a))} className="text-blue-500 hover:text-red-500">×</button>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface BranchFormData {
   name: string;
   address: string;
@@ -12,9 +46,11 @@ interface BranchFormData {
   email: string;
   description: string;
   coverPhoto: string;
+  amenities: string[];
+  cancellationPolicy: string;
 }
 
-const emptyForm: BranchFormData = { name: '', address: '', phone: '', email: '', description: '', coverPhoto: '' };
+const emptyForm: BranchFormData = { name: '', address: '', phone: '', email: '', description: '', coverPhoto: '', amenities: [], cancellationPolicy: '' };
 
 function CoverPhotoInput({ value, onChange }: { value: string; onChange: (url: string) => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
@@ -97,6 +133,8 @@ export default function BranchesPage() {
         email: formData.email || undefined,
         description: formData.description || undefined,
         coverPhoto: formData.coverPhoto || undefined,
+        amenities: formData.amenities,
+        cancellationPolicy: formData.cancellationPolicy || undefined,
       });
       setBranches((prev) => [branch, ...prev]);
       setShowForm(false);
@@ -117,6 +155,8 @@ export default function BranchesPage() {
       email: b.email ?? '',
       description: b.description ?? '',
       coverPhoto: b.coverPhoto ?? '',
+      amenities: b.amenities ?? [],
+      cancellationPolicy: b.cancellationPolicy ?? '',
     });
   }
 
@@ -131,6 +171,8 @@ export default function BranchesPage() {
         email: editData.email || undefined,
         description: editData.description || undefined,
         coverPhoto: editData.coverPhoto || undefined,
+        amenities: editData.amenities,
+        cancellationPolicy: editData.cancellationPolicy || undefined,
       });
       setBranches((prev) => prev.map((b) => (b.id === id ? updated : b)));
       setEditingId(null);
@@ -186,6 +228,17 @@ export default function BranchesPage() {
               <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>תמונת כריכה</label>
               <CoverPhotoInput value={formData.coverPhoto} onChange={(url) => setFormData((p) => ({ ...p, coverPhoto: url }))} />
             </div>
+            <div className="mb-3">
+              <AmenitiesInput amenities={formData.amenities} onChange={(amenities) => setFormData((p) => ({ ...p, amenities }))} />
+            </div>
+            <textarea
+              placeholder="מדיניות ביטול (תוצג לאורחים באתר ההזמנה)..."
+              value={formData.cancellationPolicy}
+              onChange={(e) => setFormData((p) => ({ ...p, cancellationPolicy: e.target.value }))}
+              rows={3}
+              className="w-full rounded-md border px-3 py-2 text-sm mb-3"
+              style={{ borderColor: 'var(--color-border-default)' }}
+            />
             <div className="flex gap-2 mt-3">
               <button type="submit" disabled={saving} className="text-sm px-4 py-2 rounded-md text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
                 {saving ? 'שומר...' : 'שמור'}
@@ -261,6 +314,17 @@ export default function BranchesPage() {
                               <label className="block text-xs mb-1" style={{ color: 'var(--color-text-secondary)' }}>תמונת כריכה</label>
                               <CoverPhotoInput value={editData.coverPhoto} onChange={(url) => setEditData((p) => ({ ...p, coverPhoto: url }))} />
                             </div>
+                            <div className="mb-3">
+                              <AmenitiesInput amenities={editData.amenities} onChange={(amenities) => setEditData((p) => ({ ...p, amenities }))} />
+                            </div>
+                            <textarea
+                              placeholder="מדיניות ביטול (תוצג לאורחים באתר ההזמנה)..."
+                              value={editData.cancellationPolicy}
+                              onChange={(e) => setEditData((p) => ({ ...p, cancellationPolicy: e.target.value }))}
+                              rows={3}
+                              className="w-full rounded-md border px-3 py-2 text-sm mb-3"
+                              style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
+                            />
                             <div className="flex gap-2">
                               <button type="submit" disabled={editSaving} className="text-sm px-4 py-2 rounded-md text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
                                 {editSaving ? 'שומר...' : 'שמור שינויים'}

@@ -126,10 +126,10 @@ export default function RoomTypesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(false);
-  const [createForm, setCreateForm] = useState({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '', photos: [] as string[], amenities: [] as string[] });
+  const [createForm, setCreateForm] = useState({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '', photos: [] as string[], amenities: [] as string[], bedType: '', roomSize: '' });
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', basePrice: '', maxOccupancy: '', description: '', photos: [] as string[], amenities: [] as string[] });
+  const [editForm, setEditForm] = useState({ name: '', basePrice: '', maxOccupancy: '', description: '', photos: [] as string[], amenities: [] as string[], bedType: '', roomSize: '' });
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -174,10 +174,12 @@ export default function RoomTypesPage() {
         description: createForm.description || undefined,
         photos: createForm.photos,
         amenities: createForm.amenities,
+        bedType: createForm.bedType || undefined,
+        roomSize: createForm.roomSize ? Number(createForm.roomSize) : undefined,
       });
       setRoomTypes((prev) => [...prev, rt]);
       setShowCreate(false);
-      setCreateForm({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '', photos: [], amenities: [] });
+      setCreateForm({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '', photos: [], amenities: [], bedType: '', roomSize: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה ביצירת סוג חדר');
     } finally {
@@ -194,6 +196,8 @@ export default function RoomTypesPage() {
       description: rt.description ?? '',
       photos: rt.photos ?? [],
       amenities: rt.amenities ?? [],
+      bedType: rt.bedType ?? '',
+      roomSize: rt.roomSize != null ? String(rt.roomSize) : '',
     });
   }
 
@@ -208,6 +212,8 @@ export default function RoomTypesPage() {
         description: editForm.description || undefined,
         photos: editForm.photos,
         amenities: editForm.amenities,
+        bedType: editForm.bedType || undefined,
+        roomSize: editForm.roomSize ? Number(editForm.roomSize) : undefined,
       });
       setRoomTypes((prev) => prev.map((rt) => (rt.id === updated.id ? updated : rt)));
       setEditingId(null);
@@ -309,6 +315,26 @@ export default function RoomTypesPage() {
                 style={{ borderColor: 'var(--color-border-default)' }}
               />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <select
+                value={createForm.bedType}
+                onChange={(e) => setCreateForm((p) => ({ ...p, bedType: e.target.value }))}
+                className="rounded-md border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--color-border-default)' }}
+              >
+                <option value="">סוג מיטה (אופציונלי)</option>
+                {['בודד', 'זוגית', 'טווין', 'קינג', 'שתי מיטות'].map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <input
+                type="number"
+                placeholder="גודל החדר במ״ר"
+                value={createForm.roomSize}
+                onChange={(e) => setCreateForm((p) => ({ ...p, roomSize: e.target.value }))}
+                min={1}
+                className="rounded-md border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--color-border-default)' }}
+              />
+            </div>
             <input
               placeholder="תיאור (אופציונלי)"
               value={createForm.description}
@@ -402,6 +428,26 @@ export default function RoomTypesPage() {
                           />
                         </td>
                         <td className="px-4 py-2" colSpan={2}>
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            <select
+                              value={editForm.bedType}
+                              onChange={(e) => setEditForm((p) => ({ ...p, bedType: e.target.value }))}
+                              className="rounded border px-2 py-1 text-xs"
+                              style={{ borderColor: 'var(--color-border-default)' }}
+                            >
+                              <option value="">סוג מיטה</option>
+                              {['בודד', 'זוגית', 'טווין', 'קינג', 'שתי מיטות'].map((t) => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <input
+                              type="number"
+                              placeholder="גודל מ״ר"
+                              value={editForm.roomSize}
+                              onChange={(e) => setEditForm((p) => ({ ...p, roomSize: e.target.value }))}
+                              min={1}
+                              className="rounded border px-2 py-1 text-xs"
+                              style={{ borderColor: 'var(--color-border-default)' }}
+                            />
+                          </div>
                           <input
                             value={editForm.description}
                             onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}

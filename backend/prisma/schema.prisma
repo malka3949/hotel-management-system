@@ -35,9 +35,11 @@ model Branch {
   email          String?   @db.VarChar(255)
   contactPerson  String?   @db.VarChar(255) @map("contact_person")
   timezone       String    @default("Asia/Jerusalem") @db.VarChar(50)
-  description    String?   @db.Text
-  coverPhoto     String?   @db.VarChar(2048) @map("cover_photo")
-  isActive       Boolean   @default(true) @map("is_active")
+  description          String?   @db.Text
+  coverPhoto           String?   @db.VarChar(2048) @map("cover_photo")
+  amenities            String[]  @default([])
+  cancellationPolicy   String?   @db.Text @map("cancellation_policy")
+  isActive             Boolean   @default(true) @map("is_active")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
@@ -114,6 +116,8 @@ model RoomType {
   description   String?   @db.Text
   photos        String[]  @default([])
   amenities     String[]  @default([])
+  bedType       String?   @db.VarChar(50) @map("bed_type")
+  roomSize      Int?      @map("room_size")
   createdAt     DateTime  @default(now()) @map("created_at")
 
   branch        Branch    @relation(fields: [branchId], references: [id])

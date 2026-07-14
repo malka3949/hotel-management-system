@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsOptional, IsUrl, MinLength, MaxLength } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsUrl, IsArray, MinLength, MaxLength } from 'class-validator';
 
 export class UpdateBranchDto {
   @IsString()
@@ -30,4 +30,14 @@ export class UpdateBranchDto {
   @IsUrl()
   @IsOptional()
   coverPhoto?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  amenities?: string[];
+
+  @IsString()
+  @MaxLength(5000)
+  @IsOptional()
+  cancellationPolicy?: string;
 }

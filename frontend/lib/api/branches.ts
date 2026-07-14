@@ -11,6 +11,8 @@ export interface Branch {
   isActive: boolean;
   description: string | null;
   coverPhoto: string | null;
+  amenities: string[];
+  cancellationPolicy: string | null;
   createdAt: string;
 }
 
