@@ -346,8 +346,8 @@ export default function RoomTypesPage() {
             <table className="w-full text-sm">
               <thead style={{ backgroundColor: 'var(--color-bg-base)' }}>
                 <tr>
-                  {['', 'שם', 'מחיר / לילה', 'קיבולת מקס', 'תיאור', ''].map((h) => (
-                    <th key={h} className="px-4 py-3 text-right font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                  {['', 'שם', 'מחיר / לילה', 'קיבולת מקס', 'תיאור', 'פעולות'].map((h, i) => (
+                    <th key={i} className="px-4 py-3 text-right font-medium" style={{ color: 'var(--color-text-secondary)' }}>
                       {h}
                     </th>
                   ))}
