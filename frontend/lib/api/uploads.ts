@@ -8,7 +8,7 @@ export async function uploadPhoto(file: File): Promise<string> {
   formData.append('file', file);
 
   const token = getToken();
-  const res = await fetch('/api/v1/admin/uploads/photo', {
+  const res = await fetch('/api/admin/uploads/photo', {
     method: 'POST',
     credentials: 'include',
     headers: token ? { Authorization: `Bearer ${token}` } : {},

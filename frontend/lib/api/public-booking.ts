@@ -1,4 +1,4 @@
-const BASE = '/api/v1/public/branches';
+const BASE = '/api/public/branches';
 
 export interface PublicBranch {
   id: string;
