@@ -64,6 +64,7 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="email"
+            suppressHydrationWarning
             className="w-full rounded-md border px-3 py-2 text-sm outline-none transition-colors"
             style={{
               borderColor: 'var(--color-border-default)',
@@ -90,6 +91,7 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
+            suppressHydrationWarning
             className="w-full rounded-md border px-3 py-2 text-sm outline-none transition-colors"
             style={{
               borderColor: 'var(--color-border-default)',
