@@ -218,7 +218,7 @@ export default function ReservationsPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
-                      {r.createdByUser.name}
+                      {r.createdByUser?.name ?? '—'}
                     </td>
                     <td className="px-4 py-3">
                       <Link
