@@ -22,7 +22,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   allowedDevOrigins: ['127.0.0.1', 'localhost', '192.168.1.166'],
   async headers() {
-    return [{ source: '/(.*)', headers: securityHeaders }];
+    const headers = [...securityHeaders];
+    if (process.env.NODE_ENV === 'production') {
+      headers.push({ key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains' });
+    }
+    return [{ source: '/(.*)', headers }];
   },
   async rewrites() {
     return [
