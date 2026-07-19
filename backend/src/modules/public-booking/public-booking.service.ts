@@ -104,7 +104,6 @@ export class PublicBookingService {
     if (checkIn < new Date()) throw new BadRequestException('CHECK_IN_MUST_BE_IN_FUTURE');
 
     // Find or create guest by email within branch
-    const nameParts = dto.guestName.trim().split(' ');
     let guest = await this.prisma.guest.findFirst({
       where: { branchId, email: dto.guestEmail, isActive: true },
     });
