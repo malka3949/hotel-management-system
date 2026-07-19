@@ -25,6 +25,8 @@ export class RoomTypesService {
         amenities: dto.amenities ?? [],
         ...(dto.bedType !== undefined && { bedType: dto.bedType }),
         ...(dto.roomSize !== undefined && { roomSize: dto.roomSize }),
+        ...(dto.maxAdults !== undefined && { maxAdults: dto.maxAdults }),
+        ...(dto.maxChildren !== undefined && { maxChildren: dto.maxChildren }),
       },
     });
   }
@@ -54,6 +56,8 @@ export class RoomTypesService {
         ...(dto.amenities !== undefined ? { amenities: dto.amenities } : {}),
         ...(dto.bedType !== undefined ? { bedType: dto.bedType } : {}),
         ...(dto.roomSize !== undefined ? { roomSize: dto.roomSize } : {}),
+        ...(dto.maxAdults !== undefined ? { maxAdults: dto.maxAdults } : {}),
+        ...(dto.maxChildren !== undefined ? { maxChildren: dto.maxChildren } : {}),
       },
     });
   }

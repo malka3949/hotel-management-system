@@ -4,6 +4,16 @@ import { PublicBookingService } from './public-booking.service';
 import { CreatePublicReservationDto } from './dto/create-public-reservation.dto';
 import { GetPublicAvailabilityDto } from './dto/get-public-availability.dto';
 
+@Controller('public/branches')
+export class PublicBranchListController {
+  constructor(private readonly service: PublicBookingService) {}
+
+  @Get()
+  listBranches() {
+    return this.service.listBranches();
+  }
+}
+
 @Controller('public/branches/:branchId')
 export class PublicBookingController {
   constructor(private readonly service: PublicBookingService) {}

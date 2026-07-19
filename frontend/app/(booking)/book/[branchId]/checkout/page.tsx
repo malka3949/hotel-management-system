@@ -52,7 +52,7 @@ export default function CheckoutPage() {
   const formatDate = (d: string) => new Date(d).toLocaleDateString('he-IL');
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
       <h1 className="text-2xl font-bold text-[#0F172A]">פרטי ההזמנה</h1>
 
       {/* Summary */}

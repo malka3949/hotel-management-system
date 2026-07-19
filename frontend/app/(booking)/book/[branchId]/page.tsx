@@ -1,15 +1,18 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { publicBookingApi, type PublicBranch } from '@/lib/api/public-booking';
 
 export default function BranchLandingPage() {
   const { branchId } = useParams<{ branchId: string }>();
   const router = useRouter();
+  const sp = useSearchParams();
   const [branch, setBranch] = useState<PublicBranch | null>(null);
-  const [checkIn, setCheckIn] = useState('');
-  const [checkOut, setCheckOut] = useState('');
+  const [checkIn, setCheckIn] = useState(sp.get('checkIn') ?? '');
+  const [checkOut, setCheckOut] = useState(sp.get('checkOut') ?? '');
+  const [adults, setAdults] = useState(Number(sp.get('adults') ?? '2'));
+  const [children, setChildren] = useState(Number(sp.get('children') ?? '0'));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -23,7 +26,9 @@ export default function BranchLandingPage() {
   function handleSearch() {
     if (!checkIn || !checkOut) { setError('יש לבחור תאריכים'); return; }
     if (new Date(checkIn) >= new Date(checkOut)) { setError('תאריך עזיבה חייב להיות אחרי תאריך הגעה'); return; }
-    router.push(`/book/${branchId}/rooms?checkIn=${checkIn}&checkOut=${checkOut}`);
+    const params = new URLSearchParams({ checkIn, checkOut, adults: String(adults) });
+    if (children > 0) params.set('children', String(children));
+    router.push(`/book/${branchId}/rooms?${params}`);
   }
 
   if (loading) return <div className="text-center py-20 text-[#475569]">טוען...</div>;
@@ -33,7 +38,7 @@ export default function BranchLandingPage() {
   const today = new Date().toISOString().split('T')[0];
 
   return (
-    <div className="space-y-8">
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       {/* Hero */}
       <div className="rounded-2xl overflow-hidden bg-[#1E3A8A] text-white relative min-h-[220px] flex flex-col justify-end">
         {branch.coverPhoto && (
@@ -83,7 +88,7 @@ export default function BranchLandingPage() {
 
       {/* Date picker */}
       <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 space-y-4">
-        <h2 className="font-semibold text-[#0F172A] text-lg">בחרו תאריכים</h2>
+        <h2 className="font-semibold text-[#0F172A] text-lg">בחרו תאריכים ואורחים</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm text-[#475569] mb-1">תאריך הגעה</label>
@@ -104,6 +109,30 @@ export default function BranchLandingPage() {
               onChange={(e) => { setCheckOut(e.target.value); setError(''); }}
               className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm"
             />
+          </div>
+          <div>
+            <label className="block text-sm text-[#475569] mb-1">מבוגרים</label>
+            <select
+              value={adults}
+              onChange={(e) => setAdults(Number(e.target.value))}
+              className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm bg-white"
+            >
+              {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
+                <option key={n} value={n}>{n} {n === 1 ? 'מבוגר' : 'מבוגרים'}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm text-[#475569] mb-1">ילדים</label>
+            <select
+              value={children}
+              onChange={(e) => setChildren(Number(e.target.value))}
+              className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm bg-white"
+            >
+              {Array.from({ length: 10 }, (_, i) => i).map((n) => (
+                <option key={n} value={n}>{n === 0 ? 'ללא ילדים' : `${n} ${n === 1 ? 'ילד' : 'ילדים'}`}</option>
+              ))}
+            </select>
           </div>
         </div>
         {error && <p className="text-red-600 text-sm">{error}</p>}

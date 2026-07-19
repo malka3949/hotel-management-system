@@ -17,7 +17,7 @@ export default function ConfirmationPage() {
     : 0;
 
   return (
-    <div className="text-center space-y-8 py-12">
+    <div className="max-w-4xl mx-auto px-4 py-12 text-center space-y-8">
       <div className="text-6xl">✓</div>
 
       <div className="space-y-2">

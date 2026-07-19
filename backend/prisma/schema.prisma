@@ -118,6 +118,8 @@ model RoomType {
   amenities     String[]  @default([])
   bedType       String?   @db.VarChar(50) @map("bed_type")
   roomSize      Int?      @map("room_size")
+  maxAdults     Int?      @map("max_adults")
+  maxChildren   Int?      @map("max_children")
   createdAt     DateTime  @default(now()) @map("created_at")
 
   branch        Branch    @relation(fields: [branchId], references: [id])

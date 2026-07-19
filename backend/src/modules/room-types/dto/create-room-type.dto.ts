@@ -1,4 +1,4 @@
-import { IsString, IsInt, IsOptional, IsNumber, IsUUID, IsArray, IsUrl, Min, MinLength, MaxLength, ArrayMaxSize } from 'class-validator';
+import { IsString, IsInt, IsOptional, IsNumber, IsUUID, IsArray, Min, MinLength, MaxLength, ArrayMaxSize } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateRoomTypeDto {
@@ -27,7 +27,7 @@ export class CreateRoomTypeDto {
   description?: string;
 
   @IsArray()
-  @IsUrl({}, { each: true })
+  @IsString({ each: true })
   @ArrayMaxSize(5)
   @IsOptional()
   photos?: string[];
@@ -47,4 +47,16 @@ export class CreateRoomTypeDto {
   @Min(1)
   @IsOptional()
   roomSize?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  maxAdults?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  maxChildren?: number;
 }

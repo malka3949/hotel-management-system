@@ -126,10 +126,10 @@ export default function RoomTypesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(false);
-  const [createForm, setCreateForm] = useState({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '', photos: [] as string[], amenities: [] as string[], bedType: '', roomSize: '' });
+  const [createForm, setCreateForm] = useState({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '', photos: [] as string[], amenities: [] as string[], bedType: '', roomSize: '', maxAdults: '', maxChildren: '' });
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', basePrice: '', maxOccupancy: '', description: '', photos: [] as string[], amenities: [] as string[], bedType: '', roomSize: '' });
+  const [editForm, setEditForm] = useState({ name: '', basePrice: '', maxOccupancy: '', description: '', photos: [] as string[], amenities: [] as string[], bedType: '', roomSize: '', maxAdults: '', maxChildren: '' });
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -176,10 +176,12 @@ export default function RoomTypesPage() {
         amenities: createForm.amenities,
         bedType: createForm.bedType || undefined,
         roomSize: createForm.roomSize ? Number(createForm.roomSize) : undefined,
+        maxAdults: createForm.maxAdults ? Number(createForm.maxAdults) : undefined,
+        maxChildren: createForm.maxChildren !== '' ? Number(createForm.maxChildren) : undefined,
       });
       setRoomTypes((prev) => [...prev, rt]);
       setShowCreate(false);
-      setCreateForm({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '', photos: [], amenities: [], bedType: '', roomSize: '' });
+      setCreateForm({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '', photos: [], amenities: [], bedType: '', roomSize: '', maxAdults: '', maxChildren: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה ביצירת סוג חדר');
     } finally {
@@ -198,6 +200,8 @@ export default function RoomTypesPage() {
       amenities: rt.amenities ?? [],
       bedType: rt.bedType ?? '',
       roomSize: rt.roomSize != null ? String(rt.roomSize) : '',
+      maxAdults: rt.maxAdults != null ? String(rt.maxAdults) : '',
+      maxChildren: rt.maxChildren != null ? String(rt.maxChildren) : '',
     });
   }
 
@@ -214,6 +218,8 @@ export default function RoomTypesPage() {
         amenities: editForm.amenities,
         bedType: editForm.bedType || undefined,
         roomSize: editForm.roomSize ? Number(editForm.roomSize) : undefined,
+        maxAdults: editForm.maxAdults ? Number(editForm.maxAdults) : undefined,
+        maxChildren: editForm.maxChildren !== '' ? Number(editForm.maxChildren) : undefined,
       });
       setRoomTypes((prev) => prev.map((rt) => (rt.id === updated.id ? updated : rt)));
       setEditingId(null);
@@ -335,6 +341,26 @@ export default function RoomTypesPage() {
                 style={{ borderColor: 'var(--color-border-default)' }}
               />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="number"
+                placeholder="מקס׳ מבוגרים (אופציונלי)"
+                value={createForm.maxAdults}
+                onChange={(e) => setCreateForm((p) => ({ ...p, maxAdults: e.target.value }))}
+                min={1}
+                className="rounded-md border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--color-border-default)' }}
+              />
+              <input
+                type="number"
+                placeholder="מקס׳ ילדים (אופציונלי)"
+                value={createForm.maxChildren}
+                onChange={(e) => setCreateForm((p) => ({ ...p, maxChildren: e.target.value }))}
+                min={0}
+                className="rounded-md border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--color-border-default)' }}
+              />
+            </div>
             <input
               placeholder="תיאור (אופציונלי)"
               value={createForm.description}
@@ -444,6 +470,26 @@ export default function RoomTypesPage() {
                               value={editForm.roomSize}
                               onChange={(e) => setEditForm((p) => ({ ...p, roomSize: e.target.value }))}
                               min={1}
+                              className="rounded border px-2 py-1 text-xs"
+                              style={{ borderColor: 'var(--color-border-default)' }}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            <input
+                              type="number"
+                              placeholder="מקס׳ מבוגרים"
+                              value={editForm.maxAdults}
+                              onChange={(e) => setEditForm((p) => ({ ...p, maxAdults: e.target.value }))}
+                              min={1}
+                              className="rounded border px-2 py-1 text-xs"
+                              style={{ borderColor: 'var(--color-border-default)' }}
+                            />
+                            <input
+                              type="number"
+                              placeholder="מקס׳ ילדים"
+                              value={editForm.maxChildren}
+                              onChange={(e) => setEditForm((p) => ({ ...p, maxChildren: e.target.value }))}
+                              min={0}
                               className="rounded border px-2 py-1 text-xs"
                               style={{ borderColor: 'var(--color-border-default)' }}
                             />

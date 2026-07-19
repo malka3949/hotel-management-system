@@ -14,6 +14,8 @@ export interface RoomType {
   amenities: string[];
   bedType: string | null;
   roomSize: number | null;
+  maxAdults: number | null;
+  maxChildren: number | null;
   createdAt: string;
 }
 
@@ -56,6 +58,10 @@ export interface CreateRoomTypePayload {
   description?: string;
   photos?: string[];
   amenities?: string[];
+  bedType?: string;
+  roomSize?: number;
+  maxAdults?: number;
+  maxChildren?: number;
 }
 
 export interface UpdateRoomTypePayload {
@@ -65,6 +71,10 @@ export interface UpdateRoomTypePayload {
   description?: string;
   photos?: string[];
   amenities?: string[];
+  bedType?: string;
+  roomSize?: number;
+  maxAdults?: number;
+  maxChildren?: number;
 }
 
 export interface RoomsFilter {

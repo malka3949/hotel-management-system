@@ -1,5 +1,16 @@
 const BASE = '/api/public/branches';
 
+export interface PublicBranchSummary {
+  id: string;
+  name: string;
+  address: string;
+  phone: string | null;
+  description: string | null;
+  coverPhoto: string | null;
+  amenities: string[];
+  minPrice: number | null;
+}
+
 export interface PublicBranch {
   id: string;
   name: string;
@@ -22,6 +33,8 @@ export interface PublicRoomType {
   amenities: string[];
   bedType: string | null;
   roomSize: number | null;
+  maxAdults: number | null;
+  maxChildren: number | null;
 }
 
 export interface CreatePublicReservationPayload {
@@ -57,6 +70,9 @@ async function publicFetch<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export const publicBookingApi = {
+  listBranches: () =>
+    publicFetch<PublicBranchSummary[]>(BASE),
+
   getBranch: (branchId: string) =>
     publicFetch<PublicBranch>(`${BASE}/${branchId}`),
 

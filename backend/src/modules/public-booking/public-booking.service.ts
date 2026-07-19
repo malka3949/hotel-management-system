@@ -19,6 +19,31 @@ export class PublicBookingService {
     private readonly guestPortal: GuestPortalService,
   ) {}
 
+  async listBranches() {
+    const branches = await this.prisma.branch.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        phone: true,
+        description: true,
+        coverPhoto: true,
+        amenities: true,
+        roomTypes: {
+          select: { basePrice: true },
+          orderBy: { basePrice: 'asc' },
+          take: 1,
+        },
+      },
+      orderBy: { name: 'asc' },
+    });
+    return branches.map(({ roomTypes, ...b }) => ({
+      ...b,
+      minPrice: roomTypes[0] ? Number(roomTypes[0].basePrice) : null,
+    }));
+  }
+
   async getBranch(branchId: string) {
     const branch = await this.prisma.branch.findUnique({
       where: { id: branchId },
@@ -53,6 +78,8 @@ export class PublicBookingService {
         amenities: true,
         bedType: true,
         roomSize: true,
+        maxAdults: true,
+        maxChildren: true,
       },
       orderBy: { basePrice: 'asc' },
     });
