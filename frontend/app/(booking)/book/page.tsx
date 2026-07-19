@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { publicBookingApi, PublicBranchSummary } from '@/lib/api/public-booking';
@@ -28,12 +28,12 @@ function HotelCardSkeleton() {
   );
 }
 
-function HotelCard({ branch, checkIn, checkOut, adults, children }: { branch: PublicBranchSummary; checkIn: string; checkOut: string; adults: number; children: number }) {
+function HotelCard({ branch, checkIn, checkOut, adults, numChildren }: { branch: PublicBranchSummary; checkIn: string; checkOut: string; adults: number; numChildren: number }) {
   const params = new URLSearchParams();
   if (checkIn) params.set('checkIn', checkIn);
   if (checkOut) params.set('checkOut', checkOut);
   params.set('adults', String(adults));
-  if (children > 0) params.set('children', String(children));
+  if (numChildren > 0) params.set('children', String(numChildren));
   const href = `/book/${branch.id}${params.toString() ? `?${params}` : ''}`;
   const mapsHref = `https://maps.google.com/?q=${encodeURIComponent(branch.address)}`;
 
@@ -104,8 +104,8 @@ export default function BookPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const today = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const tomorrow = useMemo(() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toISOString().split('T')[0]; }, []);
 
   const [checkIn, setCheckIn] = useState(searchParams.get('checkIn') ?? '');
   const [checkOut, setCheckOut] = useState(searchParams.get('checkOut') ?? '');
@@ -208,7 +208,7 @@ export default function BookPage() {
           {loading
             ? Array.from({ length: 3 }).map((_, i) => <HotelCardSkeleton key={i} />)
             : branches.map((b) => (
-                <HotelCard key={b.id} branch={b} checkIn={checkIn} checkOut={checkOut} adults={adults} children={children} />
+                <HotelCard key={b.id} branch={b} checkIn={checkIn} checkOut={checkOut} adults={adults} numChildren={children} />
               ))}
         </div>
       </div>

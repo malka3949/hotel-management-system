@@ -60,8 +60,10 @@ export default function RoomTypePage() {
   const [error, setError] = useState('');
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
+  const missingDates = !checkIn || !checkOut;
+
   useEffect(() => {
-    if (!checkIn || !checkOut) { setError('תאריכים חסרים'); setLoading(false); return; }
+    if (missingDates) return;
     Promise.all([
       publicBookingApi.getRoomTypes(branchId),
       publicBookingApi.getAvailability(branchId, checkIn, checkOut),
@@ -71,7 +73,7 @@ export default function RoomTypePage() {
       setRt(found);
       setAvailable(rooms.some((r) => r.roomType.id === roomTypeId));
     }).catch(() => setError('שגיאה בטעינה')).finally(() => setLoading(false));
-  }, [branchId, roomTypeId, checkIn, checkOut]);
+  }, [branchId, roomTypeId, checkIn, checkOut, missingDates]);
 
   const nights = checkIn && checkOut
     ? Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000)
@@ -87,6 +89,12 @@ export default function RoomTypePage() {
     router.push(`/book/${branchId}/checkout?${p}`);
   }
 
+  if (missingDates) return (
+    <div className="text-center py-20">
+      <p className="text-red-600 mb-4">תאריכים חסרים</p>
+      <button onClick={() => router.push(backUrl)} className="text-[#3B82F6] hover:underline text-sm">← חזרה לרשימה</button>
+    </div>
+  );
   if (loading) return <div className="text-center py-20 text-[#475569]">טוען...</div>;
   if (error || !rt) return (
     <div className="text-center py-20">

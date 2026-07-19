@@ -3,11 +3,15 @@ WORKDIR /app
 
 RUN apk add --no-cache openssl libc6-compat ca-certificates
 
-COPY package*.json ./
+COPY --chown=node:node package*.json ./
 RUN npm ci --ignore-scripts
 
-COPY . .
+COPY --chown=node:node . .
 
-RUN NODE_TLS_REJECT_UNAUTHORIZED=0 npm run prisma:generate
+RUN npm run prisma:generate
+
+RUN chown -R node:node /app
+
+USER node
 
 CMD ["sh", "-c", "npx prisma generate && npx prisma migrate deploy && npm run start:dev"]

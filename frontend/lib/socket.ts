@@ -2,7 +2,7 @@ import { io, Socket } from 'socket.io-client';
 
 const WS_URL =
   typeof window !== 'undefined'
-    ? `${window.location.protocol}//${window.location.hostname}:3001`
+    ? window.location.origin
     : '';
 
 let socket: Socket | null = null;

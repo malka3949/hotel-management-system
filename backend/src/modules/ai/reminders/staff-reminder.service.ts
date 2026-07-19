@@ -60,8 +60,8 @@ export class StaffReminderService {
 
 אורחים מגיעים מחר עם הערות מיוחדות:
 ${JSON.stringify(
-  arrivals.map((r) => ({
-    אורח: r.guest.fullName,
+  arrivals.map((r, i) => ({
+    אורח: `אורח_${i + 1}`,
     חדר: `${r.room.number} (${r.room.roomType.name})`,
     הערה: r.notes,
   })),
