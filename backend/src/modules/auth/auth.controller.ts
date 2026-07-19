@@ -25,9 +25,6 @@ import { CsrfGuard } from '../../common/guards/csrf.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
-// access_token is HttpOnly — JS reads the token from the login JSON response body
-// and stores it in memory/localStorage. The cookie is a parallel delivery mechanism
-// but must not be JS-readable to prevent cookie-based XSS extraction.
 const ACCESS_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
@@ -61,7 +58,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 900000 } })
   @UseGuards(CsrfGuard)
   async login(
     @Body() dto: LoginDto,
@@ -82,7 +79,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return { user: result.user, accessToken: result.accessToken };
+    return { user: result.user };
   }
 
   @Post('refresh')
@@ -109,7 +106,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return { accessToken: tokens.accessToken };
+    return {};
   }
 
   @Post('logout')

@@ -1,5 +1,6 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Patch,
@@ -81,6 +82,9 @@ export class HousekeepingController {
     @CurrentUser() user: JwtPayload,
   ) {
     const resolvedBranchId = branchId ?? user.branchId;
+    if (user.role !== 'chain_admin' && resolvedBranchId !== user.branchId) {
+      throw new ForbiddenException('BRANCH_ACCESS_DENIED');
+    }
     const resolvedDate = date ? new Date(date) : new Date();
     return this.scheduleOptimizer.optimizeSchedule(resolvedBranchId, resolvedDate);
   }

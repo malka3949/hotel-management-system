@@ -25,5 +25,6 @@ export class OnlineCheckInDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   specialRequests?: string;
 }

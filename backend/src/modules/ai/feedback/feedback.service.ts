@@ -1,3 +1,4 @@
+import * as crypto from 'crypto';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
 import { AiService } from '../ai.service';
@@ -11,8 +12,9 @@ export class FeedbackService {
   ) {}
 
   async submitFeedback(token: string, dto: SubmitFeedbackDto) {
+    const hash = crypto.createHash('sha256').update(token).digest('hex');
     const accessToken = await this.prisma.guestAccessToken.findFirst({
-      where: { tokenHash: token, expiresAt: { gt: new Date() } },
+      where: { tokenHash: hash, expiresAt: { gt: new Date() } },
       select: {
         reservation: {
           select: { id: true, guestId: true, branchId: true, status: true },

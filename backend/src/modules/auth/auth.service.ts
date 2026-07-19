@@ -173,7 +173,7 @@ export class AuthService {
     });
 
     const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
-    const resetLink = `${frontendUrl}/reset-password?token=${rawToken}`;
+    const resetLink = `${frontendUrl}/reset-password/${rawToken}`;
 
     const isDev = frontendUrl.startsWith('http://localhost');
 

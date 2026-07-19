@@ -137,8 +137,10 @@ export default function RoomsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const missingDates = !checkIn || !checkOut;
+
   useEffect(() => {
-    if (!checkIn || !checkOut) { setError('תאריכים חסרים'); setLoading(false); return; }
+    if (missingDates) return;
     Promise.all([
       publicBookingApi.getRoomTypes(branchId),
       publicBookingApi.getAvailability(branchId, checkIn, checkOut),
@@ -157,7 +159,7 @@ export default function RoomsPage() {
       }, new Map());
       setAvailableTypeCounts(counts);
     }).catch(() => setError('שגיאה בטעינת החדרים')).finally(() => setLoading(false));
-  }, [branchId, checkIn, checkOut]);
+  }, [branchId, checkIn, checkOut, missingDates]);
 
   const bedTypeOptions = useMemo(() => {
     const types = [...new Set(allRoomTypes.map((rt) => rt.bedType).filter(Boolean))] as string[];
@@ -190,6 +192,7 @@ export default function RoomsPage() {
     return new URLSearchParams(sp.toString());
   }
 
+  if (missingDates) return <div className="text-center py-20 text-red-600">תאריכים חסרים</div>;
   if (loading) return <div className="text-center py-20 text-[#475569]">טוען חדרים...</div>;
   if (error) return <div className="text-center py-20 text-red-600">{error}</div>;
 

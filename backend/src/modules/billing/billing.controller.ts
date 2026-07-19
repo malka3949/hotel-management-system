@@ -30,6 +30,8 @@ import { CreatePaymentDto } from './dto/create-payment.dto';
 import { CreateChargeDto } from './dto/create-charge.dto';
 import { CreateRefundDto } from './dto/create-refund.dto';
 import { PrePaymentDto } from './dto/pre-payment.dto';
+import { ApplyDiscountDto } from './dto/apply-discount.dto';
+import { UpsertCatalogEntryDto } from './dto/upsert-catalog-entry.dto';
 
 @Controller()
 export class BillingController {
@@ -172,10 +174,10 @@ export class BillingController {
   @Roles('chain_admin', 'hotel_manager', 'receptionist')
   applyDiscount(
     @Param('id') id: string,
-    @Body() body: { amount: number; description?: string },
+    @Body() dto: ApplyDiscountDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.chargeService.applyDiscount(id, body.amount, body.description ?? 'הנחה/זיכוי', user);
+    return this.chargeService.applyDiscount(id, dto.amount, dto.description ?? 'הנחה/זיכוי', user);
   }
 
   // ── Refunds ───────────────────────────────────────────────────────────────────
@@ -207,10 +209,10 @@ export class BillingController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('chain_admin', 'hotel_manager')
   upsertCatalogEntry(
-    @Body() body: { branchId: string; chargeType: string; price: number },
+    @Body() dto: UpsertCatalogEntryDto,
     @CurrentUser() user: JwtPayload,
   ) {
-    return this.serviceCatalogService.upsertEntry(body.branchId, body.chargeType, body.price, user);
+    return this.serviceCatalogService.upsertEntry(dto.branchId, dto.chargeType, dto.price, user);
   }
 
   @Delete('v1/service-catalog/:id')
