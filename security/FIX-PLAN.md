@@ -51,7 +51,7 @@
 | C6 | `@MaxLength` חסר ב-specialRequests | `online-check-in.dto.ts:28` | הוסף `@MaxLength(2000)`. | ✅ DONE |
 | C7 | `@IsInt() @Min(0)` חסר — type coercion ב-availability | `get-availability.dto.ts:18,20` | `@Type(() => Number) @IsInt() @Min(0)` ל-`floor` ו-`maxOccupancy`. | ✅ DONE |
 | C8 | PII ב-audit logs — ערכים לפני/אחרי | `guests.service.ts:209-224` | לוג שמות שדות בלבד: `changedFields: ['passportId']`, לא ערכים. | ✅ DONE |
-| C9 | Cookie Secure flag חסר בפרודקשן | `auth.controller.ts:27` | ודא `Secure` flag על set-cookie (מחייב TLS — ראה D2). | ⏳ ממתין ל-D2 (TLS) |
+| C9 | Cookie Secure flag חסר בפרודקשן | `auth.controller.ts:27` | `secure: process.env.NODE_ENV === 'production'` — כבר קיים. יופעל כשמגדירים NODE_ENV=production עם TLS. | ✅ כבר היה מתוקן |
 | C10 | Password reset token ב-URL — נשמר ב-logs | `auth.service.ts:176` | token ב-URL path segment, לא query string. | ✅ DONE |
 | C11 | IDOR ב-housekeeping schedule — branchId ללא בדיקה | `housekeeping.controller.ts:83` | `assertBranchAccess(branchId, user)`. | ✅ DONE |
 
@@ -63,11 +63,11 @@
 
 | # | ממצא | תיקון |
 |---|---|---|
-| D1 | אין reverse proxy | nginx service ב-compose. Backend/frontend → `expose:` בלבד. | ⏳ נדחה — PR נפרד |
-| D2 | אין TLS | nginx עם certbot / Caddy עם Let's Encrypt. | ⏳ נדחה — תלוי ב-D1 |
+| D1 | אין reverse proxy | nginx service ב-compose. Backend/frontend → `expose:` בלבד. | ✅ DONE |
+| D2 | אין TLS | nginx/default.conf: HTTPS block + HSTS מוכן, certbot volumes מחוברים. מחכה לדומיין. | ✅ מוכן — מחכה לדומיין |
 | D3 | Security headers חסרים ב-Next.js | `next.config.ts`: `async headers()` עם `X-Frame-Options`, `X-Content-Type-Options`, `CSP`, `Referrer-Policy`. | ✅ DONE |
-| D4 | Helmet ב-backend ללא HSTS | אחרי TLS — `hsts: { maxAge: 31536000 }` + CSP. | ⏳ נדחה — תלוי ב-D2 |
-| D5 | Docker socket ב-autoheal ללא `:ro` | שקול `restart: unless-stopped` במקום autoheal. | ⏳ נדחה — החלטה ארכיטקטורית |
+| D4 | Helmet ב-backend ללא HSTS | HSTS כלול ב-nginx HTTPS block. יופעל אוטומטית עם TLS. | ✅ מוכן — יופעל עם D2 |
+| D5 | Docker socket ב-autoheal ללא `:ro` | autoheal הוסר. כל service כבר עם `restart: unless-stopped`. | ✅ DONE |
 | D6 | Health endpoint חושף גרסה+uptime | הסר `version` + `uptime` מ-public response. | ✅ DONE |
 | D7 | אין resource limits | `deploy.resources.limits.memory` + `pids_limit` לכל service. | ✅ DONE |
 | D8 | Image tags floating (`latest`) | נעל: `n8nio/n8n@sha256:...`, `willfarrell/autoheal@sha256:...`, `node:20.19.1-alpine3.21` | ✅ DONE |
