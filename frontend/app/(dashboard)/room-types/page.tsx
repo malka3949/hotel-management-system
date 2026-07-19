@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   getRoomTypes,
   createRoomType,
@@ -11,6 +11,108 @@ import {
 import { getBranches, type Branch } from '@/lib/api/branches';
 import { RoleGate } from '@/components/shared/RoleGate';
 import { useAuth } from '@/hooks/useAuth';
+import { uploadPhoto } from '@/lib/api/uploads';
+
+function PhotosInput({ photos, onChange }: { photos: string[]; onChange: (p: string[]) => void }) {
+  const [urlInput, setUrlInput] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function addUrl() {
+    const url = urlInput.trim();
+    if (!url || photos.length >= 5) return;
+    onChange([...photos, url]);
+    setUrlInput('');
+  }
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || photos.length >= 5) return;
+    setUploading(true);
+    setUploadError('');
+    try {
+      const url = await uploadPhoto(file);
+      onChange([...photos, url]);
+    } catch (err) {
+      setUploadError(err instanceof Error ? err.message : 'שגיאה בהעלאה');
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-[#475569]">תמונות (עד 5)</p>
+      <div className="flex gap-2">
+        <input
+          type="url"
+          placeholder="הדבק URL תמונה..."
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addUrl())}
+          className="flex-1 rounded border px-2 py-1 text-xs"
+          style={{ borderColor: 'var(--color-border-default)' }}
+        />
+        <button type="button" onClick={addUrl} className="text-xs px-2 py-1 rounded border" style={{ borderColor: 'var(--color-border-default)' }}>הוסף</button>
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="text-xs px-2 py-1 rounded text-white" style={{ backgroundColor: 'var(--color-primary)' }}>
+          {uploading ? '...' : 'העלה'}
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
+      </div>
+      {uploadError && <p className="text-xs text-red-600">{uploadError}</p>}
+      <div className="flex flex-wrap gap-2">
+        {photos.map((url, i) => (
+          <div key={i} className="relative group w-16 h-16">
+            <img src={url} alt="" className="w-full h-full object-cover rounded border" style={{ borderColor: 'var(--color-border-default)' }} />
+            <button
+              type="button"
+              onClick={() => onChange(photos.filter((_, j) => j !== i))}
+              className="absolute top-0 left-0 bg-red-500 text-white text-xs rounded-full w-4 h-4 items-center justify-center hidden group-hover:flex"
+            >×</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AmenitiesInput({ amenities, onChange }: { amenities: string[]; onChange: (a: string[]) => void }) {
+  const [input, setInput] = useState('');
+
+  function add() {
+    const v = input.trim();
+    if (!v || amenities.includes(v)) return;
+    onChange([...amenities, v]);
+    setInput('');
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-[#475569]">שירותים (amenities)</p>
+      <div className="flex gap-2">
+        <input
+          placeholder="WiFi, מרפסת, ג׳קוזי..."
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), add())}
+          className="flex-1 rounded border px-2 py-1 text-xs"
+          style={{ borderColor: 'var(--color-border-default)' }}
+        />
+        <button type="button" onClick={add} className="text-xs px-2 py-1 rounded border" style={{ borderColor: 'var(--color-border-default)' }}>הוסף</button>
+      </div>
+      <div className="flex flex-wrap gap-1">
+        {amenities.map((a) => (
+          <span key={a} className="flex items-center gap-1 bg-blue-50 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+            {a}
+            <button type="button" onClick={() => onChange(amenities.filter((x) => x !== a))} className="text-blue-500 hover:text-red-500">×</button>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function RoomTypesPage() {
   const { user } = useAuth();
@@ -24,10 +126,10 @@ export default function RoomTypesPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [branches, setBranches] = useState<Branch[]>([]);
   const [branchesLoading, setBranchesLoading] = useState(false);
-  const [createForm, setCreateForm] = useState({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '' });
+  const [createForm, setCreateForm] = useState({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '', photos: [] as string[], amenities: [] as string[], bedType: '', roomSize: '', maxAdults: '', maxChildren: '' });
 
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', basePrice: '', maxOccupancy: '', description: '' });
+  const [editForm, setEditForm] = useState({ name: '', basePrice: '', maxOccupancy: '', description: '', photos: [] as string[], amenities: [] as string[], bedType: '', roomSize: '', maxAdults: '', maxChildren: '' });
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -70,10 +172,16 @@ export default function RoomTypesPage() {
         basePrice: Number(createForm.basePrice),
         maxOccupancy: Number(createForm.maxOccupancy),
         description: createForm.description || undefined,
+        photos: createForm.photos,
+        amenities: createForm.amenities,
+        bedType: createForm.bedType || undefined,
+        roomSize: createForm.roomSize ? Number(createForm.roomSize) : undefined,
+        maxAdults: createForm.maxAdults ? Number(createForm.maxAdults) : undefined,
+        maxChildren: createForm.maxChildren !== '' ? Number(createForm.maxChildren) : undefined,
       });
       setRoomTypes((prev) => [...prev, rt]);
       setShowCreate(false);
-      setCreateForm({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '' });
+      setCreateForm({ branchId: '', name: '', basePrice: '', maxOccupancy: '', description: '', photos: [], amenities: [], bedType: '', roomSize: '', maxAdults: '', maxChildren: '' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה ביצירת סוג חדר');
     } finally {
@@ -88,6 +196,12 @@ export default function RoomTypesPage() {
       basePrice: rt.basePrice,
       maxOccupancy: String(rt.maxOccupancy),
       description: rt.description ?? '',
+      photos: rt.photos ?? [],
+      amenities: rt.amenities ?? [],
+      bedType: rt.bedType ?? '',
+      roomSize: rt.roomSize != null ? String(rt.roomSize) : '',
+      maxAdults: rt.maxAdults != null ? String(rt.maxAdults) : '',
+      maxChildren: rt.maxChildren != null ? String(rt.maxChildren) : '',
     });
   }
 
@@ -100,6 +214,12 @@ export default function RoomTypesPage() {
         basePrice: Number(editForm.basePrice),
         maxOccupancy: Number(editForm.maxOccupancy),
         description: editForm.description || undefined,
+        photos: editForm.photos,
+        amenities: editForm.amenities,
+        bedType: editForm.bedType || undefined,
+        roomSize: editForm.roomSize ? Number(editForm.roomSize) : undefined,
+        maxAdults: editForm.maxAdults ? Number(editForm.maxAdults) : undefined,
+        maxChildren: editForm.maxChildren !== '' ? Number(editForm.maxChildren) : undefined,
       });
       setRoomTypes((prev) => prev.map((rt) => (rt.id === updated.id ? updated : rt)));
       setEditingId(null);
@@ -201,6 +321,46 @@ export default function RoomTypesPage() {
                 style={{ borderColor: 'var(--color-border-default)' }}
               />
             </div>
+            <div className="grid grid-cols-2 gap-3">
+              <select
+                value={createForm.bedType}
+                onChange={(e) => setCreateForm((p) => ({ ...p, bedType: e.target.value }))}
+                className="rounded-md border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--color-border-default)' }}
+              >
+                <option value="">סוג מיטה (אופציונלי)</option>
+                {['בודד', 'זוגית', 'טווין', 'קינג', 'שתי מיטות'].map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              <input
+                type="number"
+                placeholder="גודל החדר במ״ר"
+                value={createForm.roomSize}
+                onChange={(e) => setCreateForm((p) => ({ ...p, roomSize: e.target.value }))}
+                min={1}
+                className="rounded-md border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--color-border-default)' }}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <input
+                type="number"
+                placeholder="מקס׳ מבוגרים (אופציונלי)"
+                value={createForm.maxAdults}
+                onChange={(e) => setCreateForm((p) => ({ ...p, maxAdults: e.target.value }))}
+                min={1}
+                className="rounded-md border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--color-border-default)' }}
+              />
+              <input
+                type="number"
+                placeholder="מקס׳ ילדים (אופציונלי)"
+                value={createForm.maxChildren}
+                onChange={(e) => setCreateForm((p) => ({ ...p, maxChildren: e.target.value }))}
+                min={0}
+                className="rounded-md border px-3 py-2 text-sm"
+                style={{ borderColor: 'var(--color-border-default)' }}
+              />
+            </div>
             <input
               placeholder="תיאור (אופציונלי)"
               value={createForm.description}
@@ -208,6 +368,8 @@ export default function RoomTypesPage() {
               className="w-full rounded-md border px-3 py-2 text-sm"
               style={{ borderColor: 'var(--color-border-default)' }}
             />
+            <PhotosInput photos={createForm.photos} onChange={(photos) => setCreateForm((p) => ({ ...p, photos }))} />
+            <AmenitiesInput amenities={createForm.amenities} onChange={(amenities) => setCreateForm((p) => ({ ...p, amenities }))} />
             <div className="flex gap-2">
               <button
                 type="submit"
@@ -236,8 +398,8 @@ export default function RoomTypesPage() {
             <table className="w-full text-sm">
               <thead style={{ backgroundColor: 'var(--color-bg-base)' }}>
                 <tr>
-                  {['שם', 'מחיר / לילה', 'קיבולת מקס', 'תיאור', ''].map((h) => (
-                    <th key={h} className="px-4 py-3 text-right font-medium" style={{ color: 'var(--color-text-secondary)' }}>
+                  {['', 'שם', 'מחיר / לילה', 'קיבולת מקס', 'תיאור', 'פעולות'].map((h, i) => (
+                    <th key={i} className="px-4 py-3 text-right font-medium" style={{ color: 'var(--color-text-secondary)' }}>
                       {h}
                     </th>
                   ))}
@@ -255,6 +417,13 @@ export default function RoomTypesPage() {
                   >
                     {editingId === rt.id ? (
                       <>
+                        <td className="px-4 py-2">
+                          {editForm.photos[0] ? (
+                            <img src={editForm.photos[0]} alt="" className="w-12 h-12 object-cover rounded border" style={{ borderColor: 'var(--color-border-default)' }} />
+                          ) : (
+                            <div className="w-12 h-12 rounded border flex items-center justify-center text-xs" style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-bg-base)' }}>📷</div>
+                          )}
+                        </td>
                         <td className="px-4 py-2">
                           <input
                             value={editForm.name}
@@ -284,16 +453,58 @@ export default function RoomTypesPage() {
                             style={{ borderColor: 'var(--color-border-default)' }}
                           />
                         </td>
-                        <td className="px-4 py-2">
+                        <td className="px-4 py-2" colSpan={2}>
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            <select
+                              value={editForm.bedType}
+                              onChange={(e) => setEditForm((p) => ({ ...p, bedType: e.target.value }))}
+                              className="rounded border px-2 py-1 text-xs"
+                              style={{ borderColor: 'var(--color-border-default)' }}
+                            >
+                              <option value="">סוג מיטה</option>
+                              {['בודד', 'זוגית', 'טווין', 'קינג', 'שתי מיטות'].map((t) => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <input
+                              type="number"
+                              placeholder="גודל מ״ר"
+                              value={editForm.roomSize}
+                              onChange={(e) => setEditForm((p) => ({ ...p, roomSize: e.target.value }))}
+                              min={1}
+                              className="rounded border px-2 py-1 text-xs"
+                              style={{ borderColor: 'var(--color-border-default)' }}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2 mb-2">
+                            <input
+                              type="number"
+                              placeholder="מקס׳ מבוגרים"
+                              value={editForm.maxAdults}
+                              onChange={(e) => setEditForm((p) => ({ ...p, maxAdults: e.target.value }))}
+                              min={1}
+                              className="rounded border px-2 py-1 text-xs"
+                              style={{ borderColor: 'var(--color-border-default)' }}
+                            />
+                            <input
+                              type="number"
+                              placeholder="מקס׳ ילדים"
+                              value={editForm.maxChildren}
+                              onChange={(e) => setEditForm((p) => ({ ...p, maxChildren: e.target.value }))}
+                              min={0}
+                              className="rounded border px-2 py-1 text-xs"
+                              style={{ borderColor: 'var(--color-border-default)' }}
+                            />
+                          </div>
                           <input
                             value={editForm.description}
                             onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))}
-                            className="w-full rounded border px-2 py-1 text-sm"
+                            className="w-full rounded border px-2 py-1 text-sm mb-2"
                             style={{ borderColor: 'var(--color-border-default)' }}
                           />
-                        </td>
-                        <td className="px-4 py-2">
-                          <div className="flex gap-2">
+                          <PhotosInput photos={editForm.photos} onChange={(photos) => setEditForm((p) => ({ ...p, photos }))} />
+                          <div className="mt-2">
+                            <AmenitiesInput amenities={editForm.amenities} onChange={(amenities) => setEditForm((p) => ({ ...p, amenities }))} />
+                          </div>
+                          <div className="flex gap-2 mt-2">
                             <button
                               onClick={() => handleUpdate(rt.id)}
                               disabled={saving}
@@ -314,6 +525,13 @@ export default function RoomTypesPage() {
                       </>
                     ) : (
                       <>
+                        <td className="px-4 py-3">
+                          {rt.photos?.[0] ? (
+                            <img src={rt.photos[0]} alt="" className="w-12 h-12 object-cover rounded border" style={{ borderColor: 'var(--color-border-default)' }} />
+                          ) : (
+                            <div className="w-12 h-12 rounded border flex items-center justify-center text-lg" style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-base)' }}>📷</div>
+                          )}
+                        </td>
                         <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
                           {rt.name}
                         </td>

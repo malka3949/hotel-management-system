@@ -116,3 +116,13 @@ Status: 2 commits on feature/phase-12-production-deployment. Build: PASS. Lint: 
 [2026-07-12] Phase 13 AI Features — backend + frontend complete
 Tasks: AiModule, ConciergeService (haiku-4-5), PricingService (sonnet-4-6), NlReportsService, AiEmailService, CancellationRiskService (rule-based), ScheduleOptimizerService (rule-based)
 Files: backend/src/modules/ai/**, reservations service+module, housekeeping service+controller, frontend AI components
+
+[2026-07-19] Phase 15 Public Booking Portal — complete
+Tasks: GET /api/public/branches, /book landing page (hero, date+guests search, hotel cards, skeleton), layout header update, RTL fixes, max_adults/max_children schema + migration + UI
+Files: backend public-booking controller/service/module, room-types DTOs+service, prisma schema+migration, frontend book/page.tsx (new), book/[branchId]/page.tsx, rooms/page.tsx, checkout/page.tsx, confirmation/page.tsx, layout.tsx, lib/api/public-booking.ts, lib/api/rooms.ts, dashboard/room-types/page.tsx, team-Yuri/arch-phase15.md, team-Yuri/dev-phase15.md
+Status: TS PASS (frontend+backend). Migration applied. DB seeded with maxAdults/maxChildren.
+
+[2026-07-19] Phase 15c — filter bar + room details page
+Tasks: filter bar (bedType select + sort) in rooms list, URL params as filter state source, useMemo filter/sort, "פרטים" button, new [roomTypeId]/page.tsx with lightbox, chips, sticky booking bar, back preserves all filter params
+Files: frontend/app/(booking)/book/[branchId]/rooms/page.tsx (rewrite), frontend/app/(booking)/book/[branchId]/rooms/[roomTypeId]/page.tsx (new), team-Yuri/arch-phase15.md, team-Yuri/dev-phase15.md
+Status: TS PASS (frontend exit 0).
