@@ -2,20 +2,20 @@ databases:
   - name: hotel-management-db
     databaseName: hotel_management
     user: hotel_admin
-    plan: starter
+    plan: free
     region: frankfurt
 
 services:
   - type: keyvalue
     name: hotel-management-redis
-    plan: starter
+    plan: free
     region: frankfurt
     maxmemoryPolicy: allkeys-lru
 
   - type: web
     name: hotel-management-backend
     region: frankfurt
-    plan: starter
+    plan: free
     rootDir: backend
     dockerfilePath: ./Dockerfile
     startCommand: sh -c "node_modules/.bin/prisma migrate deploy && node dist/main"
@@ -66,7 +66,7 @@ services:
   - type: web
     name: hotel-management-frontend
     region: frankfurt
-    plan: starter
+    plan: free
     rootDir: frontend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /
