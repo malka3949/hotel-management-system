@@ -27,6 +27,7 @@ export default function GuestsPage() {
   }, [isAdmin]);
 
   const load = useCallback(async () => {
+    if (!user) return;
     if (isAdmin && !filters.branchId) {
       setLoading(false);
       setGuests([]);

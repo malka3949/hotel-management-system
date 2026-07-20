@@ -1,4 +1,4 @@
-FROM node:20-alpine AS builder
+FROM node:20.19.1-alpine3.21 AS builder
 
 WORKDIR /app
 
@@ -13,7 +13,7 @@ RUN npx prisma generate
 RUN npm run build
 
 # ---- runtime ----
-FROM node:20-alpine AS runtime
+FROM node:20.19.1-alpine3.21 AS runtime
 
 WORKDIR /app
 

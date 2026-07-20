@@ -45,6 +45,7 @@ export default function ReservationsPage() {
   }, [isAdmin]);
 
   const load = useCallback(async () => {
+    if (!user) return;
     if (isAdmin && !filters.branchId) {
       setLoading(false);
       setReservations([]);

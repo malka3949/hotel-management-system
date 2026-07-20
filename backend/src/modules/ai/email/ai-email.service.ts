@@ -27,16 +27,14 @@ export class AiEmailService {
     const prompt = `כתוב אימייל ברכה חם ומקצועי בעברית לאורח חדש של המלון.
 
 פרטים:
-- שם אורח: ${ctx.guestName}
 - שם מלון: ${ctx.hotelName}
 - סוג חדר: ${ctx.roomType}
 - מספר חדר: ${ctx.roomNumber}
 - צ'ק-אין: ${ctx.checkInDate.toLocaleDateString('he-IL')}
 - צ'ק-אאוט: ${ctx.checkOutDate.toLocaleDateString('he-IL')}
 - מספר לילות: ${nights}
-- סה"כ: ₪${ctx.totalPrice.toLocaleString('he-IL')}
 
-כתוב רק את גוף האימייל, ללא שורת נושא. סגנון חם, מקצועי, קצר (עד 150 מילה).`;
+כתוב רק את גוף האימייל, ללא שורת נושא. סגנון חם, מקצועי, קצר (עד 150 מילה). פנה לאורח בלשון כבוד.`;
 
     try {
       return await this.ai.generateText(prompt);

@@ -5,7 +5,16 @@ export const envValidationSchema = Joi.object({
     .valid('development', 'production', 'test')
     .default('development'),
   PORT: Joi.number().default(3001),
-  DATABASE_URL: Joi.string().required(),
+  DATABASE_URL: Joi.when('NODE_ENV', {
+    is: 'production',
+    then: Joi.string().required().custom((value, helpers) => {
+      if (!value.includes('sslmode=require')) {
+        return helpers.error('any.invalid', { label: 'DATABASE_URL must contain sslmode=require in production' });
+      }
+      return value;
+    }),
+    otherwise: Joi.string().required(),
+  }),
   REDIS_URL: Joi.string().default('redis://localhost:6379'),
   JWT_SECRET: Joi.string().min(32).required(),
   JWT_REFRESH_SECRET: Joi.string().min(32).required(),
@@ -28,4 +37,6 @@ export const envValidationSchema = Joi.object({
   N8N_WEBHOOK_SECRET: Joi.string().optional().allow(''),
   GOOGLE_AI_API_KEY: Joi.string().optional().allow(''),
   COHERE_API_KEY: Joi.string().optional().allow(''),
+  COHERE_DPA_SIGNED: Joi.string().valid('true', 'false').default('false'),
+  RESEND_DPA_SIGNED: Joi.string().valid('true', 'false').default('false'),
 });

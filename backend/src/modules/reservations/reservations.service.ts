@@ -25,6 +25,8 @@ import { ReservationFiltersDto, CalendarFiltersDto } from './dto/reservation-fil
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { Prisma, ReservationStatus } from '@prisma/client';
 
+const TAX_RATE = 0.17;
+
 const VALID_TRANSITIONS: Record<ReservationStatus, ReservationStatus[]> = {
   pending: ['confirmed', 'cancelled'],
   confirmed: ['checked_in', 'cancelled'],
@@ -107,11 +109,19 @@ export class ReservationsService implements OnModuleInit {
     const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / 86400000);
     const totalPrice = new Prisma.Decimal(Number(room.roomType.basePrice) * nights);
 
+    const grossNightly = new Prisma.Decimal(room.roomType.basePrice);
+    const netNightly = grossNightly
+      .div(new Prisma.Decimal(1 + TAX_RATE))
+      .toDecimalPlaces(2);
+    const invoiceSubtotal = netNightly.mul(nights);
+    const invoiceTax = invoiceSubtotal.mul(new Prisma.Decimal(TAX_RATE)).toDecimalPlaces(2);
+    const invoiceTotal = invoiceSubtotal.add(invoiceTax);
+
     const reservation = await this.prisma.$transaction(async (tx) => {
       const available = await this.availability.isRoomAvailable(dto.roomId, checkIn, checkOut, tx);
       if (!available) throw new ConflictException('ROOM_CONFLICT');
 
-      return tx.reservation.create({
+      const res = await tx.reservation.create({
         data: {
           branchId,
           roomId: dto.roomId,
@@ -129,6 +139,29 @@ export class ReservationsService implements OnModuleInit {
         },
         include: RESERVATION_INCLUDE,
       });
+
+      await tx.invoice.create({
+        data: {
+          reservationId: res.id,
+          branchId,
+          guestId: dto.guestId,
+          status: 'draft',
+          subtotal: invoiceSubtotal,
+          tax: invoiceTax,
+          total: invoiceTotal,
+          lineItems: {
+            create: {
+              description: `לינה ${nights} לילות — חדר ${room.number}`,
+              quantity: nights,
+              unitPrice: netNightly,
+              total: invoiceSubtotal,
+              itemType: 'room_charge',
+            },
+          },
+        },
+      });
+
+      return res;
     });
 
     await this.audit.log({

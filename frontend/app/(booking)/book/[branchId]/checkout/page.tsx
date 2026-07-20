@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { publicBookingApi } from '@/lib/api/public-booking';
 
-export default function CheckoutPage() {
+function CheckoutPageInner() {
   const { branchId } = useParams<{ branchId: string }>();
   const sp = useSearchParams();
   const router = useRouter();
@@ -21,7 +21,7 @@ export default function CheckoutPage() {
     : 0;
   const total = pricePerNight * nights;
 
-  const [form, setForm] = useState({ guestName: '', guestEmail: '', guestPhone: '', adults: 1, children: 0, notes: '' });
+  const [form, setForm] = useState({ guestName: '', guestEmail: '', guestPhone: '', adults: 1, children: 0, notes: '', consentGiven: false });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -32,11 +32,18 @@ export default function CheckoutPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!form.guestName || !form.guestEmail || !form.guestPhone) { setError('יש למלא את כל השדות החובה'); return; }
+    if (!form.consentGiven) { setError('חובה לאשר את מדיניות הפרטיות'); return; }
     setSubmitting(true);
     setError('');
     try {
       const result = await publicBookingApi.createReservation(branchId, {
-        ...form,
+        guestName: form.guestName,
+        guestEmail: form.guestEmail,
+        guestPhone: form.guestPhone,
+        adults: form.adults,
+        children: form.children,
+        notes: form.notes,
+        consentGiven: form.consentGiven,
         roomTypeId,
         checkInDate: checkIn,
         checkOutDate: checkOut,
@@ -133,6 +140,21 @@ export default function CheckoutPage() {
           />
         </div>
 
+        <div className="flex items-start gap-3 pt-2">
+          <input
+            type="checkbox"
+            id="consent"
+            checked={form.consentGiven}
+            onChange={(e) => set('consentGiven', e.target.checked)}
+            className="mt-1 h-4 w-4 shrink-0 accent-[#1E3A8A]"
+          />
+          <label htmlFor="consent" className="text-sm text-[#475569]">
+            קראתי ואני מסכים/ה{' '}
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#1E3A8A] underline">למדיניות הפרטיות</a>
+            {' '}ולתנאי השימוש של המלון *
+          </label>
+        </div>
+
         {error && <p className="text-red-600 text-sm">{error}</p>}
 
         <button
@@ -145,4 +167,8 @@ export default function CheckoutPage() {
       </form>
     </div>
   );
+}
+
+export default function CheckoutPage() {
+  return <Suspense><CheckoutPageInner /></Suspense>;
 }

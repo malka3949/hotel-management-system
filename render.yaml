@@ -18,6 +18,7 @@ services:
     plan: starter
     rootDir: backend
     dockerfilePath: ./Dockerfile
+    startCommand: sh -c "node_modules/.bin/prisma migrate deploy && node dist/main"
     healthCheckPath: /api/ready
     envVars:
       - key: NODE_ENV
@@ -37,15 +38,49 @@ services:
         generateValue: true
       - key: COOKIE_SECRET
         generateValue: true
+      - key: CSRF_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_HMAC_KEY
+        generateValue: true
       - key: FRONTEND_URL
         sync: false
       - key: SENTRY_DSN
         sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
       - key: TRANZILA_TERMINAL
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      - key: COHERE_API_KEY
+        sync: false
+      - key: COHERE_DPA_SIGNED
+        value: "false"
+      - key: RESEND_DPA_SIGNED
+        value: "false"
       - key: PORT
         value: "3001"
+
+  - type: web
+    name: hotel-management-frontend
+    region: frankfurt
+    plan: starter
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_URL
+        fromService:
+          name: hotel-management-backend
+          type: web
+          property: onboardingUrl
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: PORT
+        value: "3000"

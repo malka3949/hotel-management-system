@@ -149,7 +149,7 @@ export class NlReportsService {
 
     const systemPrompt = `אתה אנליסט נתונים של מלון. ענה על שאלות המשתמש בעברית בצורה ברורה ותמציתית.
 
-המשתמש: ${user.email} | תפקיד: ${roleLabel}
+תפקיד: ${roleLabel}
 ${branchId ? `הנתונים מוגבלים לסניף: ${branchId}` : 'הנתונים כוללים את כל הסניפים ברשת'}
 
 נתוני המלון (מעודכנים לרגע זה):

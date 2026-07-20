@@ -69,8 +69,8 @@ services:
       resources:
         limits:
           memory: 1g
-    expose:
-      - '3001'
+    ports:
+      - '3001:3001'
     networks:
       - hotel_internal
     healthcheck:
@@ -101,6 +101,7 @@ services:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
       - backend_dist:/app/dist
+      - ./backend/public:/app/public
     depends_on:
       postgres:
         condition: service_healthy
@@ -146,18 +147,18 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1g
-    expose:
-      - '3000'
+          memory: 1.5g
+    ports:
+      - '3000:3000'
     networks:
       - hotel_internal
     environment:
-      NODE_ENV: development
+      NODE_ENV: production
       BACKEND_URL: http://backend:3001
+    command: sh -c "node_modules/.bin/next build && node_modules/.bin/next start --hostname 0.0.0.0 --port 3000"
     volumes:
       - ./frontend:/app
       - /app/node_modules
-      - /app/.next
     depends_on:
       - backend
 

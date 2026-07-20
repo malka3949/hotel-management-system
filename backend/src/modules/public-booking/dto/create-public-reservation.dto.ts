@@ -1,15 +1,19 @@
 import {
   IsString,
   IsEmail,
-  IsUUID,
   IsISO8601,
   IsInt,
   IsOptional,
+  IsBoolean,
+  Equals,
   Min,
   Max,
   MaxLength,
+  Matches,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class CreatePublicReservationDto {
   @IsString()
@@ -23,7 +27,7 @@ export class CreatePublicReservationDto {
   @MaxLength(30)
   guestPhone!: string;
 
-  @IsUUID()
+  @Matches(UUID_RE, { message: 'roomTypeId must be a UUID' })
   roomTypeId!: string;
 
   @IsISO8601({ strict: true })
@@ -50,4 +54,9 @@ export class CreatePublicReservationDto {
   @MaxLength(2000)
   @IsOptional()
   notes?: string;
+
+  @Transform(({ value }) => value === true || value === 'true')
+  @IsBoolean()
+  @Equals(true, { message: 'חובה לאשר את מדיניות הפרטיות' })
+  consentGiven!: boolean;
 }

@@ -8,12 +8,15 @@ import {
   IsInt,
   Min,
   Max,
+  Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ReservationStatus } from '@prisma/client';
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export class ReservationFiltersDto {
-  @IsUUID()
+  @Matches(UUID_RE, { message: 'branchId must be a UUID' })
   @IsOptional()
   branchId?: string;
 
@@ -61,7 +64,7 @@ export class ReservationFiltersDto {
 }
 
 export class CalendarFiltersDto {
-  @IsUUID()
+  @Matches(UUID_RE, { message: 'branchId must be a UUID' })
   @IsOptional()
   branchId?: string;
 

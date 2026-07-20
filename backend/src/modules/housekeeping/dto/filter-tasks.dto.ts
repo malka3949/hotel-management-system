@@ -1,5 +1,7 @@
-import { IsOptional, IsEnum, IsUUID, IsDateString } from 'class-validator';
+import { IsOptional, IsEnum, IsUUID, IsDateString, Matches } from 'class-validator';
 import { HousekeepingTaskStatus, HousekeepingPriority } from '@prisma/client';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class FilterHousekeepingTasksDto {
   @IsEnum(HousekeepingTaskStatus)
@@ -22,7 +24,7 @@ export class FilterHousekeepingTasksDto {
   @IsOptional()
   roomId?: string;
 
-  @IsUUID()
+  @Matches(UUID_RE, { message: 'branchId must be a UUID' })
   @IsOptional()
   branchId?: string;
 }

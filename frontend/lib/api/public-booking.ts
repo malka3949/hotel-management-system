@@ -47,6 +47,7 @@ export interface CreatePublicReservationPayload {
   adults?: number;
   children?: number;
   notes?: string;
+  consentGiven: boolean;
 }
 
 export interface PublicReservationResult {

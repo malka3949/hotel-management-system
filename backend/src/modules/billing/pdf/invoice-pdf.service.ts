@@ -171,6 +171,8 @@ export class InvoicePdfService {
     this.assertAccess(invoice, requester);
 
     const guestEmail = invoice.reservation.guest.email;
+    if (!guestEmail) return { sent: false, to: '' };
+
     const pdfBuffer = await this.generateBuffer(invoice);
     const base64Pdf = pdfBuffer.toString('base64');
 
@@ -226,6 +228,6 @@ export class InvoicePdfService {
       attachments: [{ filename: `invoice-${shortId}.pdf`, content: base64Pdf }],
     });
 
-    return { sent: true, to: guestEmail ?? 'malka.develop3949@gmail.com' };
+    return { sent: true, to: guestEmail };
   }
 }

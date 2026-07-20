@@ -50,6 +50,13 @@ export class NotificationService {
       return;
     }
 
+    const isProd = process.env.NODE_ENV === 'production';
+    const dpaSigned = process.env.RESEND_DPA_SIGNED === 'true';
+    if (isProd && !dpaSigned) {
+      this.logger.error('Email blocked — RESEND_DPA_SIGNED is not true in production. Set env var after signing DPA at resend.com/legal/dpa');
+      return;
+    }
+
     const trimmed = options.body.trimStart();
     const isFullHtml = trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html');
     const html = isFullHtml
