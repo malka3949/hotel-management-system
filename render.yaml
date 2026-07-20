@@ -11,14 +11,16 @@ services:
     plan: free
     region: frankfurt
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
 
   - type: web
     name: hotel-management-backend
     region: frankfurt
     plan: free
+    runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    startCommand: sh -c "node_modules/.bin/prisma migrate deploy && node dist/main"
+    startCommand: sh -c "npx prisma migrate deploy && node dist/main"
     healthCheckPath: /api/ready
     envVars:
       - key: NODE_ENV
@@ -67,6 +69,7 @@ services:
     name: hotel-management-frontend
     region: frankfurt
     plan: free
+    runtime: docker
     rootDir: frontend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /
@@ -74,10 +77,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: BACKEND_URL
-        fromService:
-          name: hotel-management-backend
-          type: web
-          property: onboardingUrl
+        sync: false
       - key: NEXT_PUBLIC_API_URL
         sync: false
       - key: SENTRY_DSN
