@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { publicBookingApi, PublicBranchSummary } from '@/lib/api/public-booking';
@@ -97,7 +97,7 @@ function HotelCard({ branch, checkIn, checkOut, adults, numChildren }: { branch:
   );
 }
 
-export default function BookPage() {
+function BookPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [branches, setBranches] = useState<PublicBranchSummary[]>([]);
@@ -223,5 +223,13 @@ export default function BookPage() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function BookPage() {
+  return (
+    <Suspense>
+      <BookPageInner />
+    </Suspense>
   );
 }

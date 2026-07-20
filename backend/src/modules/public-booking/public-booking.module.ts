@@ -4,9 +4,10 @@ import { PublicBookingService } from './public-booking.service';
 import { AvailabilityModule } from '../availability/availability.module';
 import { GuestPortalModule } from '../guest-portal/guest-portal.module';
 import { PrismaModule } from '../../prisma/prisma.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
-  imports: [PrismaModule, AvailabilityModule, GuestPortalModule],
+  imports: [PrismaModule, AvailabilityModule, GuestPortalModule, AuditModule],
   controllers: [PublicBranchListController, PublicBookingController],
   providers: [PublicBookingService],
 })

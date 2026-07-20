@@ -249,6 +249,10 @@ export class GuestsService {
         where: { guestId: id },
         data: { documentNumber: '[deleted]', issuingCountry: '[deleted]' },
       }),
+      this.prisma.guestFeedback.updateMany({
+        where: { guestId: id },
+        data: { comment: null, aiSummary: null },
+      }),
     ]);
 
     await this.audit.log({

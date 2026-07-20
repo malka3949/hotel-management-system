@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AvailabilityService } from '../availability/availability.service';
 import { GuestPortalService } from '../guest-portal/guest-portal.service';
+import { AuditService } from '../audit/audit.service';
 import { CreatePublicReservationDto } from './dto/create-public-reservation.dto';
 import { GetPublicAvailabilityDto } from './dto/get-public-availability.dto';
 
@@ -17,6 +18,7 @@ export class PublicBookingService {
     private readonly prisma: PrismaService,
     private readonly availability: AvailabilityService,
     private readonly guestPortal: GuestPortalService,
+    private readonly audit: AuditService,
   ) {}
 
   async listBranches() {
@@ -104,6 +106,7 @@ export class PublicBookingService {
     if (checkIn < new Date()) throw new BadRequestException('CHECK_IN_MUST_BE_IN_FUTURE');
 
     // Find or create guest by email within branch
+    let guestCreated = false;
     let guest = await this.prisma.guest.findFirst({
       where: { branchId, email: dto.guestEmail, isActive: true },
     });
@@ -116,6 +119,7 @@ export class PublicBookingService {
           phone: dto.guestPhone,
         },
       });
+      guestCreated = true;
     }
 
     // Find first available room of requested type
@@ -159,6 +163,11 @@ export class PublicBookingService {
     });
 
     await this.availability.invalidateAvailabilityCache(branchId);
+
+    await this.audit.log({ userId: null, action: 'PUBLIC_RESERVATION_CREATE', entityType: 'reservation', entityId: reservation.id, branchId });
+    if (guestCreated) {
+      await this.audit.log({ userId: null, action: 'PUBLIC_GUEST_CREATE', entityType: 'guest', entityId: guest.id, branchId });
+    }
 
     // Send portal link so guest can manage the reservation
     const { portalUrl } = await this.guestPortal.generateAndSendPortalLink(

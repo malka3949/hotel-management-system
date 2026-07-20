@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -30,7 +30,7 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
 }
 
-export default function DashboardPage() {
+function DashboardPageInner() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const branchId = searchParams.get('branchId') ?? undefined;
@@ -260,4 +260,8 @@ export default function DashboardPage() {
       </div>}
     </div>
   );
+}
+
+export default function DashboardPage() {
+  return <Suspense><DashboardPageInner /></Suspense>;
 }

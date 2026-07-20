@@ -1,8 +1,9 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function ConfirmationPage() {
+function ConfirmationPageInner() {
   const sp = useSearchParams();
   const reservationId = sp.get('reservationId') ?? '';
   const roomType = sp.get('roomType') ?? '';
@@ -55,4 +56,8 @@ export default function ConfirmationPage() {
       </p>
     </div>
   );
+}
+
+export default function ConfirmationPage() {
+  return <Suspense><ConfirmationPageInner /></Suspense>;
 }

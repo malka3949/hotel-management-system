@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { publicBookingApi, type PublicBranch } from '@/lib/api/public-booking';
 
-export default function BranchLandingPage() {
+function BranchLandingPageInner() {
   const { branchId } = useParams<{ branchId: string }>();
   const router = useRouter();
   const sp = useSearchParams();
@@ -145,4 +145,8 @@ export default function BranchLandingPage() {
       </div>
     </div>
   );
+}
+
+export default function BranchLandingPage() {
+  return <Suspense><BranchLandingPageInner /></Suspense>;
 }

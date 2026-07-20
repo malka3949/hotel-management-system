@@ -8,7 +8,7 @@ RUN npm ci --ignore-scripts
 
 COPY --chown=node:node . .
 
-RUN npm run prisma:generate
+RUN NODE_TLS_REJECT_UNAUTHORIZED=0 npm run prisma:generate
 
 RUN chown -R node:node /app
 

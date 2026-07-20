@@ -34,13 +34,8 @@ export class CancellationResponseService {
       (reservation.checkOutDate.getTime() - reservation.checkInDate.getTime()) / 86400000,
     );
 
-    const safeReason = reservation.cancellationReason
-      ? reservation.cancellationReason.replace(/[\r\n]/g, ' ').slice(0, 200)
-      : '';
-
     const prompt = `אתה נציג שירות לקוחות של מלון בשם "${reservation.branch.name}".
 האורח ביטל הזמנה לחדר ${reservation.room.roomType.name} מ-${reservation.checkInDate.toLocaleDateString('he-IL')} ל-${reservation.checkOutDate.toLocaleDateString('he-IL')} (${nights} לילות).
-${safeReason ? `סיבת הביטול: ${safeReason}` : ''}
 
 כתוב אימייל קצר ואישי בעברית (3-4 משפטים):
 1. הבעת אכזבה שהאורח לא יגיע
@@ -58,7 +53,7 @@ ${safeReason ? `סיבת הביטול: ${safeReason}` : ''}
         body: body.replace(/\n/g, '<br>'),
       });
 
-      this.logger.log(`Cancellation offer sent to ${reservation.guest.email} for reservation ${reservationId}`);
+      this.logger.log(`Cancellation offer sent for reservation ${reservationId}`);
     } catch (err) {
       this.logger.error(`Failed to send cancellation offer for ${reservationId}: ${String(err)}`);
     }

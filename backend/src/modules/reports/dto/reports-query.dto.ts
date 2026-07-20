@@ -1,4 +1,6 @@
-import { IsOptional, IsUUID, IsDateString } from 'class-validator';
+import { IsOptional, IsDateString, Matches } from 'class-validator';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class ReportsQueryDto {
   @IsDateString()
@@ -9,7 +11,7 @@ export class ReportsQueryDto {
   @IsOptional()
   to?: string;
 
-  @IsUUID()
+  @Matches(UUID_RE, { message: 'branchId must be a UUID' })
   @IsOptional()
   branchId?: string;
 }

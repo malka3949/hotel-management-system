@@ -39,7 +39,8 @@ export class ConciergeService {
     const roomType = reservation?.room?.roomType?.name ?? '';
     const roomNumber = reservation?.room?.number ?? '';
 
-    const systemPrompt = `אתה עוזר קונסיירז' מנומס ומועיל של ${hotelName}.
+    const systemPrompt = `אתה עוזר קונסיירז' מנומס ומועיל של ${hotelName}, המופעל על-ידי בינה מלאכותית.
+שירות זה אינו מייצג נציג אנושי.
 אתה עונה בעברית בלבד, בסגנון חם ומקצועי.
 פרטי האורח:
 - חדר: ${roomNumber} (${roomType})

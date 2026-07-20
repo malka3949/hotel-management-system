@@ -1,5 +1,7 @@
-import { IsOptional, IsString, IsUUID, IsInt, Min, Max, MaxLength } from 'class-validator';
+import { IsOptional, IsString, IsInt, Min, Max, MaxLength, Matches } from 'class-validator';
 import { Type } from 'class-transformer';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class FilterGuestsDto {
   @IsString()
@@ -7,7 +9,7 @@ export class FilterGuestsDto {
   @IsOptional()
   search?: string;
 
-  @IsUUID()
+  @Matches(UUID_RE, { message: 'branchId must be a UUID' })
   @IsOptional()
   branchId?: string;
 

@@ -73,12 +73,11 @@ export class RoomUpgradeService {
       );
       const priceDiff = (upgradePrice - currentPrice) * nights;
 
-      const safeName = reservation.guest.fullName.replace(/[\r\n]/g, ' ').slice(0, 100);
       const prompt = `אתה נציג שירות לקוחות של מלון.
 שלח הצעת שדרוג חדר לאורח.
 הוא הזמין חדר ${reservation.room.roomType.name} ב-${currentPrice} ₪ ללילה.
 יש לנו חדר ${bestUpgrade.roomType.name} פנוי ב-${upgradePrice} ₪ ללילה — שדרוג של ${priceDiff} ₪ ל-${nights} לילות.
-פנה לאורח בשם ${safeName}.
+פנה לאורח בלשון כבוד.
 כתוב אימייל קצר ומפתה בעברית (3-4 משפטים) עם הצעת השדרוג. אל תכלול שורת נושא.`;
 
       const body = await this.ai.generateText(prompt);
@@ -89,7 +88,7 @@ export class RoomUpgradeService {
         body: body.replace(/\n/g, '<br>'),
       });
 
-      this.logger.log(`Upgrade offer sent to ${reservation.guest.email} for reservation ${reservation.id}`);
+      this.logger.log(`Upgrade offer sent for reservation ${reservation.id}`);
     }
   }
 }

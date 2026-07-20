@@ -19,8 +19,10 @@ Detail docs in `CLAUDE/` — read on demand. Phase status in `PROJECT_STATUS.md`
 | Email | Password | Role | גישה |
 |---|---|---|---|
 | `admin@hotel.co.il` | `Admin123!` | `chain_admin` | כל הbranchים, כל הפיצ'רים |
-| `manager@hotel.co.il` | `Manager123!` | `hotel_manager` | branch תל אביב בלבד |
-| `reception@hotel.co.il` | `Reception123!` | `receptionist` | branch תל אביב, גישה מוגבלת |
+| `manager@hotel.co.il` | `Manager123!` | `hotel_manager` | מרכז תל אביב |
+| `manager.tlv@hotel.com` | `Manager123!` | `hotel_manager` | תל אביב |
+| `manager.jer@hotel.com` | `Manager123!` | `hotel_manager` | ירושלים |
+| `reception@hotel.co.il` | `Reception123!` | `receptionist` | מרכז תל אביב, גישה מוגבלת |
 
 **Data scope:** סביבת dev בלבד — נתוני seed (`prisma/seed.ts`)
 

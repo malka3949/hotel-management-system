@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { publicBookingApi, type PublicRoomType } from '@/lib/api/public-booking';
 
@@ -44,7 +44,7 @@ function Lightbox({ photos, startIdx, onClose }: { photos: string[]; startIdx: n
   );
 }
 
-export default function RoomTypePage() {
+function RoomTypePageInner() {
   const { branchId, roomTypeId } = useParams<{ branchId: string; roomTypeId: string }>();
   const sp = useSearchParams();
   const router = useRouter();
@@ -204,4 +204,8 @@ export default function RoomTypePage() {
       </div>
     </>
   );
+}
+
+export default function RoomTypePage() {
+  return <Suspense><RoomTypePageInner /></Suspense>;
 }

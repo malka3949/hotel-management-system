@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { Suspense, useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { publicBookingApi, type PublicRoomType } from '@/lib/api/public-booking';
 
@@ -118,7 +118,7 @@ function RoomCard({
   );
 }
 
-export default function RoomsPage() {
+function RoomsPageInner() {
   const { branchId } = useParams<{ branchId: string }>();
   const sp = useSearchParams();
   const router = useRouter();
@@ -275,4 +275,8 @@ export default function RoomsPage() {
       </div>
     </div>
   );
+}
+
+export default function RoomsPage() {
+  return <Suspense><RoomsPageInner /></Suspense>;
 }
