@@ -29,6 +29,7 @@ COPY start.sh ./start.sh
 RUN chmod +x ./start.sh
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN chown -R appuser:appgroup /app
 USER appuser
 
 EXPOSE 3001
