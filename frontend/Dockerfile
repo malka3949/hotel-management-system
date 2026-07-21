@@ -1,5 +1,8 @@
 FROM node:20.19.1-alpine3.21 AS builder
 
+ARG BACKEND_URL=http://localhost:3001
+ENV BACKEND_URL=$BACKEND_URL
+
 WORKDIR /app
 
 COPY package*.json ./
