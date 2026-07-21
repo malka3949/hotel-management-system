@@ -9,11 +9,8 @@ import {
   Min,
   Max,
   MaxLength,
-  Matches,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export class CreatePublicReservationDto {
   @IsString()
@@ -27,7 +24,7 @@ export class CreatePublicReservationDto {
   @MaxLength(30)
   guestPhone!: string;
 
-  @Matches(UUID_RE, { message: 'roomTypeId must be a UUID' })
+  @IsString()
   roomTypeId!: string;
 
   @IsISO8601({ strict: true })
