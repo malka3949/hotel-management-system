@@ -1,5 +1,7 @@
 FROM node:20.19.1-alpine3.21 AS builder
 
+RUN apk add --no-cache openssl
+
 WORKDIR /app
 
 COPY package*.json ./
@@ -14,6 +16,8 @@ RUN npm run build
 
 # ---- runtime ----
 FROM node:20.19.1-alpine3.21 AS runtime
+
+RUN apk add --no-cache openssl
 
 WORKDIR /app
 
