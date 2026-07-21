@@ -103,7 +103,9 @@ export class PublicBookingService {
     const checkIn = new Date(dto.checkInDate);
     const checkOut = new Date(dto.checkOutDate);
     if (checkIn >= checkOut) throw new BadRequestException('CHECK_OUT_MUST_BE_AFTER_CHECK_IN');
-    if (checkIn < new Date()) throw new BadRequestException('CHECK_IN_MUST_BE_IN_FUTURE');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (checkIn < today) throw new BadRequestException('CHECK_IN_MUST_BE_IN_FUTURE');
 
     // Find or create guest by email within branch
     let guestCreated = false;
