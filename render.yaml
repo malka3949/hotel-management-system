@@ -20,7 +20,7 @@ services:
     runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
-    dockerCommand: sh -c "npx prisma migrate deploy && node dist/main"
+    dockerCommand: ./start.sh
     healthCheckPath: /api/ready
     envVars:
       - key: NODE_ENV
