@@ -12,22 +12,23 @@ if [ -n "$DATABASE_URL" ] && ! echo "$DATABASE_URL" | grep -q "sslmode=require";
 fi
 
 # One-time fix: mark init migration as applied if it is stuck in rolled-back state
+# (tables were created successfully; only _prisma_migrations state was wrong)
 npx prisma migrate resolve --applied 20260601000000_init 2>/dev/null || true
 npx prisma migrate deploy
 
-# Seed if no room types yet (idempotent)
+# Seed if room types are missing or incomplete (full set = 13 types across 3 branches)
 node -e "
 (async () => {
   const { PrismaClient } = require('@prisma/client');
   const p = new PrismaClient();
   try {
     const n = await p.roomType.count();
-    if (n === 0) {
-      console.log('No room types found — running seed...');
+    if (n < 13) {
+      console.log('Room types incomplete (' + n + '/13) — running seed...');
       const { execSync } = require('child_process');
       execSync('node prisma/seed-prod.js', { stdio: 'inherit' });
     } else {
-      console.log('DB already has data — skipping seed.');
+      console.log('DB already has full data (' + n + ' room types) — skipping seed.');
     }
   } catch (e) {
     console.warn('Seed check failed:', e.message);
