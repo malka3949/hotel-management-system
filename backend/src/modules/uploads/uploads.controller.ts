@@ -9,15 +9,14 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { randomUUID } from 'crypto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { v2 as cloudinary } from 'cloudinary';
+import { memoryStorage } from 'multer';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_SIZE = 5 * 1024 * 1024;
 
 @Controller('admin/uploads')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,13 +26,7 @@ export class UploadsController {
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: join(process.cwd(), 'public', 'uploads'),
-        filename: (_req, file, cb) => {
-          const ext = extname(file.originalname).toLowerCase();
-          cb(null, `${randomUUID()}${ext}`);
-        },
-      }),
+      storage: memoryStorage(),
       limits: { fileSize: MAX_SIZE },
       fileFilter: (_req, file, cb) => {
         if (!ALLOWED_MIME.includes(file.mimetype)) {
@@ -44,8 +37,24 @@ export class UploadsController {
       },
     }),
   )
-  uploadPhoto(@UploadedFile() file: Express.Multer.File): { url: string } {
+  async uploadPhoto(@UploadedFile() file: Express.Multer.File): Promise<{ url: string }> {
     if (!file) throw new BadRequestException('No file uploaded');
-    return { url: `/uploads/${file.filename}` };
+
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+    });
+
+    const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream({ folder: 'hotel-management', resource_type: 'image' }, (err, res) => {
+          if (err || !res) return reject(err ?? new Error('Upload failed'));
+          resolve(res);
+        })
+        .end(file.buffer);
+    });
+
+    return { url: result.secure_url };
   }
 }
