@@ -65,7 +65,7 @@ export class NotificationService {
 
     const payload: Record<string, unknown> = {
       from: 'onboarding@resend.dev',
-      to: 'malka.develop3949@gmail.com',
+      to: options.to,
       subject: options.subject,
       html,
     };
