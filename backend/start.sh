@@ -15,4 +15,27 @@ fi
 # (tables were created successfully; only _prisma_migrations state was wrong)
 npx prisma migrate resolve --applied 20260601000000_init 2>/dev/null || true
 npx prisma migrate deploy
+
+# Seed initial data if DB is empty (idempotent — skipped if branches already exist)
+node -e "
+(async () => {
+  const { PrismaClient } = require('@prisma/client');
+  const p = new PrismaClient();
+  try {
+    const n = await p.branch.count();
+    if (n === 0) {
+      console.log('Empty DB detected — running seed...');
+      const { execSync } = require('child_process');
+      execSync('node prisma/seed-prod.js', { stdio: 'inherit' });
+    } else {
+      console.log('DB already has data — skipping seed.');
+    }
+  } catch (e) {
+    console.warn('Seed check failed:', e.message);
+  } finally {
+    await p.\$disconnect();
+  }
+})();
+" || true
+
 node dist/main
