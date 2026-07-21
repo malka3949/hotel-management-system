@@ -2,20 +2,22 @@ databases:
   - name: hotel-management-db
     databaseName: hotel_management
     user: hotel_admin
-    plan: starter
+    plan: free
     region: frankfurt
 
 services:
   - type: keyvalue
     name: hotel-management-redis
-    plan: starter
+    plan: free
     region: frankfurt
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
 
   - type: web
     name: hotel-management-backend
     region: frankfurt
-    plan: starter
+    plan: free
+    runtime: docker
     rootDir: backend
     dockerfilePath: ./Dockerfile
     healthCheckPath: /api/ready
@@ -37,15 +39,47 @@ services:
         generateValue: true
       - key: COOKIE_SECRET
         generateValue: true
+      - key: CSRF_SECRET
+        generateValue: true
+      - key: REFRESH_TOKEN_HMAC_KEY
+        generateValue: true
       - key: FRONTEND_URL
         sync: false
       - key: SENTRY_DSN
         sync: false
       - key: STRIPE_SECRET_KEY
         sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
       - key: TRANZILA_TERMINAL
         sync: false
       - key: RESEND_API_KEY
         sync: false
+      - key: COHERE_API_KEY
+        sync: false
+      - key: COHERE_DPA_SIGNED
+        value: "false"
+      - key: RESEND_DPA_SIGNED
+        value: "false"
       - key: PORT
         value: "3001"
+
+  - type: web
+    name: hotel-management-frontend
+    region: frankfurt
+    plan: free
+    runtime: docker
+    rootDir: frontend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_URL
+        sync: false
+      - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: PORT
+        value: "3000"
