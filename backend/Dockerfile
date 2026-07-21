@@ -25,10 +25,12 @@ RUN npm prune --omit=dev
 
 COPY --from=builder /app/dist ./dist
 COPY prisma ./prisma/
+COPY start.sh ./start.sh
+RUN chmod +x ./start.sh
 
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["./start.sh"]
