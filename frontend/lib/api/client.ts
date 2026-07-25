@@ -61,7 +61,14 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     });
   };
 
-  let res = await doRequest();
+  let res: Response;
+  try {
+    res = await doRequest();
+  } catch {
+    const msg = 'אין חיבור לאינטרנט או שהשרת אינו מגיב';
+    if (typeof window !== 'undefined') toast.error(msg);
+    throw new Error(msg);
+  }
 
   if (res.status === 401) {
     const refreshed = await doRefresh();

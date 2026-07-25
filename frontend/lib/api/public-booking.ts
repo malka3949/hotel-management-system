@@ -1,3 +1,5 @@
+import { toast } from 'sonner';
+
 const BASE = '/api/public/branches';
 
 export interface PublicBranchSummary {
@@ -64,10 +66,28 @@ export interface PublicReservationResult {
 }
 
 async function publicFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
+  let res: Response;
+  try {
+    res = await fetch(url, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
+  } catch {
+    const msg = 'אין חיבור לאינטרנט או שהשרת אינו מגיב';
+    if (typeof window !== 'undefined') toast.error(msg);
+    throw new Error(msg);
+  }
+
+  if (!res.ok && res.headers.get('content-type')?.includes('text/html')) {
+    const msg = 'השרת אינו זמין, נסה שוב בעוד מספר שניות';
+    if (typeof window !== 'undefined') toast.error(msg);
+    throw new Error(msg);
+  }
+
   const body = await res.json();
-  if (!res.ok) throw new Error(body.message ?? `HTTP ${res.status}`);
-  return (body.data ?? body) as T;
+  if (!res.ok) {
+    const msg = (body as { message?: string }).message ?? `שגיאת שרת ${res.status}`;
+    if (typeof window !== 'undefined') toast.error(msg);
+    throw new Error(msg);
+  }
+  return ((body as { data?: T }).data ?? body) as T;
 }
 
 export const publicBookingApi = {
