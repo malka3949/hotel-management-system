@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { toast } from 'sonner';
 import {
   HousekeepingTask,
   HousekeepingTaskStatus,
@@ -78,7 +79,7 @@ export default function HousekeepingManagePage() {
       const updated = await housekeepingApi.assignTask(taskId, userId);
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'שגיאה');
+      toast.error(e instanceof Error ? e.message : 'שגיאה');
     }
   }
 
@@ -89,7 +90,7 @@ export default function HousekeepingManagePage() {
       const updated = await housekeepingApi.skipTask(taskId, reason);
       setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'שגיאה');
+      toast.error(e instanceof Error ? e.message : 'שגיאה');
     }
   }
 
@@ -103,7 +104,7 @@ export default function HousekeepingManagePage() {
       setShowCreate(false);
       setCreateForm({ scheduledFor: today, priority: 'normal' });
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'שגיאה');
+      toast.error(err instanceof Error ? err.message : 'שגיאה');
     } finally {
       setCreating(false);
     }
@@ -112,7 +113,7 @@ export default function HousekeepingManagePage() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-[#0F172A]">ניהול ניקיון</h1>
+        <h1 className="text-2xl font-bold text-[#0F172A]">ניהול ניקוי</h1>
         <button
           onClick={() => setShowCreate(!showCreate)}
           className="bg-[#CA8A04] text-white px-4 py-2 rounded-lg text-sm font-medium"

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'מערכת ניהול מלון',
@@ -15,6 +16,7 @@ export default function RootLayout({
     <html lang="he" dir="rtl" className="h-full">
       <body className="min-h-full bg-base text-primary antialiased">
         {children}
+        <Toaster position="top-center" dir="rtl" richColors duration={4000} />
       </body>
     </html>
   );
