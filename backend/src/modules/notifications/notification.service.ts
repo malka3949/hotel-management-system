@@ -50,13 +50,6 @@ export class NotificationService {
       return;
     }
 
-    const isProd = process.env.NODE_ENV === 'production';
-    const dpaSigned = process.env.RESEND_DPA_SIGNED === 'true';
-    if (isProd && !dpaSigned) {
-      this.logger.error('Email blocked — RESEND_DPA_SIGNED is not true in production. Set env var after signing DPA at resend.com/legal/dpa');
-      return;
-    }
-
     const trimmed = options.body.trimStart();
     const isFullHtml = trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html');
     const html = isFullHtml
@@ -73,21 +66,17 @@ export class NotificationService {
     if (options.text) payload['text'] = options.text;
     if (options.attachments?.length) payload['attachments'] = options.attachments;
 
-    try {
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
 
-      if (!res.ok) {
-        const err = await res.text();
-        this.logger.error(`Resend error ${res.status}: ${err}`);
-      } else {
-        this.logger.log(`Email sent via Resend, subject: ${options.subject}`);
-      }
-    } catch (err: unknown) {
-      this.logger.error(`Email delivery failed (network/TLS): ${err instanceof Error ? err.message : String(err)}`);
+    if (!res.ok) {
+      const err = await res.text();
+      this.logger.error(`Resend error ${res.status}: ${err}`);
+    } else {
+      this.logger.log(`Email sent via Resend to ${options.to}, subject: ${options.subject}`);
     }
   }
 }
