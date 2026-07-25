@@ -52,10 +52,17 @@ export interface PaymentPayload {
 }
 
 async function portalFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${API}/${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${API}/${path}`, {
+      ...init,
+      headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+    });
+  } catch {
+    const msg = 'אין חיבור לאינטרנט או שהשרת אינו מגיב';
+    if (typeof window !== 'undefined') toast.error(msg);
+    throw new Error(msg);
+  }
 
   if (!res.ok && res.headers.get('content-type')?.includes('text/html')) {
     const msg = 'השרת אינו זמין, נסה שוב בעוד מספר שניות';
