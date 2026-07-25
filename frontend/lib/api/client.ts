@@ -1,3 +1,5 @@
+import { toast } from 'sonner';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
 let refreshPromise: Promise<boolean> | null = null;
@@ -73,7 +75,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
 
   if (!res.ok && res.headers.get('content-type')?.includes('text/html')) {
-    throw new Error('השרת אינו זמין');
+    const msg = 'השרת אינו זמין';
+    if (typeof window !== 'undefined') toast.error(msg);
+    throw new Error(msg);
   }
 
   const body = (await res.json()) as {
@@ -84,7 +88,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   };
 
   if (!res.ok || !body.success) {
-    throw new Error(body.message ?? body.error ?? 'Request failed');
+    const msg = body.message ?? body.error ?? 'שגיאה בלתי צפויה';
+    if (typeof window !== 'undefined') toast.error(msg);
+    throw new Error(msg);
   }
 
   return body.data as T;
