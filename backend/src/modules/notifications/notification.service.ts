@@ -57,7 +57,7 @@ export class NotificationService {
       : wrapEmailHtml(`<p style="color:#0F172A;font-size:15px;line-height:1.7;font-family:Arial,sans-serif">${options.body}</p>`);
 
     const payload: Record<string, unknown> = {
-      from: 'onboarding@resend.dev',
+      from: 'רשת מלונות <onboarding@resend.dev>',
       to: 'malka.develop3949@gmail.com',
       subject: options.subject,
       html,
@@ -76,7 +76,7 @@ export class NotificationService {
       const err = await res.text();
       this.logger.error(`Resend error ${res.status}: ${err}`);
     } else {
-      this.logger.log(`Email sent via Resend to ${options.to}, subject: ${options.subject}`);
+      this.logger.log(`Email sent via Resend, subject: ${options.subject}`);
     }
   }
 }
