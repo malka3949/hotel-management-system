@@ -58,33 +58,36 @@ async function cleanOrphanedRooms() {
     await prisma.onlineCheckIn.deleteMany({ where: { reservationId: { in: orphanedResvIds } } });
     await prisma.guestAccessToken.deleteMany({ where: { reservationId: { in: orphanedResvIds } } });
     await prisma.reservationGuest.deleteMany({ where: { reservationId: { in: orphanedResvIds } } });
+    await prisma.guestFeedback.deleteMany({ where: { reservationId: { in: orphanedResvIds } } });
+    await prisma.housekeepingTask.deleteMany({ where: { reservationId: { in: orphanedResvIds } } });
 
-    const orphanedPayments = await prisma.payment.findMany({
-      where: { reservationId: { in: orphanedResvIds } },
-      select: { id: true },
-    });
-    if (orphanedPayments.length > 0) {
-      const payIds = orphanedPayments.map(p => p.id);
-      await prisma.refund.deleteMany({ where: { paymentId: { in: payIds } } });
-      await prisma.charge.deleteMany({ where: { paymentId: { in: payIds } } });
-    }
-    await prisma.paymentAttempt.deleteMany({ where: { reservationId: { in: orphanedResvIds } } });
-    await prisma.payment.deleteMany({ where: { reservationId: { in: orphanedResvIds } } });
-
+    // invoices → payments (RESTRICT) + charges (RESTRICT) + line_items (CASCADE)
     const orphanedInvoices = await prisma.invoice.findMany({
       where: { reservationId: { in: orphanedResvIds } },
       select: { id: true },
     });
     if (orphanedInvoices.length > 0) {
       const invIds = orphanedInvoices.map(i => i.id);
+      const invPayments = await prisma.payment.findMany({
+        where: { invoiceId: { in: invIds } },
+        select: { id: true },
+      });
+      if (invPayments.length > 0) {
+        const payIds = invPayments.map(p => p.id);
+        await prisma.paymentAttempt.deleteMany({ where: { paymentId: { in: payIds } } });
+        await prisma.refund.deleteMany({ where: { paymentId: { in: payIds } } });
+      }
+      await prisma.payment.deleteMany({ where: { invoiceId: { in: invIds } } });
+      await prisma.charge.deleteMany({ where: { invoiceId: { in: invIds } } });
       await prisma.invoiceLineItem.deleteMany({ where: { invoiceId: { in: invIds } } });
     }
     await prisma.invoice.deleteMany({ where: { reservationId: { in: orphanedResvIds } } });
     await prisma.reservation.deleteMany({ where: { id: { in: orphanedResvIds } } });
   }
 
+  // housekeeping tasks not linked to reservation but linked to room (RESTRICT on room_id)
+  await prisma.housekeepingTask.deleteMany({ where: { roomId: { in: orphanedRoomIds } } });
   await prisma.room.deleteMany({ where: { id: { in: orphanedRoomIds } } });
-
   await prisma.roomType.deleteMany({
     where: { id: { notIn: SEED_RT_IDS }, rooms: { none: {} } },
   });
