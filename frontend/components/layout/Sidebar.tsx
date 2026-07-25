@@ -15,7 +15,7 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'דשבורד', href: '/dashboard', icon: '⊞', exact: true },
-  { label: 'חדרים', href: '/rooms', icon: '🛏', roles: ['chain_admin', 'hotel_manager', 'receptionist'] },
+  { label: 'חדרים', href: '/rooms', icon: '🛏', roles: ['chain_admin', 'hotel_manager', 'receptionist'], exact: true },
   { label: 'לוח סטטוס', href: '/rooms/status-board', icon: '📡', roles: ['chain_admin', 'hotel_manager', 'receptionist', 'housekeeping'] },
   { label: 'סוגי חדרים', href: '/room-types', icon: '🏷️', roles: ['chain_admin', 'hotel_manager'] },
   { label: 'אורחים', href: '/guests', icon: '👤', roles: ['chain_admin', 'hotel_manager', 'receptionist'] },
