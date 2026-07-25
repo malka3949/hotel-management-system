@@ -1,6 +1,6 @@
 import { apiFetch } from './client';
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api';
+const API = '/api';
 
 export interface ConversationMessage {
   role: 'user' | 'assistant';
