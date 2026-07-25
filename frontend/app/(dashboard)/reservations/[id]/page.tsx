@@ -228,7 +228,7 @@ export default function ReservationDetailPage() {
         >
           <h3 className="font-medium text-sm" style={{ color: 'var(--color-text-secondary)' }}>חדר</h3>
           <p className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>
-            חדר {reservation.room.number} · {reservation.room.roomType.name}
+            חדר {reservation.room.number} · {reservation.room.roomType?.name ?? '—'}
           </p>
           {reservation.room.floor !== null && (
             <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>קומה {reservation.room.floor}</p>
@@ -272,7 +272,7 @@ export default function ReservationDetailPage() {
         >
           <h3 className="font-medium text-sm" style={{ color: 'var(--color-text-secondary)' }}>מידע נוסף</h3>
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            נוצר ע&quot;י: <span style={{ color: 'var(--color-text-primary)' }}>{reservation.createdByUser.name}</span>
+            נוצר ע&quot;י: <span style={{ color: 'var(--color-text-primary)' }}>{reservation.createdByUser?.name ?? 'לא ידוע'}</span>
           </p>
           <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
             {formatDateTime(reservation.createdAt)}
