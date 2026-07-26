@@ -24,6 +24,7 @@ function CheckoutPageInner() {
   const [form, setForm] = useState({ guestName: '', guestEmail: '', guestPhone: '', adults: 1, children: 0, notes: '', consentGiven: false });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [emailConflict, setEmailConflict] = useState(false);
 
   function set<K extends keyof typeof form>(k: K, v: typeof form[K]) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -35,6 +36,7 @@ function CheckoutPageInner() {
     if (!form.consentGiven) { setError('חובה לאשר את מדיניות הפרטיות'); return; }
     setSubmitting(true);
     setError('');
+    setEmailConflict(false);
     try {
       const result = await publicBookingApi.createReservation(branchId, {
         guestName: form.guestName,
@@ -50,7 +52,12 @@ function CheckoutPageInner() {
       });
       router.push(`/book/${branchId}/confirmation?reservationId=${result.reservationId}&roomType=${encodeURIComponent(result.roomType)}&checkIn=${checkIn}&checkOut=${checkOut}&total=${result.totalPrice}${roomPhoto ? `&photo=${encodeURIComponent(roomPhoto)}` : ''}`);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'שגיאה ביצירת ההזמנה');
+      const msg = err instanceof Error ? err.message : 'שגיאה ביצירת ההזמנה';
+      if (msg === 'EMAIL_ALREADY_REGISTERED') {
+        setEmailConflict(true);
+      } else {
+        setError(msg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -89,7 +96,7 @@ function CheckoutPageInner() {
           <input
             type="email"
             value={form.guestEmail}
-            onChange={(e) => set('guestEmail', e.target.value)}
+            onChange={(e) => { set('guestEmail', e.target.value); setEmailConflict(false); }}
             className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm"
             placeholder="name@example.com"
           />
@@ -155,11 +162,17 @@ function CheckoutPageInner() {
           </label>
         </div>
 
+        {emailConflict && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-800" dir="rtl">
+            <p className="font-semibold mb-1">כתובת המייל כבר קיימת במערכת</p>
+            <p>לסיוע בהזמנה, אנא פנה לצוות המלון.</p>
+          </div>
+        )}
         {error && <p className="text-red-600 text-sm">{error}</p>}
 
         <button
           type="submit"
-          disabled={submitting}
+          disabled={submitting || emailConflict}
           className="w-full bg-[#CA8A04] hover:bg-[#B45309] disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
         >
           {submitting ? 'שולח...' : 'אשר הזמנה'}

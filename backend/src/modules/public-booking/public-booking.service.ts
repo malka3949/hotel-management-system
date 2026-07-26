@@ -107,22 +107,23 @@ export class PublicBookingService {
     today.setHours(0, 0, 0, 0);
     if (checkIn < today) throw new BadRequestException('CHECK_IN_MUST_BE_IN_FUTURE');
 
-    // Find or create guest by email within branch
-    let guestCreated = false;
-    let guest = await this.prisma.guest.findFirst({
+    // Block duplicate email — each guest email must be unique per branch in public booking.
+    // Returning guests should contact the hotel directly.
+    const existingGuest = await this.prisma.guest.findFirst({
       where: { branchId, email: dto.guestEmail, isActive: true },
     });
-    if (!guest) {
-      guest = await this.prisma.guest.create({
-        data: {
-          branchId,
-          fullName: dto.guestName,
-          email: dto.guestEmail,
-          phone: dto.guestPhone,
-        },
-      });
-      guestCreated = true;
+    if (existingGuest) {
+      throw new ConflictException('EMAIL_ALREADY_REGISTERED');
     }
+
+    const guest = await this.prisma.guest.create({
+      data: {
+        branchId,
+        fullName: dto.guestName,
+        email: dto.guestEmail,
+        phone: dto.guestPhone,
+      },
+    });
 
     // Find first available room of requested type
     const availableRooms = await this.availability.getAvailableRooms({
@@ -167,11 +168,8 @@ export class PublicBookingService {
     await this.availability.invalidateAvailabilityCache(branchId);
 
     await this.audit.log({ userId: null, action: 'PUBLIC_RESERVATION_CREATE', entityType: 'reservation', entityId: reservation.id, branchId });
-    if (guestCreated) {
-      await this.audit.log({ userId: null, action: 'PUBLIC_GUEST_CREATE', entityType: 'guest', entityId: guest.id, branchId });
-    }
+    await this.audit.log({ userId: null, action: 'PUBLIC_GUEST_CREATE', entityType: 'guest', entityId: guest.id, branchId });
 
-    // Send portal link so guest can manage the reservation
     const { portalUrl } = await this.guestPortal.generateAndSendPortalLink(
       reservation.id,
       guest.id,
