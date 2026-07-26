@@ -7,7 +7,7 @@ import { publicBookingApi, PublicBranchSummary } from '@/lib/api/public-booking'
 
 function HotelCardSkeleton() {
   return (
-    <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden animate-pulse">
+    <div className="bg-white rounded-2xl border border-[var(--color-border-default)] overflow-hidden animate-pulse">
       <div className="w-full h-52 bg-gray-200" />
       <div className="p-5 space-y-3">
         <div className="h-6 bg-gray-200 rounded w-3/4" />
@@ -41,11 +41,11 @@ function HotelCard({ branch, checkIn, checkOut, adults, numChildren }: { branch:
   const extra = branch.amenities.length - 3;
 
   return (
-    <div className="bg-white rounded-2xl border border-[#E2E8F0] overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="bg-white rounded-2xl border border-[var(--color-border-default)] overflow-hidden hover:shadow-lg transition-shadow">
       {branch.coverPhoto ? (
         <img src={branch.coverPhoto} alt={branch.name} className="w-full h-52 object-cover" />
       ) : (
-        <div className="w-full h-52 bg-gradient-to-br from-[#1E3A8A] to-[#3B82F6] flex items-center justify-center">
+        <div className="w-full h-52 bg-gradient-to-br from-[#1C1C1E] to-[#3C3C3E] flex items-center justify-center">
           <span className="text-6xl">🏨</span>
         </div>
       )}
@@ -55,39 +55,39 @@ function HotelCard({ branch, checkIn, checkOut, adults, numChildren }: { branch:
           href={mapsHref}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1 text-sm text-[#475569] hover:text-[#1E3A8A]"
+          className="flex items-center gap-1 text-sm text-[var(--color-text-secondary)] hover:text-[var(--color-accent)]"
         >
           <span>📍</span>
           <span>{branch.address}</span>
         </a>
         {branch.description && (
-          <p className="text-sm text-[#475569] line-clamp-2">{branch.description}</p>
+          <p className="text-sm text-[var(--color-text-secondary)] line-clamp-2">{branch.description}</p>
         )}
         {chips.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {chips.map((a) => (
-              <span key={a} className="bg-blue-50 text-[#1E3A8A] text-xs px-2 py-1 rounded-full">
+              <span key={a} className="text-[var(--color-accent)] bg-[rgba(196,162,83,0.1)] text-xs px-2 py-1 rounded-full">
                 {a}
               </span>
             ))}
             {extra > 0 && (
-              <span className="text-[#475569] text-xs px-2 py-1">+{extra} נוספים</span>
+              <span className="text-[var(--color-text-secondary)] text-xs px-2 py-1">+{extra} נוספים</span>
             )}
           </div>
         )}
-        <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0]">
+        <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-default)]">
           <div>
             {branch.minPrice != null ? (
-              <span className="text-lg font-bold text-[#1E3A8A]">
+              <span className="text-lg font-bold text-[var(--color-accent)]">
                 מ-₪{branch.minPrice.toLocaleString('he-IL')} ללילה
               </span>
             ) : (
-              <span className="text-sm text-[#475569]">בירור מחיר</span>
+              <span className="text-sm text-[var(--color-text-secondary)]">בירור מחיר</span>
             )}
           </div>
           <Link
             href={href}
-            className="bg-[#CA8A04] hover:bg-[#B45309] text-white px-5 py-2 rounded-lg text-sm font-semibold transition-colors"
+            className="bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-white px-5 py-2 rounded-lg text-sm font-semibold transition-colors"
           >
             לפרטים ←
           </Link>
@@ -133,7 +133,7 @@ function BookPageInner() {
   return (
     <div>
       {/* Hero */}
-      <div className="bg-gradient-to-l from-[#1E3A8A] to-[#1e40af] text-white py-20 px-6">
+      <div className="bg-gradient-to-l from-[#1C1C1E] to-[#2C2C2E] text-white py-20 px-6">
         <div className="max-w-6xl mx-auto text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">גלו את המלון המושלם עבורכם</h1>
           <p className="text-xl text-blue-200">{branches.length > 0 ? `${branches.length} יעדים מובחרים ברחבי הארץ` : 'יעדים מובחרים ברחבי הארץ'}</p>
@@ -147,31 +147,31 @@ function BookPageInner() {
           className="bg-white rounded-2xl shadow-md p-5 flex flex-wrap gap-4 items-end"
         >
           <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-            <label className="text-xs font-medium text-[#475569]">תאריך הגעה</label>
+            <label className="text-xs font-medium text-[var(--color-text-secondary)]">תאריך הגעה</label>
             <input
               type="date"
               min={today}
               value={checkIn}
               onChange={(e) => setCheckIn(e.target.value)}
-              className="border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+              className="border border-[var(--color-border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div className="flex flex-col gap-1 flex-1 min-w-[140px]">
-            <label className="text-xs font-medium text-[#475569]">תאריך עזיבה</label>
+            <label className="text-xs font-medium text-[var(--color-text-secondary)]">תאריך עזיבה</label>
             <input
               type="date"
               min={checkIn || tomorrow}
               value={checkOut}
               onChange={(e) => setCheckOut(e.target.value)}
-              className="border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+              className="border border-[var(--color-border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             />
           </div>
           <div className="flex flex-col gap-1 min-w-[100px]">
-            <label className="text-xs font-medium text-[#475569]">מבוגרים</label>
+            <label className="text-xs font-medium text-[var(--color-text-secondary)]">מבוגרים</label>
             <select
               value={adults}
               onChange={(e) => setAdults(Number(e.target.value))}
-              className="border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] bg-white"
+              className="border border-[var(--color-border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] bg-white"
             >
               {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>{n} {n === 1 ? 'מבוגר' : 'מבוגרים'}</option>
@@ -179,11 +179,11 @@ function BookPageInner() {
             </select>
           </div>
           <div className="flex flex-col gap-1 min-w-[100px]">
-            <label className="text-xs font-medium text-[#475569]">ילדים</label>
+            <label className="text-xs font-medium text-[var(--color-text-secondary)]">ילדים</label>
             <select
               value={children}
               onChange={(e) => setChildren(Number(e.target.value))}
-              className="border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#1E3A8A] bg-white"
+              className="border border-[var(--color-border-default)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] bg-white"
             >
               {Array.from({ length: 10 }, (_, i) => i).map((n) => (
                 <option key={n} value={n}>{n === 0 ? 'ללא ילדים' : `${n} ${n === 1 ? 'ילד' : 'ילדים'}`}</option>
@@ -192,7 +192,7 @@ function BookPageInner() {
           </div>
           <button
             type="submit"
-            className="bg-[#1E3A8A] hover:bg-[#3B82F6] text-white px-6 py-2 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap"
+            className="bg-[var(--color-primary)] hover:bg-[var(--color-accent)] text-white px-6 py-2 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap"
           >
             חפש
           </button>
@@ -214,12 +214,12 @@ function BookPageInner() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-[#E2E8F0] py-6 text-center text-sm text-[#475569]">
+      <footer className="border-t border-[var(--color-border-default)] py-6 text-center text-sm text-[var(--color-text-secondary)]">
         <p>© 2026 רשת מלונות — כל הזכויות שמורות</p>
         <div className="flex justify-center gap-4 mt-2">
-          <a href="#" className="hover:text-[#1E3A8A]">מדיניות פרטיות</a>
+          <a href="#" className="hover:text-[var(--color-accent)]">מדיניות פרטיות</a>
           <span>|</span>
-          <a href="#" className="hover:text-[#1E3A8A]">צור קשר</a>
+          <a href="#" className="hover:text-[var(--color-accent)]">צור קשר</a>
         </div>
       </footer>
     </div>

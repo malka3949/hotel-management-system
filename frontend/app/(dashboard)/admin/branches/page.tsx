@@ -29,7 +29,7 @@ function AmenitiesInput({ amenities, onChange }: { amenities: string[]; onChange
       </div>
       <div className="flex flex-wrap gap-1">
         {amenities.map((a) => (
-          <span key={a} className="flex items-center gap-1 bg-blue-50 text-blue-800 text-xs px-2 py-0.5 rounded-full">
+          <span key={a} className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(196,162,83,0.12)', color: 'var(--color-accent)' }}>
             {a}
             <button type="button" onClick={() => onChange(amenities.filter((x) => x !== a))} className="text-blue-500 hover:text-red-500">×</button>
           </span>
@@ -186,7 +186,7 @@ export default function BranchesPage() {
 
   async function handleToggleActive(b: Branch) {
     const action = b.isActive ? 'השבתה' : 'הפעלה';
-    if (!confirm(`${action} את הסניף “${b.name}”?`)) return;
+    if (!confirm(`${action} את הסניף "${b.name}"?`)) return;
     setTogglingId(b.id);
     try {
       const updated = await setBranchActive(b.id, !b.isActive);
