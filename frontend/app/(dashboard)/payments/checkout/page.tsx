@@ -168,8 +168,8 @@ function CheckoutContent() {
                 onClick={() => setMethod(opt.value)}
                 className={`rounded border p-3 text-sm font-medium transition-colors ${
                   method === opt.value
-                    ? 'border-primary bg-blue-50 text-primary'
-                    : 'border-border-default text-text-secondary hover:bg-gray-50'
+                    ? 'border-[var(--color-accent)] text-[var(--color-accent)]'
+                    : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-base)]'
                 }`}
               >
                 {opt.label}
