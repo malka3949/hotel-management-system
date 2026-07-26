@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { translateError } from './error-messages';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
@@ -73,7 +74,13 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   if (res.status === 401) {
     const refreshed = await doRefresh();
     if (refreshed) {
-      res = await doRequest();
+      try {
+        res = await doRequest();
+      } catch {
+        const msg = 'אין חיבור לאינטרנט או שהשרת אינו מגיב';
+        if (typeof window !== 'undefined') toast.error(msg);
+        throw new Error(msg);
+      }
     }
     if (res.status === 401 && typeof window !== 'undefined') {
       window.location.href = '/login';
@@ -95,7 +102,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   };
 
   if (!res.ok || !body.success) {
-    const msg = body.message ?? body.error ?? 'שגיאה בלתי צפויה';
+    const msg = translateError(body.message ?? body.error ?? '');
     if (typeof window !== 'undefined') toast.error(msg);
     throw new Error(msg);
   }

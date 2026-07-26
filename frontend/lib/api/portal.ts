@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { translateError } from './error-messages';
 
 const API = '/api';
 
@@ -63,16 +64,14 @@ async function portalFetch<T>(path: string, init?: RequestInit): Promise<T> {
     if (typeof window !== 'undefined') toast.error(msg);
     throw new Error(msg);
   }
-
   if (!res.ok && res.headers.get('content-type')?.includes('text/html')) {
     const msg = 'השרת אינו זמין, נסה שוב בעוד מספר שניות';
     if (typeof window !== 'undefined') toast.error(msg);
     throw new Error(msg);
   }
-
   const json = (await res.json()) as { success: boolean; data?: T; error?: string; message?: string };
   if (!res.ok || !json.success) {
-    const msg = json.error ?? json.message ?? 'שגיאה בלתי צפויה';
+    const msg = translateError(json.error ?? json.message ?? '');
     if (typeof window !== 'undefined') toast.error(msg);
     throw new Error(msg);
   }

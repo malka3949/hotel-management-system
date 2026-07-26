@@ -1,4 +1,5 @@
 import { toast } from 'sonner';
+import { translateError } from './error-messages';
 
 const BASE = '/api/public/branches';
 
@@ -74,16 +75,14 @@ async function publicFetch<T>(url: string, init?: RequestInit): Promise<T> {
     if (typeof window !== 'undefined') toast.error(msg);
     throw new Error(msg);
   }
-
   if (!res.ok && res.headers.get('content-type')?.includes('text/html')) {
     const msg = 'השרת אינו זמין, נסה שוב בעוד מספר שניות';
     if (typeof window !== 'undefined') toast.error(msg);
     throw new Error(msg);
   }
-
   const body = await res.json();
   if (!res.ok) {
-    const msg = (body as { message?: string }).message ?? `שגיאת שרת ${res.status}`;
+    const msg = translateError((body as { message?: string }).message ?? '');
     if (typeof window !== 'undefined') toast.error(msg);
     throw new Error(msg);
   }
