@@ -17,6 +17,10 @@ export class BranchesService {
         ...(dto.email !== undefined && { email: dto.email }),
         ...(dto.contactPerson !== undefined && { contactPerson: dto.contactPerson }),
         ...(dto.timezone !== undefined && { timezone: dto.timezone }),
+        ...(dto.description !== undefined && { description: dto.description }),
+        ...(dto.coverPhoto !== undefined && { coverPhoto: dto.coverPhoto }),
+        ...(dto.amenities !== undefined && { amenities: dto.amenities }),
+        ...(dto.cancellationPolicy !== undefined && { cancellationPolicy: dto.cancellationPolicy }),
       },
     });
   }
