@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clarity — מערכת ניהול מלון</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sidebar:#FFFFFF;--bg:#F3F4F6;--surface:#FFFFFF;
+  --accent:#0E7490;--accent-bg:#ECFEFF;
+  --nav:#6B7280;--nav-active:#0E7490;
+  --h:#111827;--body:#6B7280;--border:#E5E7EB;
+  --green-bg:#DCFCE7;--green:#166534;
+  --amber-bg:#FEF9C3;--amber:#854D0E;
+  --blue-bg:#DBEAFE;--blue:#1E40AF;
+  --red-bg:#FEE2E2;--red:#991B1B;
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--h);display:flex;height:100vh;overflow:hidden;font-size:14px}
+.sidebar{width:232px;min-width:232px;background:var(--sidebar);border-left:1px solid var(--border);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.sidebar-header{padding:20px 18px;border-bottom:1px solid var(--border)}
+.hotel-name{font-size:15px;font-weight:700;color:var(--h);letter-spacing:-.02em}
+.hotel-tag{font-size:11px;color:var(--body);margin-top:2px}
+.sidebar-section{padding:12px 10px 6px}
+.section-label{font-size:10px;font-weight:600;color:#9CA3AF;text-transform:uppercase;letter-spacing:.08em;padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:7px;cursor:pointer;color:var(--nav);font-size:13px;font-weight:500;transition:all .12s;margin-bottom:1px}
+.nav-item:hover{background:#F9FAFB;color:var(--h)}
+.nav-item.active{background:var(--accent-bg);color:var(--nav-active);font-weight:600}
+.nav-icon{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-item.active .nav-icon{opacity:1}
+.nav-badge{margin-right:auto;background:var(--accent);color:#fff;font-size:10px;font-weight:600;padding:1px 6px;border-radius:100px}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid var(--border)}
+.user-row{display:flex;align-items:center;gap:9px}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.u-name{font-size:13px;font-weight:600}
+.u-role{font-size:11px;color:var(--body)}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-left h1{font-size:15px;font-weight:600}
+.topbar-date{font-size:12.5px;color:var(--body)}
+.topbar-right{display:flex;gap:8px}
+.btn{padding:6px 13px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--h)}
+.btn-primary{background:var(--accent);color:#fff;font-weight:600}
+.content{padding:22px 24px;flex:1}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px}
+.kpi-label{font-size:11.5px;font-weight:500;color:var(--body);margin-bottom:6px}
+.kpi-value{font-size:26px;font-weight:700;color:var(--h);letter-spacing:-.03em;line-height:1}
+.kpi-sub{font-size:11px;color:var(--body);margin-top:5px}
+.trend-up{color:#16A34A;font-weight:600}
+.trend-dn{color:#DC2626;font-weight:600}
+.grid2{display:grid;grid-template-columns:1fr 330px;gap:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-size:13.5px;font-weight:600}
+.card-link{font-size:12px;color:var(--accent);font-weight:500;cursor:pointer}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:right;font-size:11px;font-weight:600;color:var(--body);text-transform:uppercase;letter-spacing:.05em;padding:9px 18px;background:#F9FAFB;border-bottom:1px solid var(--border)}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:#F9FAFB}
+td{padding:11px 18px;font-size:13px;color:var(--h)}
+.g-cell{display:flex;align-items:center;gap:9px}
+.g-av{width:26px;height:26px;border-radius:50%;background:#E5E7EB;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#6B7280;flex-shrink:0}
+.g-name{font-weight:500;font-size:13px}
+.g-nights{font-size:11px;color:var(--body)}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:600}
+.bg{background:var(--green-bg);color:var(--green)}
+.ba{background:var(--amber-bg);color:var(--amber)}
+.bb{background:var(--blue-bg);color:var(--blue)}
+.br{background:var(--red-bg);color:var(--red)}
+.room-wrap{padding:14px 16px}
+.floor-lbl{font-size:10.5px;font-weight:600;color:var(--body);margin-bottom:7px;margin-top:4px}
+.room-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:12px}
+.rc{aspect-ratio:1;border-radius:5px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer}
+.rc-num{font-size:11px;font-weight:700}
+.rc-type{font-size:8.5px;opacity:.7;margin-top:1px}
+.occ{background:#DBEAFE;color:#1E40AF}
+.vac{background:#DCFCE7;color:#166534}
+.cout{background:#FEF9C3;color:#854D0E}
+.mnt{background:#FEE2E2;color:#991B1B}
+.cln{background:#F3F4F6;color:#9CA3AF}
+.legend{display:flex;flex-wrap:wrap;gap:9px;padding:11px 16px;border-top:1px solid var(--border)}
+.li{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--body)}
+.ld{width:8px;height:8px;border-radius:2px}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="hotel-name">מלון המרכז</div>
+    <div class="hotel-tag">תל אביב · ניהול רשת</div>
+  </div>
+  <div class="sidebar-section">
+    <div class="section-label">ראשי</div>
+    <div class="nav-item active">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      לוח בקרה
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      חדרים
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      הזמנות
+      <span class="nav-badge">12</span>
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+      אורחים
+    </div>
+  </div>
+  <div class="sidebar-section">
+    <div class="section-label">תפעול</div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+      חדרנית
+      <span class="nav-badge" style="background:#F59E0B">5</span>
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+      דוחות
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+      חיוב
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+      הגדרות
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-row">
+      <div class="avatar">ד״ש</div>
+      <div><div class="u-name">דנה שמעוני</div><div class="u-role">מנהלת מלון</div></div>
+    </div>
+  </div>
+</aside>
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left"><h1>לוח בקרה</h1></div>
+    <div class="topbar-date">שבת, 26 ביולי 2025</div>
+    <div class="topbar-right">
+      <button class="btn btn-outline">ייצוא</button>
+      <button class="btn btn-primary">+ צ׳ק-אין חדש</button>
+    </div>
+  </div>
+  <div class="content">
+    <div class="kpi-grid">
+      <div class="kpi"><div class="kpi-label">תפוסה היום</div><div class="kpi-value">87%</div><div class="kpi-sub"><span class="trend-up">↑ 4%</span> לעומת אתמול</div></div>
+      <div class="kpi"><div class="kpi-label">הכנסה יומית</div><div class="kpi-value">₪18,450</div><div class="kpi-sub"><span class="trend-up">↑ 12%</span> לעומת אתמול</div></div>
+      <div class="kpi"><div class="kpi-label">צ׳ק-אין היום</div><div class="kpi-value">14</div><div class="kpi-sub">מתוך 14 הזמנות</div></div>
+      <div class="kpi"><div class="kpi-label">צ׳ק-אאוט היום</div><div class="kpi-value">9</div><div class="kpi-sub"><span class="trend-dn">3 ממתינים</span></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <div class="card-head"><div class="card-title">צ׳ק-אין היום</div><div class="card-link">כל ההזמנות →</div></div>
+        <table>
+          <thead><tr><th>אורח</th><th>חדר</th><th>תאריכים</th><th>סטטוס</th><th></th></tr></thead>
+          <tbody>
+            <tr><td><div class="g-cell"><div class="g-av">יל</div><div><div class="g-name">יעל לוי</div><div class="g-nights">3 לילות</div></div></div></td><td>302</td><td>26/07–29/07</td><td><span class="badge bg">בוצע</span></td><td style="color:#9CA3AF">⋯</td></tr>
+            <tr><td><div class="g-cell"><div class="g-av">מכ</div><div><div class="g-name">משה כהן</div><div class="g-nights">1 לילה</div></div></div></td><td>115</td><td>26/07–27/07</td><td><span class="badge ba">ממתין</span></td><td style="color:#9CA3AF">⋯</td></tr>
+            <tr><td><div class="g-cell"><div class="g-av">רז</div><div><div class="g-name">רונה זיו</div><div class="g-nights">5 לילות</div></div></div></td><td>214</td><td>26/07–31/07</td><td><span class="badge bg">בוצע</span></td><td style="color:#9CA3AF">⋯</td></tr>
+            <tr><td><div class="g-cell"><div class="g-av">אמ</div><div><div class="g-name">אלון מזרחי</div><div class="g-nights">2 לילות</div></div></div></td><td>408</td><td>26/07–28/07</td><td><span class="badge bb">ביצוע</span></td><td style="color:#9CA3AF">⋯</td></tr>
+            <tr><td><div class="g-cell"><div class="g-av">שפ</div><div><div class="g-name">שרית פרץ</div><div class="g-nights">4 לילות</div></div></div></td><td>501</td><td>26/07–30/07</td><td><span class="badge ba">ממתין</span></td><td style="color:#9CA3AF">⋯</td></tr>
+            <tr><td><div class="g-cell"><div class="g-av">נב</div><div><div class="g-name">נועה בן-דוד</div><div class="g-nights">2 לילות</div></div></div></td><td>118</td><td>26/07–28/07</td><td><span class="badge bg">בוצע</span></td><td style="color:#9CA3AF">⋯</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="card-title">סטטוס חדרים</div><div class="card-link">מפה מלאה →</div></div>
+        <div class="room-wrap">
+          <div class="floor-lbl">קומה 1</div>
+          <div class="room-grid">
+            <div class="rc occ"><div class="rc-num">101</div><div class="rc-type">STD</div></div>
+            <div class="rc vac"><div class="rc-num">102</div><div class="rc-type">STD</div></div>
+            <div class="rc cout"><div class="rc-num">103</div><div class="rc-type">DLX</div></div>
+            <div class="rc occ"><div class="rc-num">104</div><div class="rc-type">STD</div></div>
+            <div class="rc cln"><div class="rc-num">105</div><div class="rc-type">STD</div></div>
+          </div>
+          <div class="floor-lbl">קומה 2</div>
+          <div class="room-grid">
+            <div class="rc occ"><div class="rc-num">201</div><div class="rc-type">DLX</div></div>
+            <div class="rc occ"><div class="rc-num">202</div><div class="rc-type">DLX</div></div>
+            <div class="rc vac"><div class="rc-num">203</div><div class="rc-type">DLX</div></div>
+            <div class="rc mnt"><div class="rc-num">204</div><div class="rc-type">DLX</div></div>
+            <div class="rc occ"><div class="rc-num">205</div><div class="rc-type">STD</div></div>
+          </div>
+          <div class="floor-lbl">קומה 3</div>
+          <div class="room-grid">
+            <div class="rc cout"><div class="rc-num">301</div><div class="rc-type">STE</div></div>
+            <div class="rc occ"><div class="rc-num">302</div><div class="rc-type">STD</div></div>
+            <div class="rc occ"><div class="rc-num">303</div><div class="rc-type">STD</div></div>
+            <div class="rc vac"><div class="rc-num">304</div><div class="rc-type">STE</div></div>
+            <div class="rc occ"><div class="rc-num">305</div><div class="rc-type">STD</div></div>
+          </div>
+          <div class="floor-lbl">קומה 4</div>
+          <div class="room-grid">
+            <div class="rc vac"><div class="rc-num">401</div><div class="rc-type">STE</div></div>
+            <div class="rc occ"><div class="rc-num">402</div><div class="rc-type">STE</div></div>
+            <div class="rc cln"><div class="rc-num">403</div><div class="rc-type">STE</div></div>
+            <div class="rc occ"><div class="rc-num">404</div><div class="rc-type">STE</div></div>
+            <div class="rc cout"><div class="rc-num">405</div><div class="rc-type">PNT</div></div>
+          </div>
+        </div>
+        <div class="legend">
+          <div class="li"><div class="ld" style="background:#BFDBFE"></div>תפוס</div>
+          <div class="li"><div class="ld" style="background:#BBF7D0"></div>פנוי</div>
+          <div class="li"><div class="ld" style="background:#FEF08A"></div>יציאה היום</div>
+          <div class="li"><div class="ld" style="background:#FECACA"></div>תחזוקה</div>
+          <div class="li"><div class="ld" style="background:#E5E7EB"></div>ניקיון</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>
