@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getReconciliation, type ReconciliationReport } from '@/lib/api/billing';
+import { useBranchStore } from '@/lib/store/branch.store';
 import { useAuth } from '@/hooks/useAuth';
 
 function today() {
@@ -26,23 +27,26 @@ const METHOD_LABELS: Record<string, string> = {
 export default function ReconciliationPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const isAdmin = user?.role === 'chain_admin';
+  const { selectedBranchId } = useBranchStore();
   const [startDate, setStartDate] = useState(monthStart());
   const [endDate, setEndDate] = useState(today());
   const [report, setReport] = useState<ReconciliationReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const branchId = isAdmin ? selectedBranchId || undefined : (user?.branchId ?? undefined);
+
   useEffect(() => {
     if (!user) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (isAdmin && !selectedBranchId) return;
     setLoading(true);
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setError('');
-    getReconciliation(startDate, endDate)
+    getReconciliation(startDate, endDate, branchId)
       .then(setReport)
       .catch((e: Error) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [startDate, endDate, user]);
+  }, [startDate, endDate, user, branchId, isAdmin, selectedBranchId]);
 
   return (
     <div className="max-w-5xl" dir="rtl">
@@ -55,7 +59,7 @@ export default function ReconciliationPage() {
         </h2>
       </div>
 
-      <div className="flex gap-4 mb-6 items-end">
+      <div className="flex gap-4 mb-6 items-end flex-wrap">
         <div>
           <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>מתאריך</label>
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
@@ -67,6 +71,9 @@ export default function ReconciliationPage() {
             className="rounded-md border px-3 py-2 text-sm" style={{ borderColor: 'var(--color-border-default)' }} />
         </div>
       </div>
+      {isAdmin && !selectedBranchId && (
+        <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>בחר סניף כדי להציג דוח</p>
+      )}
 
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
       {loading && <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>טוען...</p>}

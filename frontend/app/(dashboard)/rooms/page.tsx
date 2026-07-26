@@ -14,7 +14,7 @@ import {
   type CleaningStatus,
   type RoomsFilter,
 } from '@/lib/api/rooms';
-import { getBranches, type Branch } from '@/lib/api/branches';
+import { useBranchStore } from '@/lib/store/branch.store';
 import { RoomStatusBadge } from '@/components/shared/RoomStatusBadge';
 import { CleaningStatusBadge } from '@/components/shared/CleaningStatusBadge';
 import { RoleGate } from '@/components/shared/RoleGate';
@@ -37,17 +37,17 @@ export default function RoomsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'chain_admin';
 
+  const { selectedBranchId } = useBranchStore();
+
   const [rooms, setRooms] = useState<Room[]>([]);
   const [roomTypes, setRoomTypes] = useState<RoomType[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filters, setFilters] = useState<RoomsFilter>({});
 
   useEffect(() => {
-    if (!isAdmin) return;
-    getBranches().then(setBranches).catch(() => {});
-  }, [isAdmin]);
+    setFilters((f) => ({ ...f, branchId: selectedBranchId || undefined, roomTypeId: undefined }));
+  }, [selectedBranchId]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -125,21 +125,6 @@ export default function RoomsPage() {
         className="mb-5 p-4 rounded-lg border flex flex-wrap gap-3"
         style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
       >
-        {isAdmin && (
-          <select
-            value={filters.branchId ?? ''}
-            onChange={(e) =>
-              setFilters((f) => ({ ...f, branchId: e.target.value || undefined, roomTypeId: undefined }))
-            }
-            className="rounded-md border px-3 py-2 text-sm font-medium"
-            style={{ borderColor: 'var(--color-border-default)' }}
-          >
-            <option value="">בחר סניף</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        )}
         <input
           placeholder="חיפוש לפי מספר חדר"
           value={filters.search ?? ''}

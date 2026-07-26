@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { getBranches, type Branch } from '@/lib/api/branches';
+import { useBranchStore } from '@/lib/store/branch.store';
 import {
   getArrivals,
   getDepartures,
@@ -25,10 +25,9 @@ type Tab = 'arrivals' | 'departures' | 'active';
 export default function FrontDeskPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'chain_admin';
+  const { selectedBranchId: selectedBranch } = useBranchStore();
 
   const [activeTab, setActiveTab] = useState<Tab>('arrivals');
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [selectedBranch, setSelectedBranch] = useState<string>('');
 
   const [arrivals, setArrivals] = useState<FrontDeskReservation[]>([]);
   const [departures, setDepartures] = useState<FrontDeskReservation[]>([]);
@@ -47,11 +46,6 @@ export default function FrontDeskPage() {
 
   const [chargeTarget, setChargeTarget] = useState<{ reservationId: string; invoiceId: string; branchId: string } | null>(null);
   const [chargeFetching, setChargeFetching] = useState(false);
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    getBranches().then(setBranches).catch(() => {});
-  }, [isAdmin]);
 
   const branchId = isAdmin ? selectedBranch || undefined : undefined;
 
@@ -157,19 +151,6 @@ export default function FrontDeskPage() {
         <h2 className="text-xl font-semibold" style={{ color: 'var(--color-text-primary)' }}>
           קבלת קהל
         </h2>
-        {isAdmin && (
-          <select
-            value={selectedBranch}
-            onChange={(e) => setSelectedBranch(e.target.value)}
-            className="rounded-md border px-3 py-2 text-sm"
-            style={{ borderColor: 'var(--color-border-default)' }}
-          >
-            <option value="">בחר סניף</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        )}
       </div>
 
       {isAdmin && !selectedBranch ? (
