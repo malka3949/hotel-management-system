@@ -54,7 +54,6 @@ function DashboardPageInner() {
       return;
     }
     if (!canSeeReports) {
-      // housekeeping: no dashboard data
       setLoading(false);
       return;
     }
@@ -115,7 +114,6 @@ function DashboardPageInner() {
         </div>
       )}
 
-      {/* KPI Cards */}
       {canSeeReports && <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         <KPICard
           label="חדרים תפוסים"
@@ -170,7 +168,6 @@ function DashboardPageInner() {
         />
       </div>}
 
-      {/* Charts */}
       {canSeeReports && <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div
           className="rounded-lg border p-4"
@@ -192,7 +189,6 @@ function DashboardPageInner() {
         </div>
       </div>}
 
-      {/* Today's Arrivals Table */}
       {canSeeReports &&
       <div
         className="rounded-lg border"
@@ -248,7 +244,7 @@ function DashboardPageInner() {
                     {formatDate(r.checkOutDate)}
                   </td>
                   <td className="px-4 py-2.5">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                    <span className="px-2 py-0.5 rounded-full text-xs font-medium" style={{ backgroundColor: 'rgba(196,162,83,0.12)', color: 'var(--color-accent)' }}>
                       {r.status === 'confirmed' ? 'מאושר' : r.status}
                     </span>
                   </td>

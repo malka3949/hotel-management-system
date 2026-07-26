@@ -44,31 +44,32 @@ export default function HousekeepingPage() {
   const greeting = `שלום, ${user?.name ?? ''}. יש לך ${tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length} משימות פעילות.`;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 max-w-lg mx-auto">
-      <h1 className="text-xl font-bold text-[#0F172A] mb-1">ניקיון</h1>
-      <p className="text-sm text-[#475569] mb-4">{greeting}</p>
+    <div className="min-h-screen p-4 max-w-lg mx-auto" style={{ backgroundColor: 'var(--color-bg-base)' }}>
+      <h1 className="text-xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>ניקיון</h1>
+      <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>{greeting}</p>
 
       <div className="flex gap-2 mb-4">
         {(['today', 'pending'] as Filter[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={
               filter === f
-                ? 'bg-[#1E3A8A] text-white'
-                : 'bg-white text-[#475569] border border-[#E2E8F0]'
-            }`}
+                ? { backgroundColor: 'var(--color-primary)', color: '#fff' }
+                : { backgroundColor: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border-default)' }
+            }
           >
             {f === 'today' ? 'היום' : 'כל הממתינות'}
           </button>
         ))}
       </div>
 
-      {loading && <p className="text-sm text-[#475569]">טוען...</p>}
+      {loading && <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>טוען...</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       {!loading && !error && tasks.length === 0 && (
-        <p className="text-sm text-[#475569] text-center py-8">אין משימות</p>
+        <p className="text-sm text-center py-8" style={{ color: 'var(--color-text-secondary)' }}>אין משימות</p>
       )}
 
       <div className="flex flex-col gap-3">

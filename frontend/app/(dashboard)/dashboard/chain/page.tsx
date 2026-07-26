@@ -54,7 +54,6 @@ export default function ChainDashboardPage() {
         </div>
       )}
 
-      {/* Network Summary */}
       {!loading && branches.length > 0 && (
         <div className="grid grid-cols-3 gap-4 mb-8">
           {[
@@ -78,7 +77,6 @@ export default function ChainDashboardPage() {
         </div>
       )}
 
-      {/* Branch Table */}
       <div
         className="rounded-lg border"
         style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
@@ -137,7 +135,7 @@ export default function ChainDashboardPage() {
                               b.occupancyPct >= 80
                                 ? '#059669'
                                 : b.occupancyPct >= 50
-                                  ? '#CA8A04'
+                                  ? '#C4A253'
                                   : '#DC2626',
                           }}
                         />
