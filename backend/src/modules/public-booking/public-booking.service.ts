@@ -171,13 +171,14 @@ export class PublicBookingService {
       await this.audit.log({ userId: null, action: 'PUBLIC_GUEST_CREATE', entityType: 'guest', entityId: guest.id, branchId });
     }
 
-    // Send portal link so guest can manage the reservation
+    // Send portal link — always use the name/email from the current booking form,
+    // not from the existing guest record (which may belong to a previous booking).
     const { portalUrl } = await this.guestPortal.generateAndSendPortalLink(
       reservation.id,
       guest.id,
       reservation.checkOutDate,
-      guest.email,
-      guest.fullName,
+      dto.guestEmail,
+      dto.guestName,
     );
 
     return {
