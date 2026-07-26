@@ -100,10 +100,41 @@ function SessionsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+function NotificationsPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="absolute left-0 top-11 z-50 w-72 rounded-xl shadow-xl p-4"
+      style={{
+        backgroundColor: 'var(--color-bg-surface)',
+        border: '1px solid var(--color-border-default)',
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+          התראות
+        </h3>
+        <button
+          onClick={onClose}
+          className="text-xs px-2 py-0.5 rounded"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          סגור
+        </button>
+      </div>
+      <div className="py-6 text-center">
+        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          אין התראות חדשות
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export function Topbar() {
   const { user, clearUser } = useAuth();
   const router = useRouter();
   const [showSessions, setShowSessions] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   async function handleLogout() {
     try {
@@ -158,29 +189,34 @@ export function Topbar() {
       {user && (
         <div className="flex items-center gap-3">
           {/* Notification bell */}
-          <button
-            className="relative w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-            style={{ color: 'var(--color-text-secondary)' }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-bg-base)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-            }}
-            title="התראות"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M8 1.5a4.5 4.5 0 00-4.5 4.5v2.5l-1 1.5h11l-1-1.5V6A4.5 4.5 0 008 1.5z"
-                stroke="currentColor" strokeWidth="1.4" fill="none"
-              />
-              <path d="M6.5 11.5a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
-            </svg>
-            <span
-              className="absolute top-1 right-1 w-2 h-2 rounded-full"
-              style={{ backgroundColor: '#DC2626', border: '1.5px solid var(--color-bg-surface)' }}
-            />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => {
+                setShowNotifications((v) => !v);
+                setShowSessions(false);
+              }}
+              className="relative w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+              style={{ color: 'var(--color-text-secondary)' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-bg-base)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+              }}
+              title="התראות"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M8 1.5a4.5 4.5 0 00-4.5 4.5v2.5l-1 1.5h11l-1-1.5V6A4.5 4.5 0 008 1.5z"
+                  stroke="currentColor" strokeWidth="1.4" fill="none"
+                />
+                <path d="M6.5 11.5a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+              </svg>
+            </button>
+            {showNotifications && (
+              <NotificationsPanel onClose={() => setShowNotifications(false)} />
+            )}
+          </div>
 
           {/* Divider */}
           <div className="w-px h-5" style={{ backgroundColor: 'var(--color-border-default)' }} />
@@ -188,7 +224,10 @@ export function Topbar() {
           {/* User info */}
           <div className="relative">
             <button
-              onClick={() => setShowSessions((v) => !v)}
+              onClick={() => {
+                setShowSessions((v) => !v);
+                setShowNotifications(false);
+              }}
               className="flex items-center gap-2 text-sm"
             >
               <div
