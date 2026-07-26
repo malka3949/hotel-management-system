@@ -51,6 +51,7 @@ export class BranchesService {
         ...(dto.coverPhoto !== undefined && { coverPhoto: dto.coverPhoto }),
         ...(dto.amenities !== undefined && { amenities: dto.amenities }),
         ...(dto.cancellationPolicy !== undefined && { cancellationPolicy: dto.cancellationPolicy }),
+        ...(dto.isActive !== undefined && { isActive: dto.isActive }),
       },
     });
   }

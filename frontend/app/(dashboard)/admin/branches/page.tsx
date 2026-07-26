@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { getBranches, createBranch, updateBranch, type Branch } from '@/lib/api/branches';
+import { getBranches, createBranch, updateBranch, setBranchActive, type Branch } from '@/lib/api/branches';
 import { uploadPhoto } from '@/lib/api/uploads';
 import { RoleGate } from '@/components/shared/RoleGate';
 
@@ -18,7 +18,7 @@ function AmenitiesInput({ amenities, onChange }: { amenities: string[]; onChange
       <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>שירותי הסניף (amenities)</p>
       <div className="flex gap-2">
         <input
-          placeholder="בריכה, חניה, חדר כושר..."
+          placeholder="בריכה, חנייה, חדר כושר..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), add())}
@@ -96,7 +96,7 @@ function CoverPhotoInput({ value, onChange }: { value: string; onChange: (url: s
       {value && (
         <div className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={value} alt="תצוגה מקדימה" className="h-16 w-24 object-cover rounded-md border" style={{ borderColor: 'var(--color-border-default)' }} />
+          <img src={value} alt="תצוגה מקדימית" className="h-16 w-24 object-cover rounded-md border" style={{ borderColor: 'var(--color-border-default)' }} />
           <button type="button" onClick={() => onChange('')} className="text-xs" style={{ color: '#DC2626' }}>הסר</button>
         </div>
       )}
@@ -114,6 +114,7 @@ export default function BranchesPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editData, setEditData] = useState<BranchFormData>(emptyForm);
   const [editSaving, setEditSaving] = useState(false);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
 
   useEffect(() => {
     getBranches()
@@ -180,6 +181,20 @@ export default function BranchesPage() {
       setError(err instanceof Error ? err.message : 'שגיאה בשמירת סניף');
     } finally {
       setEditSaving(false);
+    }
+  }
+
+  async function handleToggleActive(b: Branch) {
+    const action = b.isActive ? 'השבתה' : 'הפעלה';
+    if (!confirm(`${action} את הסניף “${b.name}”?`)) return;
+    setTogglingId(b.id);
+    try {
+      const updated = await setBranchActive(b.id, !b.isActive);
+      setBranches((prev) => prev.map((x) => (x.id === b.id ? updated : x)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `שגיאה ב${action}`);
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -274,14 +289,27 @@ export default function BranchesPage() {
                           {b.isActive ? 'פעיל' : 'לא פעיל'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-left">
-                        <button
-                          onClick={() => editingId === b.id ? setEditingId(null) : startEdit(b)}
-                          className="text-xs px-3 py-1 rounded border"
-                          style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
-                        >
-                          {editingId === b.id ? 'סגור' : 'עריכה'}
-                        </button>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2 justify-end">
+                          <button
+                            onClick={() => editingId === b.id ? setEditingId(null) : startEdit(b)}
+                            className="text-xs px-3 py-1 rounded border"
+                            style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
+                          >
+                            {editingId === b.id ? 'סגור' : 'עריכה'}
+                          </button>
+                          <button
+                            onClick={() => void handleToggleActive(b)}
+                            disabled={togglingId === b.id}
+                            className="text-xs px-3 py-1 rounded border disabled:opacity-40"
+                            style={{
+                              borderColor: b.isActive ? '#FCA5A5' : 'var(--color-border-default)',
+                              color: b.isActive ? '#DC2626' : '#16A34A',
+                            }}
+                          >
+                            {togglingId === b.id ? '...' : b.isActive ? 'השבת' : 'הפעל'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                     {editingId === b.id && (
