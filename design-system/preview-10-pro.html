@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>לוח בקרה — מלון המרכז</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sb:#1C1C1E;--sb-border:rgba(255,255,255,.08);
+  --accent:#C4A253;--accent-dim:rgba(196,162,83,.12);
+  --bg:#F6F4F0;--surface:#FFFFFF;--border:#E5DFDA;
+  --h:#1C1C1E;--body:#71717A;--muted:#A1A1AA;
+  --s-in:#15803D;--s-in-bg:#F0FDF4;
+  --s-wait:#B45309;--s-wait-bg:#FFFBEB;
+  --s-out:#1D4ED8;--s-out-bg:#EFF6FF;
+  --s-new:#6D28D9;--s-new-bg:#F5F3FF;
+}
+body{font-family:'Heebo',-apple-system,sans-serif;background:var(--bg);color:var(--h);display:flex;height:100vh;overflow:hidden;font-size:14px;line-height:1.5}
+
+/* SIDEBAR */
+.sidebar{width:220px;min-width:220px;background:var(--sb);display:flex;flex-direction:column;height:100vh;overflow-y:auto}
+.sb-logo{padding:18px 16px 14px;border-bottom:1px solid var(--sb-border)}
+.sb-hotel{font-size:13.5px;font-weight:700;color:#FFF;line-height:1.3}
+.sb-chain{font-size:10px;color:rgba(255,255,255,.28);margin-top:2px;letter-spacing:.07em;text-transform:uppercase}
+.sb-section{padding:14px 10px 6px}
+.sb-section-title{font-size:9.5px;font-weight:600;color:rgba(255,255,255,.2);letter-spacing:.1em;text-transform:uppercase;padding:0 8px;margin-bottom:4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:6px;color:rgba(255,255,255,.45);font-size:13px;font-weight:400;cursor:pointer;transition:all .12s;margin-bottom:1px;position:relative}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.75)}
+.nav-item.active{background:rgba(196,162,83,.12);color:#FFF;font-weight:500}
+.nav-item.active::before{content:'';position:absolute;right:0;top:6px;bottom:6px;width:3px;background:var(--accent);border-radius:2px 0 0 2px}
+.nav-icon{width:15px;height:15px;flex-shrink:0;opacity:.55}
+.nav-item.active .nav-icon{opacity:1}
+.nav-count{margin-right:auto;font-size:10px;font-weight:700;background:var(--accent);color:var(--sb);padding:1px 5px;border-radius:10px;line-height:1.4}
+.nav-dot{margin-right:auto;width:7px;height:7px;border-radius:50%;background:#F87171}
+.sb-footer{margin-top:auto;padding:12px 14px;border-top:1px solid var(--sb-border)}
+.sb-user{display:flex;align-items:center;gap:9px}
+.sb-avatar{width:30px;height:30px;border-radius:8px;background:var(--accent);color:#1C1C1E;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.sb-uname{font-size:12.5px;font-weight:600;color:#FFF}
+.sb-urole{font-size:10.5px;color:rgba(255,255,255,.32)}
+
+/* TOPBAR */
+.main{flex:1;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.topbar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;white-space:nowrap}
+.search-wrap{flex:1;max-width:260px;margin-right:12px;position:relative}
+.search{width:100%;height:32px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:0 32px 0 10px;font-size:13px;font-family:inherit;color:var(--h);outline:none;text-align:right}
+.search::placeholder{color:var(--muted)}
+.search-icon{position:absolute;left:auto;right:10px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none}
+.tb-actions{display:flex;align-items:center;gap:8px;margin-right:auto}
+.tb-date{font-size:12.5px;color:var(--body);white-space:nowrap}
+.notif{position:relative;width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--body)}
+.notif-dot{position:absolute;top:5px;left:5px;width:8px;height:8px;border-radius:50%;background:#EF4444;border:2px solid var(--surface)}
+.btn{height:32px;padding:0 12px;border-radius:7px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--h)}
+.btn-primary{background:var(--accent);color:#1C1C1E;font-weight:700}
+
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px 16px}
+.kpi-lbl{font-size:11px;color:var(--body);font-weight:500;margin-bottom:4px}
+.kpi-val{font-size:22px;font-weight:800;color:var(--h);line-height:1;letter-spacing:-.02em}
+.kpi-sub{font-size:11px;color:var(--body);margin-top:3px}
+.up{color:#15803D;font-weight:600}
+.dn{color:#B91C1C;font-weight:600}
+
+/* BODY */
+.body-grid{display:grid;grid-template-columns:1fr 272px;gap:12px;flex:1;min-height:0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;display:flex;flex-direction:column;overflow:hidden}
+.card-head{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-shrink:0}
+.card-title{font-size:13.5px;font-weight:700}
+.tabs{display:flex;gap:2px;background:#F6F4F0;padding:3px;border-radius:7px}
+.tab{padding:4px 11px;font-size:12px;font-weight:500;color:var(--body);border-radius:5px;cursor:pointer}
+.tab.active{background:var(--surface);color:var(--h);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.ca{margin-right:auto}
+
+/* TABLE */
+.tbl-wrap{overflow-y:auto;flex:1}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:right;font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:8px 12px;background:#FAFAF8;border-bottom:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:1}
+tbody tr{border-bottom:1px solid #F0EDE8;transition:background .1s}
+tbody tr:hover{background:#FAFAF8}
+td{padding:8px 12px;font-size:12.5px;color:var(--h);white-space:nowrap}
+.gc{display:flex;align-items:center;gap:8px}
+.gav{width:26px;height:26px;border-radius:7px;background:#F0EDE8;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:var(--body);flex-shrink:0}
+.gname{font-weight:600;font-size:12.5px;line-height:1.2}
+.gphone{font-size:10.5px;color:var(--muted)}
+.rnum{font-weight:700;font-size:12.5px}
+.rtype{font-size:10px;color:var(--body)}
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:10.5px;font-weight:600}
+.si{background:var(--s-in-bg);color:var(--s-in)}
+.sw{background:var(--s-wait-bg);color:var(--s-wait)}
+.sb2{background:var(--s-out-bg);color:var(--s-out)}
+.sn{background:var(--s-new-bg);color:var(--s-new)}
+.payd{color:var(--s-in);font-weight:600;font-size:11.5px}
+.payp{color:var(--s-wait);font-weight:600;font-size:11.5px}
+.act-btn{font-size:11.5px;font-weight:500;color:var(--accent);cursor:pointer;border:none;background:none;font-family:inherit;padding:3px 6px;border-radius:4px}
+.act-btn:hover{background:var(--accent-dim)}
+
+/* PANEL */
+.panel{display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.rs-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.rs-head{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12.5px;font-weight:700}
+.rs-body{padding:10px 14px;display:flex;flex-direction:column;gap:6px}
+.rs-total{font-size:11px;color:var(--body);margin-bottom:3px}
+.rs-bar-bg{height:5px;background:#F0EDE8;border-radius:10px;overflow:hidden;margin-bottom:8px}
+.rs-bar-fill{height:100%;background:var(--accent);border-radius:10px;width:87%}
+.rs-row{display:flex;align-items:center;justify-content:space-between;font-size:12px}
+.rs-lbl{display:flex;align-items:center;gap:7px;color:var(--body)}
+.rs-dot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.rs-val{font-weight:700;font-size:13px;color:var(--h)}
+.al-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;flex:1;display:flex;flex-direction:column}
+.al-head{padding:10px 14px;border-bottom:1px solid var(--border);font-size:12.5px;font-weight:700;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.al-cnt{font-size:10px;font-weight:700;background:#FEF2F2;color:#B91C1C;padding:1px 6px;border-radius:10px}
+.al-body{overflow-y:auto;flex:1}
+.al-item{padding:9px 14px;border-bottom:1px solid #F0EDE8;display:flex;gap:9px;align-items:flex-start}
+.al-item:last-child{border-bottom:none}
+.al-ico{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px}
+.al-txt{font-size:11.5px;color:var(--h);line-height:1.4}
+.al-time{font-size:10.5px;color:var(--muted);margin-top:1px}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-hotel">מלון המרכז</div>
+    <div class="sb-chain">Hotel Management</div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-section-title">ניהול</div>
+    <div class="nav-item active">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>לוח בקרה
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>הזמנות<span class="nav-count">17</span>
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>חדרים
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>אורחים
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>חיוב<span class="nav-dot"></span>
+    </div>
+  </div>
+  <div class="sb-section">
+    <div class="sb-section-title">תפעול</div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/></svg>חדרנית<span class="nav-count" style="background:#F87171;color:#fff">5</span>
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>דוחות
+    </div>
+    <div class="nav-item">
+      <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>הגדרות
+    </div>
+  </div>
+  <div class="sb-footer">
+    <div class="sb-user">
+      <div class="sb-avatar">ד״ש</div>
+      <div><div class="sb-uname">דנה שמעוני</div><div class="sb-urole">מנהלת מלון</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title">לוח בקרה</div>
+    <div class="search-wrap">
+      <svg class="search-icon" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input class="search" type="text" placeholder="חפש אורח, חדר, הזמנה...">
+    </div>
+    <div class="tb-actions">
+      <span class="tb-date">שבת, 26.07.2025</span>
+      <div class="notif">
+        <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+        <div class="notif-dot"></div>
+      </div>
+      <button class="btn btn-outline">ייצוא CSV</button>
+      <button class="btn btn-primary">+ צ׳ק-אין חדש</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-lbl">תפוסה</div><div class="kpi-val">87%</div><div class="kpi-sub"><span class="up">↑4%</span> לעומת אתמול</div></div>
+      <div class="kpi"><div class="kpi-lbl">הכנסה יומית</div><div class="kpi-val">₪18,450</div><div class="kpi-sub"><span class="up">↑12%</span> לעומת אתמול</div></div>
+      <div class="kpi"><div class="kpi-lbl">צ׳ק-אין היום</div><div class="kpi-val">14</div><div class="kpi-sub">10 בוצע · 4 ממתינים</div></div>
+      <div class="kpi"><div class="kpi-lbl">צ׳ק-אאוט היום</div><div class="kpi-val">9</div><div class="kpi-sub"><span class="dn">3 עדיין בחדר</span></div></div>
+      <div class="kpi"><div class="kpi-lbl">RevPAR</div><div class="kpi-val">₪521</div><div class="kpi-sub"><span class="up">↑8%</span> לעומת שבוע שעבר</div></div>
+    </div>
+
+    <div class="body-grid">
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title">הזמנות</div>
+          <div class="tabs">
+            <div class="tab active">היום</div>
+            <div class="tab">עתידי</div>
+            <div class="tab">הכל</div>
+          </div>
+          <div class="ca"><button class="btn btn-outline" style="height:28px;font-size:12px">סנן ▾</button></div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>אורח</th><th>חדר</th>
+              <th>צ׳ק-אין</th><th>צ׳ק-אאוט</th>
+              <th>לילות</th><th>סכום</th>
+              <th>תשלום</th><th>סטטוס</th><th></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td><div class="gc"><div class="gav">יל</div><div><div class="gname">יעל לוי</div><div class="gphone">052-4483021</div></div></div></td>
+                <td><div><div class="rnum">302</div><div class="rtype">Deluxe</div></div></td>
+                <td>26/07 14:00</td><td>29/07</td><td>3</td><td>₪2,850</td>
+                <td><span class="payd">שולם</span></td><td><span class="badge si">צ׳ק-אין</span></td>
+                <td><button class="act-btn">פתח</button></td>
+              </tr>
+              <tr>
+                <td><div class="gc"><div class="gav">מכ</div><div><div class="gname">משה כהן</div><div class="gphone">054-7712340</div></div></div></td>
+                <td><div><div class="rnum">115</div><div class="rtype">Standard</div></div></td>
+                <td>26/07 16:00</td><td>27/07</td><td>1</td><td>₪680</td>
+                <td><span class="payp">ממתין</span></td><td><span class="badge sw">ממתין</span></td>
+                <td><button class="act-btn">פתח</button></td>
+              </tr>
+              <tr>
+                <td><div class="gc"><div class="gav">רז</div><div><div class="gname">רינת זיו</div><div class="gphone">050-9934771</div></div></div></td>
+                <td><div><div class="rnum">214</div><div class="rtype">Suite</div></div></td>
+                <td>26/07 12:00</td><td>31/07</td><td>5</td><td>₪6,250</td>
+                <td><span class="payd">שולם</span></td><td><span class="badge si">צ׳ק-אין</span></td>
+                <td><button class="act-btn">פתח</button></td>
+              </tr>
+              <tr>
+                <td><div class="gc"><div class="gav">אמ</div><div><div class="gname">אלון מזרחי</div><div class="gphone">058-2201984</div></div></div></td>
+                <td><div><div class="rnum">408</div><div class="rtype">Standard</div></div></td>
+                <td>26/07 15:00</td><td>28/07</td><td>2</td><td>₪1,360</td>
+                <td><span class="payd">שולם</span></td><td><span class="badge sw">ממתין</span></td>
+                <td><button class="act-btn">פתח</button></td>
+              </tr>
+              <tr>
+                <td><div class="gc"><div class="gav">שפ</div><div><div class="gname">שרית פרץ</div><div class="gphone">053-6641820</div></div></div></td>
+                <td><div><div class="rnum">501</div><div class="rtype">Deluxe</div></div></td>
+                <td>26/07 13:00</td><td>30/07</td><td>4</td><td>₪3,800</td>
+                <td><span class="payp">ממתין</span></td><td><span class="badge sw">ממתין</span></td>
+                <td><button class="act-btn">פתח</button></td>
+              </tr>
+              <tr>
+                <td><div class="gc"><div class="gav">נב</div><div><div class="gname">נועה בן-דוד</div><div class="gphone">052-1195043</div></div></div></td>
+                <td><div><div class="rnum">118</div><div class="rtype">Standard</div></div></td>
+                <td>26/07 11:00</td><td>28/07</td><td>2</td><td>₪1,360</td>
+                <td><span class="payd">שולם</span></td><td><span class="badge si">צ׳ק-אין</span></td>
+                <td><button class="act-btn">פתח</button></td>
+              </tr>
+              <tr>
+                <td><div class="gc"><div class="gav">גא</div><div><div class="gname">גיא אברהמי</div><div class="gphone">054-3388201</div></div></div></td>
+                <td><div><div class="rnum">320</div><div class="rtype">Deluxe</div></div></td>
+                <td>26/07 17:00</td><td>29/07</td><td>3</td><td>₪2,850</td>
+                <td><span class="payd">שולם</span></td><td><span class="badge sn">חדש</span></td>
+                <td><button class="act-btn">פתח</button></td>
+              </tr>
+              <tr>
+                <td><div class="gc"><div class="gav">תש</div><div><div class="gname">תמר שניר</div><div class="gphone">050-7712002</div></div></div></td>
+                <td><div><div class="rnum">404</div><div class="rtype">Suite</div></div></td>
+                <td>26/07 16:30</td><td>31/07</td><td>5</td><td>₪6,250</td>
+                <td><span class="payp">ממתין</span></td><td><span class="badge sn">חדש</span></td>
+                <td><button class="act-btn">פתח</button></td>
+              </tr>
+              <tr>
+                <td><div class="gc"><div class="gav">דל</div><div><div class="gname">דוד ליפשיץ</div><div class="gphone">058-9900341</div></div></div></td>
+                <td><div><div class="rnum">207</div><div class="rtype">Standard</div></div></td>
+                <td>26/07 18:00</td><td>27/07</td><td>1</td><td>₪680</td>
+                <td><span class="payp">ממתין</span></td><td><span class="badge sn">חדש</span></td>
+                <td><button class="act-btn">פתח</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="rs-card">
+          <div class="rs-head">סטטוס חדרים</div>
+          <div class="rs-body">
+            <div class="rs-total">52 חדרים סה״כ · 87% תפוסה</div>
+            <div class="rs-bar-bg"><div class="rs-bar-fill"></div></div>
+            <div class="rs-row"><div class="rs-lbl"><div class="rs-dot" style="background:#BFDBFE"></div>תפוסים</div><div class="rs-val">42</div></div>
+            <div class="rs-row"><div class="rs-lbl"><div class="rs-dot" style="background:#BBF7D0"></div>פנויים</div><div class="rs-val">5</div></div>
+            <div class="rs-row"><div class="rs-lbl"><div class="rs-dot" style="background:#FDE68A"></div>יוצאים היום</div><div class="rs-val">3</div></div>
+            <div class="rs-row"><div class="rs-lbl"><div class="rs-dot" style="background:#E5E7EB"></div>בניקיון</div><div class="rs-val">1</div></div>
+            <div class="rs-row"><div class="rs-lbl"><div class="rs-dot" style="background:#FECACA"></div>תחזוקה</div><div class="rs-val">1</div></div>
+          </div>
+        </div>
+        <div class="al-card">
+          <div class="al-head"><span>התראות</span><span class="al-cnt">4</span></div>
+          <div class="al-body">
+            <div class="al-item">
+              <div class="al-ico" style="background:#FEF2F2;color:#B91C1C">!</div>
+              <div><div class="al-txt">חדר 204 — תחזוקה דחופה: מזגן לא עובד</div><div class="al-time">לפני 23 דקות</div></div>
+            </div>
+            <div class="al-item">
+              <div class="al-ico" style="background:#FFFBEB;color:#B45309">⏰</div>
+              <div><div class="al-txt">3 אורחים לא עשו צ׳ק-אאוט (103, 205, 301)</div><div class="al-time">לפני 1 שעה</div></div>
+            </div>
+            <div class="al-item">
+              <div class="al-ico" style="background:#F5F3FF;color:#6D28D9">₪</div>
+              <div><div class="al-txt">תשלום ממתין: שרית פרץ (501) — ₪3,800</div><div class="al-time">לפני 2 שעות</div></div>
+            </div>
+            <div class="al-item">
+              <div class="al-ico" style="background:#F0FDF4;color:#15803D">✓</div>
+              <div><div class="al-txt">הזמנה חדשה אושרה — גיא אברהמי (320)</div><div class="al-time">לפני 3 שעות</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
