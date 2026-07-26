@@ -92,14 +92,14 @@ function RoomTypePageInner() {
   if (missingDates) return (
     <div className="text-center py-20">
       <p className="text-red-600 mb-4">תאריכים חסרים</p>
-      <button onClick={() => router.push(backUrl)} className="text-[#3B82F6] hover:underline text-sm">← חזרה לרשימה</button>
+      <button onClick={() => router.push(backUrl)} className="text-[var(--color-accent)] hover:underline text-sm">← חזרה לרשימה</button>
     </div>
   );
   if (loading) return <div className="text-center py-20 text-[#475569]">טוען...</div>;
   if (error || !rt) return (
     <div className="text-center py-20">
       <p className="text-red-600 mb-4">{error || 'החדר לא נמצא'}</p>
-      <button onClick={() => router.push(backUrl)} className="text-[#3B82F6] hover:underline text-sm">← חזרה לרשימה</button>
+      <button onClick={() => router.push(backUrl)} className="text-[var(--color-accent)] hover:underline text-sm">← חזרה לרשימה</button>
     </div>
   );
 
@@ -113,7 +113,7 @@ function RoomTypePageInner() {
 
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 pb-28">
         {/* Back */}
-        <button onClick={() => router.push(backUrl)} className="flex items-center gap-1 text-sm text-[#3B82F6] hover:underline">
+        <button onClick={() => router.push(backUrl)} className="flex items-center gap-1 text-sm text-[var(--color-accent)] hover:underline">
           ← כל החדרים
         </button>
 
@@ -134,7 +134,7 @@ function RoomTypePageInner() {
 
         {/* Name + availability */}
         <div className="flex items-start justify-between gap-4">
-          <h1 className="text-3xl font-bold text-[#0F172A]">{rt.name}</h1>
+          <h1 className="text-3xl font-bold text-[var(--color-text-primary)]">{rt.name}</h1>
           <span className={`shrink-0 text-sm font-semibold px-3 py-1 rounded-full ${available ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
             {available ? '✓ זמין' : '✗ לא זמין'}
           </span>
@@ -150,25 +150,25 @@ function RoomTypePageInner() {
             <span className="bg-slate-100 text-[#475569] text-sm px-3 py-1.5 rounded-full">🧒 עד {rt.maxChildren} ילדים</span>
           )}
           {rt.bedType && (
-            <span className="bg-slate-100 text-[#475569] text-sm px-3 py-1.5 rounded-full">🛏 {rt.bedType}</span>
+            <span className="bg-slate-100 text-[#475569] text-sm px-3 py-1.5 rounded-full">🛌 {rt.bedType}</span>
           )}
           {rt.roomSize && (
-            <span className="bg-slate-100 text-[#475569] text-sm px-3 py-1.5 rounded-full">📐 {rt.roomSize} מ״ר</span>
+            <span className="bg-slate-100 text-[#475569] text-sm px-3 py-1.5 rounded-full">📏 {rt.roomSize} מ״ר</span>
           )}
         </div>
 
         {/* Description */}
         {rt.description && (
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5">
-            <h2 className="font-semibold text-[#0F172A] mb-2">על החדר</h2>
+          <div className="bg-white border border-[var(--color-border-default)] rounded-xl p-5">
+            <h2 className="font-semibold text-[var(--color-text-primary)] mb-2">על החדר</h2>
             <p className="text-[#475569] leading-relaxed">{rt.description}</p>
           </div>
         )}
 
         {/* Amenities */}
         {rt.amenities.length > 0 && (
-          <div className="bg-white border border-[#E2E8F0] rounded-xl p-5">
-            <h2 className="font-semibold text-[#0F172A] mb-3">שירותים ואמניות</h2>
+          <div className="bg-white border border-[var(--color-border-default)] rounded-xl p-5">
+            <h2 className="font-semibold text-[var(--color-text-primary)] mb-3">שירותים ואמניות</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {rt.amenities.map((a) => (
                 <div key={a} className="flex items-center gap-2 text-sm text-[#475569]">
@@ -182,10 +182,10 @@ function RoomTypePageInner() {
       </div>
 
       {/* Sticky booking bar */}
-      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-[#E2E8F0] shadow-lg z-40">
+      <div className="fixed bottom-0 inset-x-0 bg-white border-t border-[var(--color-border-default)] shadow-lg z-40">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
           <div>
-            <p className="text-2xl font-bold text-[#1E3A8A]">₪{Number(rt.basePrice).toLocaleString()}<span className="text-sm font-normal text-[#475569]"> ללילה</span></p>
+            <p className="text-2xl font-bold text-[var(--color-accent)]">₪{Number(rt.basePrice).toLocaleString()}<span className="text-sm font-normal text-[#475569]"> ללילה</span></p>
             {nights > 0 && (
               <p className="text-sm text-[#475569]">{nights} לילות · סה״כ <span className="font-semibold text-[#0F172A]">₪{(Number(rt.basePrice) * nights).toLocaleString()}</span></p>
             )}
@@ -193,7 +193,8 @@ function RoomTypePageInner() {
           {available ? (
             <button
               onClick={handleBook}
-              className="bg-[#CA8A04] hover:bg-[#B45309] text-white font-bold px-8 py-3 rounded-xl text-base transition-colors whitespace-nowrap"
+              className="text-white font-bold px-8 py-3 rounded-xl text-base transition-opacity hover:opacity-90 whitespace-nowrap"
+              style={{ backgroundColor: 'var(--color-accent)' }}
             >
               הזמן עכשיו
             </button>

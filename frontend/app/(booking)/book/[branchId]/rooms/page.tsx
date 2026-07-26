@@ -23,7 +23,7 @@ function RoomCard({
   const photos = rt.photos.filter(Boolean);
 
   return (
-    <div className={`bg-white rounded-xl border overflow-hidden ${available ? 'border-[#E2E8F0]' : 'border-[#E2E8F0] opacity-60'}`}>
+    <div className={`bg-white rounded-xl border overflow-hidden ${available ? 'border-[var(--color-border-default)]' : 'border-[var(--color-border-default)] opacity-60'}`}>
       {photos.length > 0 && (
         <div className="relative">
           <img src={photos[photoIdx]} alt={rt.name} className="w-full h-48 object-cover" />
@@ -58,15 +58,15 @@ function RoomCard({
             <div className="flex flex-wrap gap-2 items-center">
               <span className="text-[#475569] text-sm">עד {rt.maxOccupancy} אורחים</span>
               {rt.bedType && (
-                <span className="bg-slate-100 text-[#475569] text-xs px-2 py-0.5 rounded-full">🛏 {rt.bedType}</span>
+                <span className="bg-slate-100 text-[#475569] text-xs px-2 py-0.5 rounded-full">🛌 {rt.bedType}</span>
               )}
               {rt.roomSize && (
-                <span className="bg-slate-100 text-[#475569] text-xs px-2 py-0.5 rounded-full">📐 {rt.roomSize} מ״ר</span>
+                <span className="bg-slate-100 text-[#475569] text-xs px-2 py-0.5 rounded-full">📏 {rt.roomSize} מ״ר</span>
               )}
             </div>
           </div>
           <div className="text-end">
-            <p className="text-2xl font-bold text-[#1E3A8A]">₪{Number(rt.basePrice).toLocaleString()}</p>
+            <p className="text-2xl font-bold text-[var(--color-accent)]">₪{Number(rt.basePrice).toLocaleString()}</p>
             <p className="text-xs text-[#475569]">ללילה</p>
           </div>
         </div>
@@ -78,7 +78,7 @@ function RoomCard({
         {rt.amenities.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {rt.amenities.slice(0, 4).map((a) => (
-              <span key={a} className="bg-blue-50 text-[#1E3A8A] text-xs px-2 py-1 rounded-full">{a}</span>
+              <span key={a} className="text-[var(--color-accent)] bg-[rgba(196,162,83,0.1)] text-xs px-2 py-1 rounded-full">{a}</span>
             ))}
             {rt.amenities.length > 4 && (
               <span className="text-[#475569] text-xs px-1 py-1">+{rt.amenities.length - 4}</span>
@@ -90,21 +90,23 @@ function RoomCard({
           <p className="text-amber-600 text-xs font-semibold">⚡ נותרו {remainingCount} חדרים בלבד!</p>
         )}
 
-        <div className="flex items-center justify-between pt-2 border-t border-[#E2E8F0]">
+        <div className="flex items-center justify-between pt-2 border-t border-[var(--color-border-default)]">
           <p className="text-sm text-[#475569]">
             סה״כ: <span className="font-semibold text-[#0F172A]">₪{(Number(rt.basePrice) * nights).toLocaleString()}</span>
           </p>
           <div className="flex gap-2">
             <button
               onClick={onDetails}
-              className="border border-[#1E3A8A] text-[#1E3A8A] hover:bg-blue-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              className="px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              style={{ border: '1px solid var(--color-accent)', color: 'var(--color-accent)' }}
             >
               פרטים
             </button>
             {available ? (
               <button
                 onClick={onBook}
-                className="bg-[#CA8A04] hover:bg-[#B45309] text-white font-semibold px-4 py-2 rounded-lg text-sm transition-colors"
+                className="text-white font-semibold px-4 py-2 rounded-lg text-sm transition-opacity hover:opacity-90"
+                style={{ backgroundColor: 'var(--color-accent)' }}
               >
                 הזמן עכשיו
               </button>
@@ -206,20 +208,20 @@ function RoomsPageInner() {
             {formatDate(checkIn)} — {formatDate(checkOut)} · {nights} לילות · {adults} מבוגרים{children > 0 ? ` + ${children} ילדים` : ''}
           </p>
         </div>
-        <button onClick={() => router.back()} className="text-sm text-[#3B82F6] hover:underline">
+        <button onClick={() => router.back()} className="text-sm text-[var(--color-accent)] hover:underline">
           שנה תאריכים
         </button>
       </div>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap gap-3 items-center bg-white border border-[#E2E8F0] rounded-xl px-4 py-3">
+      <div className="flex flex-wrap gap-3 items-center bg-white border border-[var(--color-border-default)] rounded-xl px-4 py-3">
         <span className="text-sm font-medium text-[#475569]">סינון:</span>
         {bedTypeOptions.length > 0 && (
           <div className="flex items-center gap-1">
             <select
               value={bedTypeFilter}
               onChange={(e) => setParam('bedType', e.target.value)}
-              className="border border-[#E2E8F0] rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+              className="border border-[var(--color-border-default)] rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
             >
               <option value="">כל סוגי המיטות</option>
               {bedTypeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
@@ -234,7 +236,7 @@ function RoomsPageInner() {
           <select
             value={sort}
             onChange={(e) => setParam('sort', e.target.value)}
-            className="border border-[#E2E8F0] rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[#1E3A8A]"
+            className="border border-[var(--color-border-default)] rounded-lg px-3 py-1.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           >
             <option value="price_asc">מחיר: נמוך לגבוה</option>
             <option value="price_desc">מחיר: גבוה לנמוך</option>
