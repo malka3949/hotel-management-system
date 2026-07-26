@@ -39,7 +39,6 @@ function ThankYouCard() {
     <div style={{ position: 'relative', marginTop: 24, overflow: 'visible' }}>
       <style>{CSS}</style>
 
-      {/* Rising particles */}
       {PARTICLES.map((p, i) => (
         <span
           key={i}
@@ -48,7 +47,7 @@ function ThankYouCard() {
             bottom: 20,
             left: `${p.left}%`,
             fontSize: p.size,
-            color: '#CA8A04',
+            color: '#C4A253',
             pointerEvents: 'none',
             zIndex: 10,
             animation: `gentleRise ${p.dur}s ease-out ${p.delay}s both`,
@@ -58,18 +57,16 @@ function ThankYouCard() {
         </span>
       ))}
 
-      {/* Card */}
       <div
         style={{
           animation: 'cardSlideIn 0.5s ease-out 0.05s both',
           background: '#FFFBEB',
-          border: '1.5px solid #CA8A04',
+          border: '1.5px solid #C4A253',
           borderRadius: 16,
           overflow: 'hidden',
         }}
       >
-        {/* Gold top stripe */}
-        <div style={{ height: 4, background: 'linear-gradient(90deg, #CA8A04, #FCD34D, #CA8A04)' }} />
+        <div style={{ height: 4, background: 'linear-gradient(90deg, #C4A253, #FCD34D, #C4A253)' }} />
 
         <div style={{ padding: '32px 28px', textAlign: 'center' }}>
           <div
@@ -85,7 +82,7 @@ function ThankYouCard() {
           <div
             style={{
               height: 2,
-              background: '#CA8A04',
+              background: '#C4A253',
               margin: '16px auto',
               borderRadius: 2,
               animation: 'dividerGrow 0.6s ease-out 0.4s both',
@@ -119,7 +116,7 @@ function ThankYouCard() {
 
           <p
             style={{
-              color: '#CA8A04',
+              color: '#C4A253',
               fontSize: 13,
               marginTop: 16,
               letterSpacing: '0.05em',
@@ -164,9 +161,9 @@ export default function FeedbackForm({ token }: Props) {
   if (submitted) return <ThankYouCard />;
 
   return (
-    <div className="bg-white border border-[#E2E8F0] rounded-xl p-6 mt-6" dir="rtl">
-      <h3 className="text-[#0F172A] font-semibold text-lg mb-1">שתף אותנו בחוויה</h3>
-      <p className="text-[#475569] text-sm mb-4">ניתן לשלוח משוב בכל שלב של השהייה</p>
+    <div className="rounded-xl p-6 mt-6" dir="rtl" style={{ backgroundColor: 'var(--color-bg-surface)', border: '1px solid var(--color-border-default)' }}>
+      <h3 style={{ color: 'var(--color-text-primary)' }} className="font-semibold text-lg mb-1">שתף אותנו בחוויה</h3>
+      <p style={{ color: 'var(--color-text-secondary)' }} className="text-sm mb-4">ניתן לשלוח משוב בכל שלב של השהייה</p>
 
       <div className="flex gap-2 mb-4 justify-center">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -189,13 +186,15 @@ export default function FeedbackForm({ token }: Props) {
         onChange={(e) => setComment(e.target.value)}
         placeholder="ספר לנו על החוויה שלך (אופציונלי)"
         rows={3}
-        className="w-full border border-[#E2E8F0] rounded-lg p-3 text-sm text-[#0F172A] resize-none focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+        className="w-full rounded-lg p-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-[#C4A253]"
+        style={{ border: '1px solid var(--color-border-default)', color: 'var(--color-text-primary)' }}
       />
 
       <button
         onClick={handleSubmit}
         disabled={rating === 0 || loading}
-        className="mt-3 w-full bg-[#1E3A8A] text-white rounded-lg py-2.5 text-sm font-medium disabled:opacity-40 hover:bg-[#3B82F6] transition-colors"
+        className="mt-3 w-full text-white rounded-lg py-2.5 text-sm font-medium disabled:opacity-40 transition-colors"
+        style={{ backgroundColor: '#1C1C1E' }}
       >
         {loading ? 'שולח...' : 'שלח משוב'}
       </button>

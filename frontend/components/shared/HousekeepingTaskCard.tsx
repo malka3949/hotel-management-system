@@ -48,12 +48,12 @@ export function HousekeepingTaskCard({ task, onUpdate }: Props) {
   const isAutoCreated = task.createdBy === null;
 
   return (
-    <div className="bg-white rounded-lg border border-[#E2E8F0] p-4 shadow-sm">
+    <div className="rounded-lg border p-4 shadow-sm" style={{ backgroundColor: 'var(--color-bg-surface)', borderColor: 'var(--color-border-default)' }}>
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-lg font-bold text-[#0F172A]">חדר {task.room.number}</span>
+          <span className="text-lg font-bold" style={{ color: 'var(--color-text-primary)' }}>חדר {task.room.number}</span>
           {task.room.floor != null && (
-            <span className="text-sm text-[#475569]">קומה {task.room.floor}</span>
+            <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>קומה {task.room.floor}</span>
           )}
           {isAutoCreated ? (
             <span title="נוצר אוטומטית בעת צ'ק-אאוט" className="text-base">🧹</span>
@@ -64,13 +64,13 @@ export function HousekeepingTaskCard({ task, onUpdate }: Props) {
         <PriorityBadge priority={task.priority} />
       </div>
 
-      <div className="flex items-center gap-2 mb-3 text-sm text-[#475569]">
+      <div className="flex items-center gap-2 mb-3 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
         <span>סטטוס: <strong>{statusLabels[task.status]}</strong></span>
         {task.assignee && <span>· {task.assignee.name}</span>}
       </div>
 
       {task.notes && (
-        <p className="text-sm text-[#475569] mb-3 bg-[#F8FAFC] rounded p-2">{task.notes}</p>
+        <p className="text-sm mb-3 rounded p-2" style={{ color: 'var(--color-text-secondary)', backgroundColor: 'var(--color-bg-base)' }}>{task.notes}</p>
       )}
 
       {error && (
@@ -88,7 +88,8 @@ export function HousekeepingTaskCard({ task, onUpdate }: Props) {
           </button>
           <button
             onClick={() => setConfirmComplete(false)}
-            className="flex-1 border border-[#E2E8F0] text-[#475569] text-sm py-2 rounded-lg"
+            className="flex-1 text-sm py-2 rounded-lg border"
+            style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
           >
             ביטול
           </button>
@@ -99,7 +100,8 @@ export function HousekeepingTaskCard({ task, onUpdate }: Props) {
             <button
               onClick={() => void handleStart()}
               disabled={loading}
-              className="flex-1 bg-[#1E3A8A] text-white text-sm py-2 rounded-lg font-medium disabled:opacity-50"
+              className="flex-1 text-white text-sm py-2 rounded-lg font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-primary)' }}
             >
               {loading ? 'מעדכן...' : 'התחל ניקיון'}
             </button>
@@ -114,7 +116,7 @@ export function HousekeepingTaskCard({ task, onUpdate }: Props) {
             </button>
           )}
           {(task.status === 'completed' || task.status === 'skipped') && (
-            <span className="flex-1 text-center text-sm text-[#475569] py-2">
+            <span className="flex-1 text-center text-sm py-2" style={{ color: 'var(--color-text-secondary)' }}>
               {task.status === 'completed' ? '✓ הושלם' : '— דולג'}
             </span>
           )}

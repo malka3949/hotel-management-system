@@ -49,7 +49,7 @@ export function PipelineChart({ data, loading }: PipelineChartProps) {
             formatter={(v) => [v, 'הזמנות']}
             labelFormatter={(l) => `תאריך: ${l}`}
           />
-          <Bar dataKey="count" fill="#3B82F6" radius={[3, 3, 0, 0]} />
+          <Bar dataKey="count" fill="#C4A253" radius={[3, 3, 0, 0]} />
         </BarChart>
       </ResponsiveContainer>
     </div>
