@@ -28,6 +28,7 @@ COPY --from=builder /app/node_modules ./node_modules
 RUN npm prune --omit=dev
 
 COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/src/assets ./src/assets
 COPY prisma ./prisma/
 COPY start.sh ./start.sh
 RUN chmod +x ./start.sh
