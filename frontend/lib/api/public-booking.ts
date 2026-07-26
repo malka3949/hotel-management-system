@@ -82,9 +82,11 @@ async function publicFetch<T>(url: string, init?: RequestInit): Promise<T> {
   }
   const body = await res.json();
   if (!res.ok) {
-    const msg = translateError((body as { message?: string }).message ?? '');
-    if (typeof window !== 'undefined') toast.error(msg);
-    throw new Error(msg);
+    // Throw the raw error code so callers can branch on it (e.g. EMAIL_ALREADY_REGISTERED).
+    // Show the translated string only in the toast.
+    const raw = (body as { message?: string }).message ?? '';
+    if (typeof window !== 'undefined') toast.error(translateError(raw));
+    throw new Error(raw);
   }
   return ((body as { data?: T }).data ?? body) as T;
 }

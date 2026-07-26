@@ -36,6 +36,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   GUEST_NOT_FOUND: 'האורח לא נמצא',
   DUPLICATE_GUEST_EMAIL: 'אורח עם אימייל זה כבר קיים',
   DUPLICATE_GUEST_PASSPORT: 'אורח עם מספר דרכון זה כבר קיים',
+  EMAIL_ALREADY_REGISTERED: 'כתובת המייל כבר קיימת במערכת. לסיוע בהזמנה, פנה לצוות המלון.',
   // Users / Branches
   USER_NOT_FOUND: 'המשתמש לא נמצא',
   CANNOT_CREATE_CHAIN_ADMIN: 'לא ניתן ליצור מנהל רשת',

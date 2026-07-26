@@ -3,6 +3,7 @@
 import { Suspense, useState } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { publicBookingApi } from '@/lib/api/public-booking';
+import { translateError } from '@/lib/api/error-messages';
 
 function CheckoutPageInner() {
   const { branchId } = useParams<{ branchId: string }>();
@@ -54,11 +55,11 @@ function CheckoutPageInner() {
       });
       router.push(`/book/${branchId}/confirmation?reservationId=${result.reservationId}&roomType=${encodeURIComponent(result.roomType)}&checkIn=${checkIn}&checkOut=${checkOut}&total=${result.totalPrice}${roomPhoto ? `&photo=${encodeURIComponent(roomPhoto)}` : ''}`);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'שגיאה ביצירת ההזמנה';
-      if (msg === 'EMAIL_ALREADY_REGISTERED') {
+      const code = err instanceof Error ? err.message : '';
+      if (code === 'EMAIL_ALREADY_REGISTERED') {
         setEmailConflict(true);
       } else {
-        setError(msg);
+        setError(translateError(code) || 'שגיאה ביצירת ההזמנה');
       }
     } finally {
       setSubmitting(false);
