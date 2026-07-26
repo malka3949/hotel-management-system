@@ -18,7 +18,7 @@ Detail docs in `CLAUDE/` — read on demand. Phase status in `PROJECT_STATUS.md`
 
 | Email | Password | Role | גישה |
 |---|---|---|---|
-| `admin@hotel.co.il` | `Admin123!` | `chain_admin` | כל הbranchים, כל הפיצ'רים |
+| `admin@hotel.co.il` | `Admin123!` | `chain_admin` | כל הbranches, כל הפיצ'רים |
 | `manager@hotel.co.il` | `Manager123!` | `hotel_manager` | מרכז תל אביב |
 | `manager.tlv@hotel.com` | `Manager123!` | `hotel_manager` | תל אביב |
 | `manager.jer@hotel.com` | `Manager123!` | `hotel_manager` | ירושלים |
@@ -83,14 +83,19 @@ Doc: `design-system/`. **Do not invent colors, components, or patterns outside t
 
 | Token | Hex | Usage |
 |-------|-----|-------|
-| primary | `#1E3A8A` | Main actions, nav active |
-| primary-light | `#3B82F6` | Hover, secondary buttons |
-| accent | `#CA8A04` | CTA buttons only |
-| bg-base | `#F8FAFC` | Page background |
+| primary | `#1C1C1E` | Sidebar bg, primary actions |
+| primary-light | `#2C2C2E` | Sidebar hover |
+| accent | `#C4A253` | Gold — CTAs, active nav, highlights |
+| accent-hover | `#B8923F` | Gold hover state |
+| bg-base | `#F6F4F0` | Warm stone page background |
 | bg-surface | `#FFFFFF` | Cards, panels |
-| border-default | `#E2E8F0` | All borders |
-| text-primary | `#0F172A` | Headings |
-| text-secondary | `#475569` | Supporting text |
+| bg-sidebar | `#1C1C1E` | Sidebar background |
+| border-default | `#E5DFDA` | Warm borders |
+| text-primary | `#1A1A1A` | Headings |
+| text-secondary | `#6B6560` | Supporting text |
+| text-muted | `#9C9490` | Placeholders |
+
+**Font:** Heebo (Google Fonts) — Hebrew-optimized, used across all UI
 
 **RTL:** `dir="rtl"` on all pages. Hebrew default UI. No hardcoded LTR assumptions.
 

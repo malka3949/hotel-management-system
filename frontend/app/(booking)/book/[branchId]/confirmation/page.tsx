@@ -22,37 +22,37 @@ function ConfirmationPageInner() {
       <div className="text-6xl">✓</div>
 
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-[#0F172A]">ההזמנה אושרה!</h1>
-        <p className="text-[#475569]">שלחנו אליך מייל עם קישור לניהול ההזמנה</p>
+        <h1 className="text-3xl font-bold" style={{ color: 'var(--color-text-primary)' }}>ההזמנה אושררה!</h1>
+        <p style={{ color: 'var(--color-text-secondary)' }}>שלחנו אליך מייל עם קישור לניהול ההזמנה</p>
       </div>
 
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 max-w-sm mx-auto text-right space-y-3">
+      <div className="rounded-xl border p-6 max-w-sm mx-auto text-right space-y-3" style={{ backgroundColor: 'var(--color-bg-surface)', borderColor: 'var(--color-border-default)' }}>
         {photo && (
           <div className="flex justify-center mb-1">
-            <img src={photo} alt={roomType} className="w-20 h-20 object-cover rounded-xl border border-[#E2E8F0]" />
+            <img src={photo} alt={roomType} className="w-20 h-20 object-cover rounded-xl border" style={{ borderColor: 'var(--color-border-default)' }} />
           </div>
         )}
         <div>
-          <p className="text-xs text-[#475569]">מספר הזמנה</p>
-          <p className="font-mono text-sm text-[#0F172A] break-all">{reservationId}</p>
+          <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>מספר הזמנה</p>
+          <p className="font-mono text-sm break-all" style={{ color: 'var(--color-text-primary)' }}>{reservationId}</p>
         </div>
         <div>
-          <p className="text-xs text-[#475569]">סוג חדר</p>
-          <p className="font-semibold text-[#0F172A]">{roomType}</p>
+          <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>סוג חדר</p>
+          <p className="font-semibold" style={{ color: 'var(--color-text-primary)' }}>{roomType}</p>
         </div>
         <div>
-          <p className="text-xs text-[#475569]">תאריכים</p>
-          <p className="text-[#0F172A]">{formatDate(checkIn)} — {formatDate(checkOut)} ({nights} לילות)</p>
+          <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>תאריכים</p>
+          <p style={{ color: 'var(--color-text-primary)' }}>{formatDate(checkIn)} — {formatDate(checkOut)} ({nights} לילות)</p>
         </div>
-        <div className="border-t border-[#E2E8F0] pt-3">
-          <p className="text-xs text-[#475569]">סה״כ לתשלום</p>
-          <p className="text-xl font-bold text-[#1E3A8A]">₪{total.toLocaleString()}</p>
-          <p className="text-xs text-[#475569] mt-1">התשלום יבוצע בצ׳ק-אין</p>
+        <div className="border-t pt-3" style={{ borderColor: 'var(--color-border-default)' }}>
+          <p className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>סה״כ לתשלום</p>
+          <p className="text-xl font-bold" style={{ color: 'var(--color-accent)' }}>₪{total.toLocaleString()}</p>
+          <p className="text-xs mt-1" style={{ color: 'var(--color-text-secondary)' }}>התשלום יבוצע בצ'ק-אין</p>
         </div>
       </div>
 
-      <p className="text-[#475569] text-sm max-w-xs mx-auto">
-        קישור לניהול ההזמנה, עשיית צ׳ק-אין מקוון ותשלום — נשלח לאימייל שהזנתם
+      <p className="text-sm max-w-xs mx-auto" style={{ color: 'var(--color-text-secondary)' }}>
+        קישור לניהול ההזמנה, עשיית צ'ק-אין מקוון ותשלום — נשלח לאימייל שהזנתם
       </p>
     </div>
   );

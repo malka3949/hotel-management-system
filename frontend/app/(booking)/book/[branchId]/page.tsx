@@ -31,7 +31,7 @@ function BranchLandingPageInner() {
     router.push(`/book/${branchId}/rooms?${params}`);
   }
 
-  if (loading) return <div className="text-center py-20 text-[#475569]">טוען...</div>;
+  if (loading) return <div className="text-center py-20" style={{ color: 'var(--color-text-secondary)' }}>טוען...</div>;
   if (error && !branch) return <div className="text-center py-20 text-red-600">{error}</div>;
   if (!branch) return null;
 
@@ -40,7 +40,7 @@ function BranchLandingPageInner() {
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
       {/* Hero */}
-      <div className="rounded-2xl overflow-hidden bg-[#1E3A8A] text-white relative min-h-[220px] flex flex-col justify-end">
+      <div className="rounded-2xl overflow-hidden text-white relative min-h-[220px] flex flex-col justify-end" style={{ backgroundColor: 'var(--color-primary)' }}>
         {branch.coverPhoto && (
           <img
             src={branch.coverPhoto}
@@ -63,13 +63,13 @@ function BranchLandingPageInner() {
       </div>
 
       {branch.description && (
-        <p className="text-[#475569] text-base leading-relaxed">{branch.description}</p>
+        <p className="text-base leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{branch.description}</p>
       )}
 
       {branch.amenities.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {branch.amenities.map((a) => (
-            <span key={a} className="bg-blue-50 text-[#1E3A8A] text-sm px-3 py-1 rounded-full border border-blue-100">
+            <span key={a} className="text-sm px-3 py-1 rounded-full" style={{ backgroundColor: 'rgba(196,162,83,0.1)', color: 'var(--color-accent)', border: '1px solid rgba(196,162,83,0.3)' }}>
               ✓ {a}
             </span>
           ))}
@@ -80,42 +80,45 @@ function BranchLandingPageInner() {
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex gap-3">
           <span className="text-xl">🔄</span>
           <div>
-            <p className="font-semibold text-[#0F172A] text-sm mb-1">מדיניות ביטול</p>
-            <p className="text-[#475569] text-sm leading-relaxed">{branch.cancellationPolicy}</p>
+            <p className="font-semibold text-sm mb-1" style={{ color: 'var(--color-text-primary)' }}>מדיניות ביטול</p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>{branch.cancellationPolicy}</p>
           </div>
         </div>
       )}
 
       {/* Date picker */}
-      <div className="bg-white rounded-xl border border-[#E2E8F0] p-6 space-y-4">
-        <h2 className="font-semibold text-[#0F172A] text-lg">בחרו תאריכים ואורחים</h2>
+      <div className="rounded-xl border p-6 space-y-4" style={{ backgroundColor: 'var(--color-bg-surface)', borderColor: 'var(--color-border-default)' }}>
+        <h2 className="font-semibold text-lg" style={{ color: 'var(--color-text-primary)' }}>בחרו תאריכים ואורחים</h2>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-[#475569] mb-1">תאריך הגעה</label>
+            <label className="block text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>תאריך הגעה</label>
             <input
               type="date"
               value={checkIn}
               min={today}
               onChange={(e) => { setCheckIn(e.target.value); setError(''); }}
-              className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm"
+              className="w-full rounded-lg px-3 py-2 text-sm"
+              style={{ border: '1px solid var(--color-border-default)' }}
             />
           </div>
           <div>
-            <label className="block text-sm text-[#475569] mb-1">תאריך עזיבה</label>
+            <label className="block text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>תאריך עזיבה</label>
             <input
               type="date"
               value={checkOut}
               min={checkIn || today}
               onChange={(e) => { setCheckOut(e.target.value); setError(''); }}
-              className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm"
+              className="w-full rounded-lg px-3 py-2 text-sm"
+              style={{ border: '1px solid var(--color-border-default)' }}
             />
           </div>
           <div>
-            <label className="block text-sm text-[#475569] mb-1">מבוגרים</label>
+            <label className="block text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>מבוגרים</label>
             <select
               value={adults}
               onChange={(e) => setAdults(Number(e.target.value))}
-              className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm bg-white"
+              className="w-full rounded-lg px-3 py-2 text-sm bg-white"
+              style={{ border: '1px solid var(--color-border-default)' }}
             >
               {Array.from({ length: 9 }, (_, i) => i + 1).map((n) => (
                 <option key={n} value={n}>{n} {n === 1 ? 'מבוגר' : 'מבוגרים'}</option>
@@ -123,11 +126,12 @@ function BranchLandingPageInner() {
             </select>
           </div>
           <div>
-            <label className="block text-sm text-[#475569] mb-1">ילדים</label>
+            <label className="block text-sm mb-1" style={{ color: 'var(--color-text-secondary)' }}>ילדים</label>
             <select
               value={children}
               onChange={(e) => setChildren(Number(e.target.value))}
-              className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm bg-white"
+              className="w-full rounded-lg px-3 py-2 text-sm bg-white"
+              style={{ border: '1px solid var(--color-border-default)' }}
             >
               {Array.from({ length: 10 }, (_, i) => i).map((n) => (
                 <option key={n} value={n}>{n === 0 ? 'ללא ילדים' : `${n} ${n === 1 ? 'ילד' : 'ילדים'}`}</option>
@@ -138,7 +142,8 @@ function BranchLandingPageInner() {
         {error && <p className="text-red-600 text-sm">{error}</p>}
         <button
           onClick={handleSearch}
-          className="w-full bg-[#CA8A04] hover:bg-[#B45309] text-white font-semibold py-3 rounded-lg transition-colors"
+          className="w-full text-white font-semibold py-3 rounded-lg transition-opacity hover:opacity-90"
+          style={{ backgroundColor: 'var(--color-accent)' }}
         >
           חפש חדרים זמינים
         </button>
