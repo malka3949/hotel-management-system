@@ -15,13 +15,15 @@ function CheckoutPageInner() {
   const roomTypeName = sp.get('roomTypeName') ?? '';
   const pricePerNight = Number(sp.get('price') ?? 0);
   const roomPhoto = sp.get('photo') ?? '';
+  const adults = Number(sp.get('adults') ?? '1');
+  const children = Number(sp.get('children') ?? '0');
 
   const nights = checkIn && checkOut
     ? Math.ceil((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000)
     : 0;
   const total = pricePerNight * nights;
 
-  const [form, setForm] = useState({ guestName: '', guestEmail: '', guestPhone: '', adults: 1, children: 0, notes: '', consentGiven: false });
+  const [form, setForm] = useState({ guestName: '', guestEmail: '', guestPhone: '', notes: '', consentGiven: false });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [emailConflict, setEmailConflict] = useState(false);
@@ -42,8 +44,8 @@ function CheckoutPageInner() {
         guestName: form.guestName,
         guestEmail: form.guestEmail,
         guestPhone: form.guestPhone,
-        adults: form.adults,
-        children: form.children,
+        adults,
+        children,
         notes: form.notes,
         consentGiven: form.consentGiven,
         roomTypeId,
@@ -72,7 +74,9 @@ function CheckoutPageInner() {
       {/* Summary */}
       <div className="bg-[#1E3A8A] text-white rounded-xl p-5 space-y-2">
         <p className="font-semibold text-lg">{roomTypeName}</p>
-        <p className="text-blue-200 text-sm">{formatDate(checkIn)} — {formatDate(checkOut)} · {nights} לילות</p>
+        <p className="text-blue-200 text-sm">
+          {formatDate(checkIn)} — {formatDate(checkOut)} · {nights} לילות · {adults} מבוגרים{children > 0 ? ` + ${children} ילדים` : ''}
+        </p>
         <p className="text-xl font-bold mt-2">₪{total.toLocaleString()}</p>
       </div>
 
@@ -111,29 +115,6 @@ function CheckoutPageInner() {
             className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm"
             placeholder="050-0000000"
           />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm text-[#475569] mb-1">מבוגרים</label>
-            <select
-              value={form.adults}
-              onChange={(e) => set('adults', Number(e.target.value))}
-              className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm"
-            >
-              {[1,2,3,4].map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm text-[#475569] mb-1">ילדים</label>
-            <select
-              value={form.children}
-              onChange={(e) => set('children', Number(e.target.value))}
-              className="w-full border border-[#E2E8F0] rounded-lg px-3 py-2 text-sm"
-            >
-              {[0,1,2,3].map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
-          </div>
         </div>
 
         <div>
