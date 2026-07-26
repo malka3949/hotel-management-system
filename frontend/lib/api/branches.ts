@@ -23,3 +23,6 @@ export const createBranch = (data: Partial<Branch>) =>
 
 export const updateBranch = (id: string, data: Partial<Branch>) =>
   apiFetch<Branch>(`/v1/branches/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+export const setBranchActive = (id: string, isActive: boolean) =>
+  apiFetch<Branch>(`/v1/branches/${id}`, { method: 'PATCH', body: JSON.stringify({ isActive }) });
