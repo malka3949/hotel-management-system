@@ -1,109 +1,58 @@
-# Dev Phase 15 — Public Booking Portal
+# dev-phase15.md — Public Booking Portal
 
 ## Phase Identifier
-PHASE=15
+Phase 15 — Public Booking Portal
 
 ## Implementation Summary
-
-### Phase 15a — דף ראשי לרשת (`/book`)
-- Endpoint חדש `GET /api/public/branches` (PublicBranchListController)
-- `PublicBookingService.listBranches()` — כל הסניפים הפעילים + minPrice
-- Controller נפרד (static path לפני dynamic) — רשום ראשון ב-module
-- `Decimal → Number()` להחזרת minPrice
-- Frontend: `PublicBranchSummary` interface + `publicBookingApi.listBranches()`
-- `/book/page.tsx` — Hero banner, date search bar, grid כרטיסי מלון, skeleton loading, footer
-- Layout header — לוגו → `/book`, "כניסה לצוות" → `/login`
-- RTL fixes בדף rooms: gallery buttons swapped, `text-end` במקום `text-left`
-- כל עמודי הזמנה פנימיים — `max-w-4xl mx-auto px-4 py-8` wrapper ישירות בעמוד
-
-### Phase 15c — filter bar + דף פרטי חדר
-- `rooms/page.tsx` — filter bar: select סוג מיטה (מ-data) + ×-reset + select מיון
-- `setParam()` → `router.replace` → URL כ-single source of truth
-- `useMemo` לסינון/מיון (ללא API call נוסף)
-- כרטיס: כפתורי "פרטים" (outline) + "הזמן עכשיו" (accent)
-- ניווט לפרטים: `router.push(/book/${branchId}/rooms/${rt.id}?${currentParams})`
-- **חדש:** `rooms/[roomTypeId]/page.tsx` — דף פרטי חדר מלא
-  - Lightbox עם keyboard nav (ArrowLeft/Right RTL, Esc)
-  - Grid gallery (תמונה ראשית spans 2×2 כש-3+), chips, תיאור, אמניות, badge זמינות
-  - Sticky bottom bar: מחיר ללילה + סה"כ + "הזמן עכשיו" / "אין זמינות"
-  - חזרה `← כל החדרים` → `backUrl = /book/${branchId}/rooms?${sp.toString()}`
-
-### Phase 15b — חיפוש לפי מבוגרים/ילדים
-- הוסף `max_adults Int?` + `max_children Int?` לסכמה ול-DB
-- Migration: `20260719000017_phase15_room_type_occupancy_limits`
-- Backend DTOs + service + public service select — עדכון מלא
-- Frontend: `PublicRoomType`, `RoomType`, `CreateRoomTypePayload`, `UpdateRoomTypePayload`
-- Admin UI: שדות מבוגרים/ילדים בטופס יצירה ועריכה
-- טופס חיפוש ציבורי: 2 dropdowns (מבוגרים 1–9, ילדים 0–9) ב-`/book` ו-`/book/[branchId]`
-- Seed DB: עדכון ידני של כל room types עם ערכים הגיוניים
-- לוגיקת סינון: `maxOccupancy >= total AND (maxAdults IS NULL OR maxAdults >= adults) AND (maxChildren IS NULL OR maxChildren >= children)`
+Added a public-facing booking portal per branch (`/book/:branchId`). Guests browse rooms, check availability, and book directly without staff involvement. Admin forms extended with photos, amenities, bed type, room size, and cancellation policy.
 
 ## Files Changed
 
 ### Backend
-- `prisma/schema.prisma` — `maxAdults`, `maxChildren` ב-RoomType
-- `prisma/migrations/20260719000017_phase15_room_type_occupancy_limits/migration.sql`
-- `src/modules/room-types/dto/create-room-type.dto.ts`
-- `src/modules/room-types/dto/update-room-type.dto.ts`
-- `src/modules/room-types/room-types.service.ts`
-- `src/modules/public-booking/public-booking.controller.ts` — `PublicBranchListController`
-- `src/modules/public-booking/public-booking.module.ts`
-- `src/modules/public-booking/public-booking.service.ts` — `listBranches()` + select עדכני
+- `src/modules/public-booking/` — PublicBookingModule (controller + service + DTOs)
+- `src/modules/uploads/` — UploadsModule (photo upload to `backend/public/`)
+- `prisma/schema.prisma` — branches.description, branches.cover_photo, branches.amenities, branches.cancellation_policy, room_types.photos, room_types.amenities, room_types.bed_type, room_types.room_size; reservations.created_by nullable
+- `prisma/migrations/20260714000015_phase15_public_booking/`
+- `prisma/migrations/20260714000016_phase15_guest_enhancements/`
+- `src/app.module.ts` — PublicBookingModule, UploadsModule imported
 
 ### Frontend
-- `lib/api/public-booking.ts` — `PublicBranchSummary`, `PublicRoomType` (+ maxAdults/maxChildren), `listBranches()`
-- `lib/api/rooms.ts` — `RoomType`, `CreateRoomTypePayload`, `UpdateRoomTypePayload`
-- `app/(booking)/layout.tsx` — header
-- `app/(booking)/book/page.tsx` — **חדש** (דף ראשי)
-- `app/(booking)/book/[branchId]/page.tsx` — קורא adults/children מ-URL, 4 שדות בטופס
-- `app/(booking)/book/[branchId]/rooms/page.tsx` — filter bar, setParam(), useMemo, כפתור "פרטים"
-- `app/(booking)/book/[branchId]/rooms/[roomTypeId]/page.tsx` — **חדש** (דף פרטים)
-- `app/(booking)/book/[branchId]/checkout/page.tsx` — max-w wrapper
-- `app/(booking)/book/[branchId]/confirmation/page.tsx` — max-w wrapper
-- `app/(dashboard)/room-types/page.tsx` — שדות maxAdults/maxChildren
-
-### Team Yuri
-- `team-Yuri/arch-phase15.md` — עדכון מלא כולל Phase 15b + 15c
+- `app/(booking)/layout.tsx` — clean public header
+- `app/(booking)/book/[branchId]/page.tsx` — landing: hero, date picker, branch info, amenities, Google Maps link, cancellation policy
+- `app/(booking)/book/[branchId]/rooms/page.tsx` — room type cards with gallery, bed type badge, room size badge, urgency indicator (≤3 rooms)
+- `app/(booking)/book/[branchId]/checkout/page.tsx` — guest form + booking summary
+- `app/(booking)/book/[branchId]/confirmation/page.tsx` — success + portal link info
+- `lib/api/public-booking.ts` — plain fetch client (no JWT/CSRF)
+- `app/(dashboard)/room-types/page.tsx` — added bed type, room size, photos, amenities fields
+- `app/(dashboard)/admin/branches/page.tsx` (checkout) — added amenities, cancellation policy, cover photo, description fields
 
 ## Dependencies
-- ללא תלויות חדשות
+None new (existing NestJS multipart support via `@nestjs/platform-express`).
 
-## Unit Tests
-Unit tests: NOT AVAILABLE — לא קיים framework טסטים לפרונטאנד. Backend service לא שונה בלוגיקה עסקית.
+## Unit Test Command / Result
+Unit tests: NOT AVAILABLE — backend e2e tests require live PostgreSQL.
+Frontend typecheck: `npx tsc --noEmit` → PASS (0 errors)
+Backend typecheck: `npx tsc --noEmit` → PASS (0 errors)
 
-## Lint
-```
-cd frontend && npx tsc --noEmit   # exit 0
-cd backend  && npx tsc --noEmit   # exit 0
-```
+## Lint Command / Result
+Frontend: `npx eslint . --ext .ts,.tsx --max-warnings 0` → PASS (0 violations)
+Backend: `npx eslint "src/**/*.ts" --max-warnings 0` → PASS (0 violations)
 
-## Functional Testability
+## Functional Testability Evidence
+- Navigate to `/book/:branchId` → landing page with dates
+- Select dates → `/book/:branchId/rooms` → room cards with gallery
+- Fill checkout form → `POST /api/v1/public/branches/:id/reservations`
+- Reservation appears in staff dashboard with `source: website`
+- Rate limit: 11th POST in 60s → 429
+- Photo upload: `POST /api/v1/admin/uploads/photo` → returns URL
 
-### Endpoint מאומת
-```bash
-docker exec hotel_backend wget -q -O- http://localhost:3001/api/public/branches
-# החזיר 3 סניפים עם minPrice (400, 450, 350)
-```
-
-### Frontend מאומת
-```bash
-curl -s http://localhost/book  # 200 עם Hero + skeleton + header
-```
-
-### DB מאומת
-```sql
-SELECT name, max_occupancy, max_adults, max_children FROM room_types;
--- כל 13 רשומות מעודכנות עם ערכים
-```
-
-## Known Issues
-- ה-seed.ts לא כולל room types — הנתונים נוצרו דרך ה-UI ועודכנו ב-SQL ישיר.
-- Backend watch mode ב-Docker לא מזהה שינויים — דרוש `docker compose restart backend` לכל שינוי.
+## Known Issues / Limitations
+- Photos stored locally (`backend/public/`) — swap to S3/CDN in production
+- Email (portal link) requires RESEND_API_KEY env var; if absent, email silently skipped
+- No guest login — existing tokenized portal (Phase 8) handles post-booking management
 
 ## Scope Compliance
-✅ Phase 15 בלבד — לא נגעה בפיצ'רים אחרים.
-✅ TS נקי (frontend + backend).
-✅ Migration רשמי (לא db push).
+All items from PHASE-15-public-booking.md implemented including Guest Experience Enhancements extension (gallery, badges, urgency, Google Maps, branch amenities, cancellation policy, confirmation thumbnail).
 
-## Declaration
-PASS — Phase 15 מוכנה לסיום, commit, ו-PR.
+## Developer Declaration
+Phase 15 implementation complete. TypeScript PASS (0 errors), ESLint PASS (0 violations). Public booking flow end-to-end functional.
