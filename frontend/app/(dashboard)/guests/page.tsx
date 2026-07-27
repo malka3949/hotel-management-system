@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { getGuests, deleteGuest, type Guest, type GuestsFilter } from '@/lib/api/guests';
-import { getBranches, type Branch } from '@/lib/api/branches';
+import { useBranchStore } from '@/lib/store/branch.store';
 import { RoleGate } from '@/components/shared/RoleGate';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -11,8 +11,9 @@ export default function GuestsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'chain_admin';
 
+  const { selectedBranchId } = useBranchStore();
+
   const [guests, setGuests] = useState<Guest[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [total, setTotal] = useState(0);
@@ -21,10 +22,9 @@ export default function GuestsPage() {
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (isAdmin) {
-      getBranches().then(setBranches).catch(() => {});
-    }
-  }, [isAdmin]);
+    setPage(1);
+    setFilters((f) => ({ ...f, branchId: selectedBranchId || undefined }));
+  }, [selectedBranchId]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -91,22 +91,6 @@ export default function GuestsPage() {
         className="mb-5 p-4 rounded-lg border flex flex-wrap gap-3"
         style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
       >
-        {isAdmin && (
-          <select
-            value={filters.branchId ?? ''}
-            onChange={(e) => {
-              setPage(1);
-              setFilters((f) => ({ ...f, branchId: e.target.value || undefined }));
-            }}
-            className="rounded-md border px-3 py-2 text-sm font-medium"
-            style={{ borderColor: 'var(--color-border-default)' }}
-          >
-            <option value="">בחר סניף</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        )}
         <input
           placeholder="חיפוש לפי שם, טלפון, אימייל, ת.ז..."
           defaultValue={filters.search ?? ''}

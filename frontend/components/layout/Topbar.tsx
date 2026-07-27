@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { logout, getSessions, revokeSession, revokeAllSessions, type Session } from '@/lib/api/auth';
+import { useBranchStore } from '@/lib/store/branch.store';
+import { getBranches } from '@/lib/api/branches';
 
 const ROLE_LABELS: Record<string, string> = {
   chain_admin: 'מנהל רשת',
@@ -135,6 +137,13 @@ export function Topbar() {
   const router = useRouter();
   const [showSessions, setShowSessions] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const { selectedBranchId, branches, setBranches, selectBranch } = useBranchStore();
+
+  useEffect(() => {
+    if (user?.role === 'chain_admin' && branches.length === 0) {
+      getBranches().then(setBranches).catch(() => {});
+    }
+  }, [user?.role, branches.length, setBranches]);
 
   async function handleLogout() {
     try {
@@ -184,6 +193,26 @@ export function Topbar() {
           />
         </div>
       </div>
+
+      {/* Branch selector — chain_admin only */}
+      {user?.role === 'chain_admin' && branches.length > 0 && (
+        <select
+          value={selectedBranchId}
+          onChange={(e) => selectBranch(e.target.value)}
+          className="text-sm rounded-lg border px-3 py-1.5 outline-none transition-all font-medium"
+          style={{
+            borderColor: selectedBranchId ? 'var(--color-accent)' : 'var(--color-border-default)',
+            backgroundColor: selectedBranchId ? 'rgba(196,162,83,0.08)' : 'var(--color-bg-base)',
+            color: selectedBranchId ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+            minWidth: '160px',
+          }}
+        >
+          <option value="">— בחר סניף —</option>
+          {branches.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      )}
 
       {/* Actions */}
       {user && (
