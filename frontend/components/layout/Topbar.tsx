@@ -123,9 +123,11 @@ function NotificationsPanel({ onClose }: { onClose: () => void }) {
           סגור
         </button>
       </div>
-      <p className="text-xs text-center py-4" style={{ color: 'var(--color-text-secondary)' }}>
-        אין התראות חדשות
-      </p>
+      <div className="py-6 text-center">
+        <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
+          אין התראות חדשות
+        </p>
+      </div>
     </div>
   );
 }
@@ -218,7 +220,10 @@ export function Topbar() {
           {/* Notification bell */}
           <div className="relative">
             <button
-              onClick={() => { setShowNotifications((v) => !v); setShowSessions(false); }}
+              onClick={() => {
+                setShowNotifications((v) => !v);
+                setShowSessions(false);
+              }}
               className="relative w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
               style={{ color: 'var(--color-text-secondary)' }}
               onMouseEnter={(e) => {
@@ -237,7 +242,9 @@ export function Topbar() {
                 <path d="M6.5 11.5a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
               </svg>
             </button>
-            {showNotifications && <NotificationsPanel onClose={() => setShowNotifications(false)} />}
+            {showNotifications && (
+              <NotificationsPanel onClose={() => setShowNotifications(false)} />
+            )}
           </div>
 
           {/* Divider */}
@@ -246,7 +253,10 @@ export function Topbar() {
           {/* User info */}
           <div className="relative">
             <button
-              onClick={() => { setShowSessions((v) => !v); setShowNotifications(false); }}
+              onClick={() => {
+                setShowSessions((v) => !v);
+                setShowNotifications(false);
+              }}
               className="flex items-center gap-2 text-sm"
             >
               <div
