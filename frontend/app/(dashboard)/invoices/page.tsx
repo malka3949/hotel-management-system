@@ -72,7 +72,7 @@ export default function InvoicesListPage() {
       {isAdmin && !selectedBranchId ? (
         <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
           <div className="text-4xl mb-3">🏨</div>
-          <p>בחר סניף כדי לצפות חשבוניות</p>
+          <p>בחר סניף כדי לצפות בחשבוניות</p>
         </div>
       ) : (
         <>
