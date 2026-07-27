@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { listInvoices, type Invoice, type InvoiceStatus } from '@/lib/api/billing';
-import { getBranches, Branch } from '@/lib/api/branches';
+import { useBranchStore } from '@/lib/store/branch.store';
 import { useAuth } from '@/hooks/useAuth';
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = {
@@ -28,9 +28,7 @@ export default function InvoicesListPage() {
   const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.role === 'chain_admin';
-
-  const [selectedBranchId, setSelectedBranchId] = useState('');
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const { selectedBranchId } = useBranchStore();
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [total, setTotal] = useState(0);
@@ -40,12 +38,7 @@ export default function InvoicesListPage() {
   const limit = 20;
 
   useEffect(() => {
-    if (isAdmin) getBranches().then(setBranches).catch(() => {});
-  }, [isAdmin]);
-
-  useEffect(() => {
     if (isAdmin && !selectedBranchId) { setLoading(false); return; }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     listInvoices({
       status: statusFilter || undefined,
@@ -67,17 +60,6 @@ export default function InvoicesListPage() {
           חשבוניות
         </h2>
         <div className="flex items-center gap-3">
-          {isAdmin && (
-            <select
-              value={selectedBranchId}
-              onChange={(e) => { setSelectedBranchId(e.target.value); setPage(1); }}
-              className="rounded-md border px-3 py-2 text-sm"
-              style={{ borderColor: 'var(--color-border-default)' }}
-            >
-              <option value="">— בחר סניף —</option>
-              {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          )}
           {!isAdmin && (
             <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>{total} סה&quot;כ</span>
           )}
