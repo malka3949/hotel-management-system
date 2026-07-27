@@ -3,14 +3,17 @@ WORKDIR /app
 
 RUN apk add --no-cache libc6-compat
 
-COPY package*.json ./
+COPY --chown=node:node package*.json ./
 RUN npm ci
 
-COPY . .
+RUN chown -R node:node /app
 
 EXPOSE 3000
 
-RUN npm run build
-
+ENV NEXT_PUBLIC_API_URL=/api
+ENV BACKEND_URL=http://backend:3001
 ENV HOSTNAME=0.0.0.0
-CMD ["node_modules/.bin/next", "start", "--hostname", "0.0.0.0"]
+
+USER node
+
+CMD ["node_modules/.bin/next", "dev", "--turbo", "--hostname", "0.0.0.0"]

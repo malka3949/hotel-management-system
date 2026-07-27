@@ -11,7 +11,13 @@ import { Injectable } from '@nestjs/common';
 import { RoomStatus, CleaningStatus } from '@prisma/client';
 
 @Injectable()
-@WebSocketGateway({ namespace: '/ws', cors: { origin: '*' } })
+@WebSocketGateway({
+  namespace: '/ws',
+  cors: {
+    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    credentials: true,
+  },
+})
 export class RoomStatusGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server!: Server;
@@ -58,5 +64,9 @@ export class RoomStatusGateway implements OnGatewayConnection, OnGatewayDisconne
 
   emitReservationCreated(reservation: Record<string, unknown>, branchId: string) {
     this.server.to(`branch:${branchId}`).emit('reservation:created', reservation);
+  }
+
+  emitHousekeepingTaskUpdated(task: Record<string, unknown>, branchId: string) {
+    this.server.to(`branch:${branchId}`).emit('housekeeping:task:updated', task);
   }
 }

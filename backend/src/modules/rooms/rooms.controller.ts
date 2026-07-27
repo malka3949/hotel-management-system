@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { RoomsService } from './rooms.service';
+import { ReservationsService } from '../reservations/reservations.service';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { UpdateRoomStatusDto, UpdateCleaningStatusDto } from './dto/update-room-status.dto';
@@ -23,7 +24,10 @@ import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 @Controller('v1/rooms')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class RoomsController {
-  constructor(private roomsService: RoomsService) {}
+  constructor(
+    private roomsService: RoomsService,
+    private reservationsService: ReservationsService,
+  ) {}
 
   @Post()
   @Roles('chain_admin', 'hotel_manager')
@@ -32,11 +36,13 @@ export class RoomsController {
   }
 
   @Get()
+  @Roles('chain_admin', 'hotel_manager', 'receptionist', 'housekeeping')
   findAll(@CurrentUser() user: JwtPayload, @Query() filters: FilterRoomsDto) {
     return this.roomsService.findAll(user, filters);
   }
 
   @Get(':id')
+  @Roles('chain_admin', 'hotel_manager', 'receptionist', 'housekeeping')
   findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.roomsService.findOne(id, user);
   }
@@ -75,5 +81,11 @@ export class RoomsController {
   @Roles('chain_admin', 'hotel_manager')
   softDelete(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.roomsService.softDelete(id, user);
+  }
+
+  @Get(':id/reservations')
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
+  getReservations(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.reservationsService.getByRoom(id, user);
   }
 }

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Operations Dark — Design Concept C</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#0F1117;--sidebar:#161B27;--surface:#1C2333;--s2:#212B3D;--acc:#00D4AA;--border:#2A3347;--text:#E8EDF5;--sec:#8B97B3;--muted:#55637A;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;direction:rtl;}
+.sidebar{width:220px;min-width:220px;background:var(--sidebar);border-left:1px solid var(--border);display:flex;flex-direction:column;}
+.sidebar-logo{padding:20px 18px 18px;border-bottom:1px solid var(--border);}
+.logo-row{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--acc),#00B896);border-radius:8px;display:flex;align-items:center;justify-content:center;}
+.logo-name{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-0.3px;}
+.logo-sub{font-size:10px;color:var(--muted);margin-top:1px;}
+.system-status{margin-top:10px;display:flex;align-items:center;gap:6px;font-size:10px;color:var(--sec);}
+.status-pulse{width:6px;height:6px;border-radius:50%;background:var(--acc);animation:pulse 2s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.nav{padding:10px 0;flex:1;}
+.nav-label{font-size:9px;font-weight:600;color:var(--muted);letter-spacing:1.5px;text-transform:uppercase;padding:12px 18px 5px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 18px;color:var(--sec);font-size:13px;cursor:pointer;transition:all 0.12s;position:relative;}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03);}
+.nav-item.active{color:var(--text);}
+.nav-item.active::after{content:'';position:absolute;right:0;top:4px;bottom:4px;width:2px;background:var(--acc);border-radius:1px;}
+.nav-icon{width:15px;height:15px;flex-shrink:0;}
+.nav-badge{margin-right:auto;background:var(--acc);color:#0F1117;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;}
+.nav-badge-warn{margin-right:auto;background:#F59E0B;color:#0F1117;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;}
+.nav-divider{height:1px;background:var(--border);margin:8px 18px;}
+.sidebar-user{padding:14px 18px;border-top:1px solid var(--border);display:flex;align-items:center;gap:9px;}
+.user-avatar{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#3B82F6,#6366F1);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0;}
+.user-name{font-size:12px;font-weight:600;color:var(--text);}
+.user-role{font-size:10px;color:var(--muted);margin-top:1px;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--sidebar);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--sec);}
+.breadcrumb-sep{color:var(--muted);}
+.breadcrumb-current{color:var(--text);font-weight:600;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.topbar-clock{font-size:12px;font-weight:600;color:var(--acc);font-variant-numeric:tabular-nums;letter-spacing:0.5px;}
+.topbar-sep{width:1px;height:18px;background:var(--border);}
+.content{flex:1;overflow-y:auto;padding:20px 24px;}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;position:relative;overflow:hidden;}
+.kpi-card.highlight{border-color:rgba(0,212,170,0.3);background:rgba(0,212,170,0.04);}
+.kpi-card.highlight::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--acc);}
+.kpi-label{font-size:10px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px;}
+.kpi-value{font-size:26px;font-weight:700;color:var(--text);line-height:1;letter-spacing:-0.5px;margin-bottom:5px;}
+.kpi-sub{font-size:11px;color:var(--sec);}
+.kpi-trend{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;margin-top:6px;padding:2px 6px;border-radius:4px;}
+.trend-up{background:rgba(0,212,170,0.12);color:var(--acc);}
+.trend-down{background:rgba(239,68,68,0.12);color:#EF6060;}
+.trend-warn{background:rgba(245,158,11,0.12);color:#F59E0B;}
+.grid-main{display:grid;grid-template-columns:1fr 280px;gap:16px;}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.panel-header{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--s2);}
+.panel-title{font-size:13px;font-weight:600;color:var(--text);}
+.panel-meta{font-size:11px;color:var(--muted);}
+.toolbar{padding:10px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.search-field{display:flex;align-items:center;gap:7px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 10px;width:200px;}
+.search-field input{border:none;outline:none;background:transparent;font-family:inherit;font-size:12px;color:var(--text);direction:rtl;width:100%;}
+.search-field input::placeholder{color:var(--muted);}
+.tab-row{display:flex;gap:0;}
+.tab{padding:5px 12px;font-size:11px;font-weight:500;color:var(--sec);border:1px solid var(--border);cursor:pointer;background:transparent;font-family:inherit;transition:all 0.1s;}
+.tab:first-child{border-radius:6px 0 0 6px;}
+.tab:last-child{border-radius:0 6px 6px 0;}
+.tab+.tab{border-right:none;}
+.tab.active{background:var(--acc);color:#0F1117;border-color:var(--acc);font-weight:600;}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:9px 18px;text-align:right;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:0.8px;text-transform:uppercase;border-bottom:1px solid var(--border);background:var(--s2);}
+tbody tr{border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;position:relative;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,0.025);}
+tbody tr.row-active{background:rgba(0,212,170,0.04);border-right:2px solid var(--acc);}
+td{padding:12px 18px;font-size:12.5px;color:var(--text);vertical-align:middle;}
+.room-id{font-size:14px;font-weight:700;color:var(--text);}
+.room-type{font-size:10px;color:var(--muted);margin-top:1px;}
+.guest-name{font-weight:600;font-size:13px;}
+.guest-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:4px;font-size:10.5px;font-weight:600;}
+.badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.badge.available{background:rgba(34,197,94,0.12);color:#4ADE80;} .badge.available .badge-dot{background:#22C55E;box-shadow:0 0 5px rgba(34,197,94,0.6);}
+.badge.reserved{background:rgba(59,130,246,0.12);color:#93C5FD;} .badge.reserved .badge-dot{background:#3B82F6;}
+.badge.checkedin{background:rgba(0,212,170,0.12);color:#5EEAD4;} .badge.checkedin .badge-dot{background:var(--acc);box-shadow:0 0 5px rgba(0,212,170,0.5);}
+.badge.preparing{background:rgba(245,158,11,0.12);color:#FCD34D;} .badge.preparing .badge-dot{background:#F59E0B;box-shadow:0 0 5px rgba(245,158,11,0.5);}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:6px;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;border:none;transition:all 0.12s;}
+.btn-primary{background:var(--acc);color:#0F1117;}
+.btn-primary:hover{background:#00B896;}
+.btn-outline{background:transparent;color:var(--sec);border:1px solid var(--border);}
+.btn-ghost{background:transparent;color:var(--muted);padding:6px 8px;}
+.actions-cell{display:flex;align-items:center;gap:6px;}
+.side-stack{display:flex;flex-direction:column;gap:12px;}
+.mini-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.mini-header{padding:10px 16px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--sec);text-transform:uppercase;letter-spacing:0.8px;background:var(--s2);}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:9px 16px;border-bottom:1px solid var(--border);font-size:12px;}
+.stat-row:last-child{border-bottom:none;}
+.stat-label{color:var(--sec);}
+.stat-value{font-weight:700;color:var(--text);}
+.stat-value.green{color:#4ADE80;} .stat-value.amber{color:#FCD34D;} .stat-value.red{color:#FC8181;} .stat-value.accent{color:var(--acc);}
+.bar-row{padding:10px 16px 4px;}
+.bar-item{margin-bottom:9px;}
+.bar-label-row{display:flex;justify-content:space-between;margin-bottom:4px;}
+.bar-name{font-size:10px;color:var(--sec);}
+.bar-pct{font-size:10px;font-weight:600;color:var(--text);}
+.bar-track{height:5px;background:var(--border);border-radius:3px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;}
+.alert-item{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;}
+.alert-item:last-child{border-bottom:none;}
+.alert-item:hover{background:rgba(255,255,255,0.02);}
+.alert-icon{width:6px;height:6px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+.alert-text{font-size:11.5px;color:var(--sec);line-height:1.45;}
+.alert-text strong{color:var(--text);font-weight:600;}
+.alert-time{font-size:9.5px;color:var(--muted);margin-top:2px;}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo"><div class="logo-row"><div class="logo-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F1117" stroke-width="2.5"><path d="M3 9h18M3 9v11a1 1 0 001 1h16a1 1 0 001-1V9"/></svg></div><div><div class="logo-name">HotelOS</div><div class="logo-sub">שלשלת מלונות</div></div></div><div class="system-status"><div class="status-pulse"></div>מערכת פעילה · תל אביב</div></div>
+  <nav class="nav">
+    <div class="nav-label">ניהול</div>
+    <div class="nav-item active"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>לוח בקרה</div>
+    <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>הזמנות<span class="nav-badge">12</span></div>
+    <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>אורחים</div>
+    <div class="nav-divider"></div>
+    <div class="nav-label">מבצעי</div>
+    <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path d="M3 9l2.45-4.9A2 2 0 017.24 3h9.52a2 2 0 011.8 1.1L21 9"/></svg>חדרנות<span class="nav-badge-warn">3</span></div>
+    <div class="nav-item"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>דוחות</div>
+  </nav>
+  <div class="sidebar-user"><div class="user-avatar">ר</div><div><div class="user-name">רבקה לוי</div><div class="user-role">מנהלת מלון</div></div></div>
+</aside>
+<main class="main">
+  <header class="topbar">
+    <div class="breadcrumb"><span>מרכז תל אביב</span><span class="breadcrumb-sep">/</span><span class="breadcrumb-current">לוח בקרה</span></div>
+    <div class="topbar-right"><span class="topbar-clock">02:34 — 26/07/26</span><div class="topbar-sep"></div><button class="btn btn-primary"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>הזמנה חדשה</button></div>
+  </header>
+  <div class="content">
+    <div class="kpi-row">
+      <div class="kpi-card highlight"><div class="kpi-label">תפוסה</div><div class="kpi-value">78%</div><div class="kpi-sub">47 / 60 חדרים</div><span class="kpi-trend trend-up">↑ +5% מאתמול</span></div>
+      <div class="kpi-card"><div class="kpi-label">צ'ק-אין ממתין</div><div class="kpi-value">4</div><div class="kpi-sub">8 הושלמו היום</div><span class="kpi-trend trend-warn">⚠ 2 מאוחרים</span></div>
+      <div class="kpi-card"><div class="kpi-label">חדרים בהכנה</div><div class="kpi-value">5</div><div class="kpi-sub">3 דחוף · 2 רגיל</div><span class="kpi-trend trend-down">↑ +2 מסיום</span></div>
+      <div class="kpi-card"><div class="kpi-label">הכנסות השבוע</div><div class="kpi-value">₪84k</div><div class="kpi-sub">ממוצע ₪11.9k / יום</div><span class="kpi-trend trend-up">↑ +12%</span></div>
+    </div>
+    <div class="grid-main">
+      <div>
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">הגעות היום — 26/07</span><span class="panel-meta">12 הגעות</span></div>
+          <div class="toolbar"><div class="search-field"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#55637A" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input placeholder="שם / חדר / מספר הזמנה..." /></div><div class="tab-row"><button class="tab active">הכל</button><button class="tab">ממתינים</button><button class="tab">הושלמו</button></div></div>
+          <table><thead><tr><th>חדר</th><th>אורח</th><th>תאריכים</th><th>סטטוס</th><th>פעולות</th></tr></thead>
+          <tbody>
+            <tr class="row-active"><td><div class="room-id">101</div><div class="room-type">דלוקס קינג</div></td><td><div class="guest-name">דוד כהן</div><div class="guest-sub">IL-4521 · 2 מבוגרים</div></td><td style="font-size:11.5px;color:#8B97B3;">26 יול — 29 יול<br><span style="color:#55637A;font-size:10px;">3 לילות</span></td><td><span class="badge reserved"><span class="badge-dot"></span>מוזמן</span></td><td><div class="actions-cell"><button class="btn btn-primary">צ'ק-אין</button></div></td></tr>
+            <tr><td><div class="room-id">205</div><div class="room-type">סטנדרט</div></td><td><div class="guest-name">מיכל אברהם</div><div class="guest-sub">IL-3847 · 1 מבוגר</div></td><td style="font-size:11.5px;color:#8B97B3;">26 יול — 28 יול<br><span style="color:#55637A;font-size:10px;">2 לילות</span></td><td><span class="badge checkedin"><span class="badge-dot"></span>צ'ק-אין</span></td><td><div class="actions-cell"><button class="btn btn-outline">צ'ק-אאוט</button></div></td></tr>
+            <tr><td><div class="room-id">312</div></td><td><div class="guest-name">יוסף לוינשטיין</div></td><td style="font-size:11.5px;color:#8B97B3;">26 יול — 1 אוג</td><td><span class="badge reserved"><span class="badge-dot"></span>מוזמן</span></td><td><div class="actions-cell"><button class="btn btn-primary">צ'ק-אין</button></div></td></tr>
+            <tr><td><div class="room-id">408</div></td><td><div class="guest-name">שרה מזרחי</div></td><td style="font-size:11.5px;color:#8B97B3;">26 יול — 27 יול</td><td><span class="badge preparing"><span class="badge-dot"></span>בהכנה</span></td><td><div class="actions-cell"><button class="btn btn-ghost" style="opacity:0.4;">ממתין לחדר</button></div></td></tr>
+          </tbody></table>
+        </div>
+      </div>
+      <div class="side-stack">
+        <div class="mini-panel">
+          <div class="mini-header">סטטוס חדרים</div>
+          <div class="stat-row"><span class="stat-label">תפוסים</span><span class="stat-value red">37</span></div>
+          <div class="stat-row"><span class="stat-label">פנויים</span><span class="stat-value green">13</span></div>
+          <div class="stat-row"><span class="stat-label">בהכנה</span><span class="stat-value amber">5</span></div>
+          <div class="stat-row"><span class="stat-label">סה"כ</span><span class="stat-value accent">60</span></div>
+        </div>
+        <div class="mini-panel">
+          <div class="mini-header">תפוסה לפי קומה</div>
+          <div class="bar-row">
+            <div class="bar-item"><div class="bar-label-row"><span class="bar-name">קומה 1</span><span class="bar-pct">90%</span></div><div class="bar-track"><div class="bar-fill" style="width:90%;background:var(--acc);"></div></div></div>
+            <div class="bar-item"><div class="bar-label-row"><span class="bar-name">קומה 2</span><span class="bar-pct">75%</span></div><div class="bar-track"><div class="bar-fill" style="width:75%;background:var(--acc);"></div></div></div>
+            <div class="bar-item"><div class="bar-label-row"><span class="bar-name">קומה 3</span><span class="bar-pct">60%</span></div><div class="bar-track"><div class="bar-fill" style="width:60%;background:#3B82F6;"></div></div></div>
+            <div class="bar-item" style="margin-bottom:0;"><div class="bar-label-row"><span class="bar-name">קומה 4</span><span class="bar-pct">45%</span></div><div class="bar-track"><div class="bar-fill" style="width:45%;background:#6366F1;"></div></div></div>
+          </div>
+        </div>
+        <div class="mini-panel">
+          <div class="mini-header">התראות</div>
+          <div class="alert-item"><div class="alert-icon" style="background:#F59E0B;box-shadow:0 0 5px rgba(245,158,11,0.5);"></div><div><div class="alert-text"><strong>חדר 408</strong> — בהכנה >45 דק'</div><div class="alert-time">לפני 12 דקות</div></div></div>
+          <div class="alert-item"><div class="alert-icon" style="background:#EF4444;box-shadow:0 0 5px rgba(239,68,68,0.5);"></div><div><div class="alert-text"><strong>חדר 301</strong> — צ'ק-אין מאוחר</div><div class="alert-time">לפני 28 דקות</div></div></div>
+          <div class="alert-item"><div class="alert-icon" style="background:var(--acc);box-shadow:0 0 5px rgba(0,212,170,0.4);"></div><div><div class="alert-text"><strong>VIP הגעה</strong> — חדר 501, 17:30</div><div class="alert-time">בעוד 3 שעות</div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

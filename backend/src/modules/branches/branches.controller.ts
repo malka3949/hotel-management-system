@@ -29,6 +29,7 @@ export class BranchesController {
   }
 
   @Get()
+  @Roles('chain_admin', 'hotel_manager')
   findAll(@CurrentUser() user: JwtPayload) {
     return this.branchesService.findAll(user);
   }

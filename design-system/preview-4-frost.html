@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<title>Concept D — Frost</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:#F1F5F9;color:#0F172A;display:flex;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{width:236px;background:#0F172A;color:#fff;display:flex;flex-direction:column;position:fixed;top:0;right:0;height:100vh;z-index:10;}
+.logo{padding:22px 18px;border-bottom:1px solid rgba(255,255,255,0.07);}
+.logo-mark{display:flex;align-items:center;gap:10px;}
+.logo-icon{width:34px;height:34px;background:linear-gradient(135deg,#2563EB,#3B82F6);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;font-weight:700;}
+.logo-text{font-size:15px;font-weight:600;}
+.logo-sub{font-size:11px;color:rgba(255,255,255,0.38);margin-top:2px;}
+nav{flex:1;padding:10px 10px;overflow-y:auto;}
+.nav-label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:rgba(255,255,255,0.28);padding:14px 10px 5px;}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:8px;cursor:pointer;color:rgba(255,255,255,0.5);font-size:13.5px;font-weight:500;transition:all .15s;margin-bottom:1px;}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.8);}
+.nav-item.active{background:#2563EB;color:#fff;}
+.nav-item.active svg{opacity:1;}
+.nav-item svg{opacity:.7;flex-shrink:0;}
+.sidebar-footer{padding:14px;border-top:1px solid rgba(255,255,255,0.07);}
+.user-card{display:flex;align-items:center;gap:10px;}
+.user-avatar{width:32px;height:32px;border-radius:8px;background:#1E40AF;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#93C5FD;flex-shrink:0;}
+.user-name{font-size:13px;font-weight:500;}
+.user-role{font-size:11px;color:rgba(255,255,255,0.38);}
+
+/* MAIN */
+.main{flex:1;margin-right:236px;display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:#fff;border-bottom:1px solid #E2E8F0;padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:5;}
+.topbar-left{display:flex;flex-direction:column;gap:1px;}
+.topbar-title{font-size:15px;font-weight:600;}
+.topbar-sub{font-size:11.5px;color:#64748B;}
+.topbar-actions{display:flex;align-items:center;gap:10px;}
+.icon-btn{width:34px;height:34px;border-radius:8px;border:1px solid #E2E8F0;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#64748B;background:#fff;}
+.icon-btn:hover{background:#F8FAFC;}
+.btn-primary{background:#2563EB;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;}
+.btn-primary:hover{background:#1D4ED8;}
+
+.content{padding:26px 28px;}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:22px;}
+.kpi-card{background:#fff;border-radius:12px;border:1px solid #E8EDF5;padding:20px 20px;box-shadow:0 1px 3px rgba(15,23,42,.04);}
+.kpi-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.kpi-icon{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;}
+.ic-blue{background:#DBEAFE;color:#2563EB;}
+.ic-green{background:#DCFCE7;color:#16A34A;}
+.ic-amber{background:#FEF3C7;color:#D97706;}
+.ic-violet{background:#EDE9FE;color:#7C3AED;}
+.kpi-trend{font-size:11.5px;font-weight:500;padding:3px 8px;border-radius:20px;}
+.up{background:#DCFCE7;color:#15803D;}
+.down{background:#FEE2E2;color:#DC2626;}
+.kpi-value{font-size:30px;font-weight:700;line-height:1;letter-spacing:-1px;margin-bottom:4px;}
+.kpi-label{font-size:12.5px;color:#64748B;}
+
+/* GRID */
+.dash-grid{display:grid;grid-template-columns:1fr 320px;gap:18px;}
+
+/* SECTION */
+.section{background:#fff;border-radius:12px;border:1px solid #E8EDF5;box-shadow:0 1px 3px rgba(15,23,42,.04);overflow:hidden;}
+.sec-header{padding:17px 22px 13px;border-bottom:1px solid #F1F5F9;display:flex;align-items:center;justify-content:space-between;}
+.sec-title{font-size:13.5px;font-weight:600;}
+.sec-count{font-size:11.5px;color:#64748B;background:#F1F5F9;padding:3px 10px;border-radius:20px;}
+
+table{width:100%;border-collapse:collapse;}
+thead tr{background:#F8FAFC;}
+th{text-align:right;padding:9px 20px;font-size:11px;font-weight:600;color:#94A3B8;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #E8EDF5;}
+td{padding:13px 20px;font-size:13.5px;border-bottom:1px solid #F8FAFC;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:#FAFBFF;}
+.td-sub{font-size:11.5px;color:#94A3B8;margin-top:1px;}
+
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11.5px;font-weight:500;}
+.b-in{background:#DCFCE7;color:#15803D;}
+.b-wait{background:#FEF9C3;color:#92400E;}
+.b-out{background:#FEE2E2;color:#DC2626;}
+.b-stay{background:#DBEAFE;color:#1E40AF;}
+
+/* SIDE */
+.side-stack{display:flex;flex-direction:column;gap:14px;}
+.stat-row{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid #F8FAFC;}
+.stat-row:last-child{border-bottom:none;}
+.stat-l{font-size:13px;color:#475569;}
+.stat-v{font-size:13.5px;font-weight:600;}
+
+.floor-row{padding:11px 20px;border-bottom:1px solid #F8FAFC;}
+.floor-row:last-child{border-bottom:none;}
+.floor-top{display:flex;justify-content:space-between;margin-bottom:7px;}
+.fl{font-size:12.5px;color:#475569;}
+.fp{font-size:12.5px;font-weight:600;}
+.bar{height:5px;background:#EEF2F8;border-radius:3px;}
+.fill{height:100%;border-radius:3px;background:#2563EB;}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <div class="logo-icon">H</div>
+      <div>
+        <div class="logo-text">HotelOS</div>
+        <div class="logo-sub">ניהול מלונות</div>
+      </div>
+    </div>
+  </div>
+  <nav>
+    <div class="nav-item active">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+      דשבורד
+    </div>
+    <div class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      הזמנות
+    </div>
+    <div class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      אורחים
+    </div>
+    <div class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      חדרים
+    </div>
+    <div class="nav-label">תפעול</div>
+    <div class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      חדרנות
+    </div>
+    <div class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      דוחות
+    </div>
+    <div class="nav-item">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      חשבוניות
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">מכ</div>
+      <div>
+        <div class="user-name">מלכה</div>
+        <div class="user-role">מנהלת מלון</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-title">דשבורד ראשי</div>
+      <div class="topbar-sub">ראשון, 26 יולי 2026 — מלון תל אביב מרכז</div>
+    </div>
+    <div class="topbar-actions">
+      <div class="icon-btn">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      </div>
+      <button class="btn-primary">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        הזמנה חדשה
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="kpi-grid">
+      <div class="kpi-card"><div class="kpi-header"><div class="kpi-icon ic-blue"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg></div><span class="kpi-trend up">↑ 4%</span></div><div class="kpi-value">87%</div><div class="kpi-label">תפוסה הלילה</div></div>
+      <div class="kpi-card"><div class="kpi-header"><div class="kpi-icon ic-green"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><span class="kpi-trend up">↑ 12</span></div><div class="kpi-value">34</div><div class="kpi-label">צ׳ק-אין היום</div></div>
+      <div class="kpi-card"><div class="kpi-header"><div class="kpi-icon ic-amber"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></div><span class="kpi-trend up">↑ 8%</span></div><div class="kpi-value">₪42,800</div><div class="kpi-label">הכנסה החודש</div></div>
+      <div class="kpi-card"><div class="kpi-header"><div class="kpi-icon ic-violet"><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><span class="kpi-trend down">↓ 2</span></div><div class="kpi-value">7</div><div class="kpi-label">משימות פתוחות</div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="section"><div class="sec-header"><div class="sec-title">צ׳ק-אין היום</div><span class="sec-count">34 אורחים</span></div><table><thead><tr><th>אורח</th><th>חדר</th><th>הגעה</th><th>עזיבה</th><th>סטטוס</th></tr></thead><tbody><tr><td><div>דניאל לוי</div><div class="td-sub">2 לילות</div></td><td>301</td><td>14:00</td><td>28 יולי</td><td><span class="badge b-in">הגיע ✓</span></td></tr><tr><td><div>שרה כהן</div><div class="td-sub">3 לילות</div></td><td>215</td><td>15:30</td><td>29 יולי</td><td><span class="badge b-wait">ממתין</span></td></tr><tr><td><div>יוסף אבישר</div><div class="td-sub">1 לילה</div></td><td>412</td><td>16:00</td><td>27 יולי</td><td><span class="badge b-stay">שוהה</span></td></tr><tr><td><div>מרים חדד</div><div class="td-sub">4 לילות</div></td><td>118</td><td>12:00</td><td>30 יולי</td><td><span class="badge b-in">הגיע ✓</span></td></tr><tr><td><div>אבי גרינברג</div><div class="td-sub">2 לילות</div></td><td>507</td><td>18:00</td><td>28 יולי</td><td><span class="badge b-wait">ממתין</span></td></tr><tr><td><div>לאה ברון</div><div class="td-sub">5 לילות</div></td><td>224</td><td>13:00</td><td>31 יולי</td><td><span class="badge b-out">עוזב</span></td></tr></tbody></table></div>
+      <div class="side-stack"><div class="section"><div class="sec-header"><div class="sec-title">סטטוס מהיר</div></div><div class="stat-row"><span class="stat-l">חדרים תפוסים</span><span class="stat-v">104 / 120</span></div><div class="stat-row"><span class="stat-l">פנויים</span><span class="stat-v">16</span></div><div class="stat-row"><span class="stat-l">לניקיון</span><span class="stat-v">8</span></div><div class="stat-row"><span class="stat-l">תקלות פתוחות</span><span class="stat-v">2</span></div></div><div class="section"><div class="sec-header"><div class="sec-title">תפוסה לפי קומה</div></div><div class="floor-row"><div class="floor-top"><span class="fl">קומה 1</span><span class="fp">95%</span></div><div class="bar"><div class="fill" style="width:95%"></div></div></div><div class="floor-row"><div class="floor-top"><span class="fl">קומה 2</span><span class="fp">88%</span></div><div class="bar"><div class="fill" style="width:88%"></div></div></div><div class="floor-row"><div class="floor-top"><span class="fl">קומה 3</span><span class="fp">72%</span></div><div class="bar"><div class="fill" style="width:72%"></div></div></div><div class="floor-row"><div class="floor-top"><span class="fl">קומה 4</span><span class="fp">80%</span></div><div class="bar"><div class="fill" style="width:80%"></div></div></div><div class="floor-row"><div class="floor-top"><span class="fl">קומה 5</span><span class="fp">65%</span></div><div class="bar"><div class="fill" style="width:65%"></div></div></div></div></div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

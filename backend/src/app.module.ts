@@ -1,8 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { ScheduleModule } from '@nestjs/schedule';
 import { envValidationSchema } from './config/env.validation';
 import { HealthController } from './health/health.controller';
+import { HealthService } from './health/health.service';
+import { RequestIdMiddleware } from './middleware/request-id.middleware';
+import { ResponseTimingMiddleware } from './middleware/response-timing.middleware';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
@@ -13,8 +17,24 @@ import { GuestsModule } from './modules/guests/guests.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { NotificationModule } from './modules/notifications/notification.module';
 import { AvailabilityModule } from './modules/availability/availability.module';
+import { ReservationsModule } from './modules/reservations/reservations.module';
+import { CheckInModule } from './modules/check-in/check-in.module';
+import { BillingModule } from './modules/billing/billing.module';
+import { GuestPortalModule } from './modules/guest-portal/guest-portal.module';
+import { HousekeepingModule } from './modules/housekeeping/housekeeping.module';
+import { ReportsModule } from './modules/reports/reports.module';
+import { AiModule } from './modules/ai/ai.module';
+import { DailyDigestModule } from './modules/ai/digest/daily-digest.module';
+import { CancellationResponseModule } from './modules/ai/cancellation/cancellation-response.module';
+import { StaffReminderModule } from './modules/ai/reminders/staff-reminder.module';
+import { RoomUpgradeModule } from './modules/ai/upgrade/room-upgrade.module';
+import { FeedbackModule } from './modules/ai/feedback/feedback.module';
+import { AiTriggersModule } from './modules/ai/triggers/ai-triggers.module';
+import { PublicBookingModule } from './modules/public-booking/public-booking.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
+  providers: [HealthService],
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
@@ -24,6 +44,7 @@ import { AvailabilityModule } from './modules/availability/availability.module';
         abortEarly: true,
       },
     }),
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([
       {
         name: 'default',
@@ -41,7 +62,28 @@ import { AvailabilityModule } from './modules/availability/availability.module';
     RoomsModule,
     GuestsModule,
     AvailabilityModule,
+    ReservationsModule,
+    CheckInModule,
+    BillingModule,
+    GuestPortalModule,
+    HousekeepingModule,
+    ReportsModule,
+    AiModule,
+    DailyDigestModule,
+    CancellationResponseModule,
+    StaffReminderModule,
+    RoomUpgradeModule,
+    FeedbackModule,
+    AiTriggersModule,
+    PublicBookingModule,
+    UploadsModule,
   ],
   controllers: [HealthController],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(RequestIdMiddleware, ResponseTimingMiddleware)
+      .forRoutes('*');
+  }
+}

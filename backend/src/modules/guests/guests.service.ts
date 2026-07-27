@@ -62,7 +62,7 @@ export class GuestsService {
     return guest;
   }
 
-  async findAll(requester: JwtPayload, filters: FilterGuestsDto) {
+  async findAll(requester: JwtPayload, filters: FilterGuestsDto, ipAddress?: string, userAgent?: string) {
     if (requester.role === 'chain_admin' && !filters.branchId) {
       throw new BadRequestException('BRANCH_ID_REQUIRED');
     }
@@ -99,10 +99,20 @@ export class GuestsService {
       this.prisma.guest.count({ where }),
     ]);
 
+    await this.audit.log({
+      userId: requester.sub,
+      action: 'GUEST_LIST',
+      entityType: 'guest',
+      branchId,
+      metadata: { resultCount: total, page, limit },
+      ipAddress,
+      userAgent,
+    });
+
     return { items, total, page, limit };
   }
 
-  async search(q: string, requester: JwtPayload, branchId?: string) {
+  async search(q: string, requester: JwtPayload, branchId?: string, ipAddress?: string, userAgent?: string) {
     const effectiveBranchId =
       requester.role === 'chain_admin' ? branchId : requester.branchId;
 
@@ -135,7 +145,7 @@ export class GuestsService {
       LIMIT 10
     `;
 
-    return results.map((r) => ({
+    const mapped = results.map((r) => ({
       id: r.id,
       fullName: r.full_name,
       email: r.email,
@@ -143,21 +153,36 @@ export class GuestsService {
       passportId: r.passport_id,
       nationality: r.nationality,
     }));
+
+    await this.audit.log({
+      userId: requester.sub,
+      action: 'GUEST_SEARCH',
+      entityType: 'guest',
+      branchId: effectiveBranchId,
+      metadata: { resultCount: mapped.length },
+      ipAddress,
+      userAgent,
+    });
+
+    return mapped;
   }
 
-  async findOne(id: string, requester: JwtPayload) {
-    const guest = await this.prisma.guest.findUnique({
-      where: { id },
+  async findOne(id: string, requester: JwtPayload, ipAddress?: string, userAgent?: string) {
+    const guest = await this.prisma.guest.findFirst({
+      where: { id, isActive: true },
       select: GUEST_SELECT,
     });
     if (!guest) throw new NotFoundException('GUEST_NOT_FOUND');
     this.assertBranchAccess(guest.branchId, requester);
-    await this.audit.log({ userId: requester.sub, action: 'GUEST_READ', entityType: 'guest', entityId: guest.id, branchId: guest.branchId });
+    await this.audit.log({ userId: requester.sub, action: 'GUEST_READ', entityType: 'guest', entityId: guest.id, branchId: guest.branchId, ipAddress, userAgent });
     return guest;
   }
 
-  async update(id: string, dto: UpdateGuestDto, requester: JwtPayload) {
-    const guest = await this.prisma.guest.findUnique({ where: { id }, select: { id: true, branchId: true, email: true, passportId: true } });
+  async update(id: string, dto: UpdateGuestDto, requester: JwtPayload, ipAddress?: string, userAgent?: string) {
+    const guest = await this.prisma.guest.findUnique({
+      where: { id },
+      select: { id: true, branchId: true, email: true, passportId: true, fullName: true, phone: true, nationality: true, dateOfBirth: true, notes: true },
+    });
     if (!guest) throw new NotFoundException('GUEST_NOT_FOUND');
     this.assertBranchAccess(guest.branchId, requester);
 
@@ -180,30 +205,76 @@ export class GuestsService {
       },
       select: GUEST_SELECT,
     });
-    await this.audit.log({ userId: requester.sub, action: 'GUEST_UPDATE', entityType: 'guest', entityId: updated.id, branchId: updated.branchId });
+
+    const changedFields = (Object.keys(dto) as Array<keyof UpdateGuestDto>).filter(
+      (key) => dto[key] !== undefined,
+    );
+
+    await this.audit.log({
+      userId: requester.sub,
+      action: 'GUEST_UPDATE',
+      entityType: 'guest',
+      entityId: updated.id,
+      branchId: updated.branchId,
+      metadata: { changedFields } as Prisma.InputJsonObject,
+      ipAddress,
+      userAgent,
+    });
     return updated;
   }
 
-  async softDelete(id: string, requester: JwtPayload) {
+  async softDelete(id: string, requester: JwtPayload, ipAddress?: string, userAgent?: string) {
     const guest = await this.prisma.guest.findUnique({ where: { id }, select: { id: true, branchId: true } });
     if (!guest) throw new NotFoundException('GUEST_NOT_FOUND');
     this.assertBranchAccess(guest.branchId, requester);
 
-    const deleted = await this.prisma.guest.update({
-      where: { id },
-      data: { isActive: false },
-      select: GUEST_SELECT,
+    await this.prisma.$transaction([
+      // Anonymize PII on the guest row — right to erasure (Amendment 13 §14)
+      this.prisma.guest.update({
+        where: { id },
+        data: {
+          isActive: false,
+          fullName: '[deleted]',
+          email: null,
+          phone: '[deleted]',
+          passportId: null,
+          dateOfBirth: null,
+          nationality: null,
+          notes: null,
+        },
+      }),
+      // Erase PII copies in child tables
+      this.prisma.onlineCheckIn.deleteMany({ where: { guestId: id } }),
+      this.prisma.guestDocument.updateMany({
+        where: { guestId: id },
+        data: { documentNumber: '[deleted]', issuingCountry: '[deleted]' },
+      }),
+      this.prisma.guestFeedback.updateMany({
+        where: { guestId: id },
+        data: { comment: null, aiSummary: null },
+      }),
+    ]);
+
+    await this.audit.log({
+      userId: requester.sub,
+      action: 'GUEST_DELETE',
+      entityType: 'guest',
+      entityId: id,
+      branchId: guest.branchId,
+      metadata: { anonymized: true },
+      ipAddress,
+      userAgent,
     });
-    await this.audit.log({ userId: requester.sub, action: 'GUEST_DELETE', entityType: 'guest', entityId: deleted.id, branchId: deleted.branchId });
-    return deleted;
+
+    return { id, anonymized: true };
   }
 
-  async addDocument(guestId: string, dto: CreateGuestDocumentDto, requester: JwtPayload) {
+  async addDocument(guestId: string, dto: CreateGuestDocumentDto, requester: JwtPayload, ipAddress?: string, userAgent?: string) {
     const guest = await this.prisma.guest.findUnique({ where: { id: guestId }, select: { id: true, branchId: true } });
     if (!guest) throw new NotFoundException('GUEST_NOT_FOUND');
     this.assertBranchAccess(guest.branchId, requester);
 
-    return this.prisma.guestDocument.create({
+    const doc = await this.prisma.guestDocument.create({
       data: {
         guestId,
         branchId: guest.branchId,
@@ -215,17 +286,42 @@ export class GuestsService {
         recordedBy: requester.sub,
       },
     });
+
+    await this.audit.log({
+      userId: requester.sub,
+      action: 'GUEST_DOCUMENT_CREATE',
+      entityType: 'guestDocument',
+      entityId: guestId,
+      branchId: guest.branchId,
+      metadata: { documentType: dto.documentType },
+      ipAddress,
+      userAgent,
+    });
+
+    return doc;
   }
 
-  async getDocuments(guestId: string, requester: JwtPayload) {
+  async getDocuments(guestId: string, requester: JwtPayload, ipAddress?: string, userAgent?: string) {
     const guest = await this.prisma.guest.findUnique({ where: { id: guestId }, select: { id: true, branchId: true } });
     if (!guest) throw new NotFoundException('GUEST_NOT_FOUND');
     this.assertBranchAccess(guest.branchId, requester);
 
-    return this.prisma.guestDocument.findMany({
+    const docs = await this.prisma.guestDocument.findMany({
       where: { guestId },
       orderBy: { createdAt: 'desc' },
     });
+
+    await this.audit.log({
+      userId: requester.sub,
+      action: 'GUEST_DOCUMENT_READ',
+      entityType: 'guestDocument',
+      entityId: guestId,
+      branchId: guest.branchId,
+      ipAddress,
+      userAgent,
+    });
+
+    return docs;
   }
 
   private assertBranchAccess(guestBranchId: string, requester: JwtPayload): void {

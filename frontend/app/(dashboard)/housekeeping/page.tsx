@@ -1,0 +1,95 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { HousekeepingTask, HousekeepingTaskStatus, housekeepingApi } from '@/lib/api/housekeeping';
+import { HousekeepingTaskCard } from '@/components/shared/HousekeepingTaskCard';
+import { useAuth } from '@/hooks/useAuth';
+import { useBranchStore } from '@/lib/store/branch.store';
+
+type Filter = 'today' | 'pending';
+
+export default function HousekeepingPage() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'chain_admin';
+  const { selectedBranchId } = useBranchStore();
+  const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
+  const [filter, setFilter] = useState<Filter>('today');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const today = new Date().toISOString().split('T')[0];
+
+  useEffect(() => {
+    if (isAdmin && !selectedBranchId) { setLoading(false); return; }
+    const params: { scheduledFor?: string; status?: HousekeepingTaskStatus; branchId?: string } =
+      filter === 'today'
+        ? { scheduledFor: today, branchId: isAdmin ? selectedBranchId : undefined }
+        : { status: 'pending', branchId: isAdmin ? selectedBranchId : undefined };
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await housekeepingApi.getTasks(params);
+        setTasks(data);
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : 'שגיאה');
+      } finally {
+        setLoading(false);
+      }
+    }
+    void load();
+  }, [filter, today, isAdmin, selectedBranchId]);
+
+  function handleTaskUpdate(updated: HousekeepingTask) {
+    setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
+  }
+
+  const greeting = `שלום, ${user?.name ?? ''}. יש לך ${tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length} משימות פעילות.`;
+
+  if (isAdmin && !selectedBranchId) {
+    return (
+      <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
+        <div className="text-4xl mb-3">🏨</div>
+        <p className="text-sm">בחר סניף כדי לצפות במשימות ניקיון</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen p-4 max-w-lg mx-auto" style={{ backgroundColor: 'var(--color-bg-base)' }}>
+      <h1 className="text-xl font-bold mb-1" style={{ color: 'var(--color-text-primary)' }}>ניקיון</h1>
+      <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>{greeting}</p>
+
+      <div className="flex gap-2 mb-4">
+        {(['today', 'pending'] as Filter[]).map((f) => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={
+              filter === f
+                ? { backgroundColor: 'var(--color-primary)', color: '#fff' }
+                : { backgroundColor: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border-default)' }
+            }
+          >
+            {f === 'today' ? 'היום' : 'כל הממתינות'}
+          </button>
+        ))}
+      </div>
+
+      {loading && <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>טוען...</p>}
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {!loading && !error && tasks.length === 0 && (
+        <p className="text-sm text-center py-8" style={{ color: 'var(--color-text-secondary)' }}>אין משימות</p>
+      )}
+
+      <div className="flex flex-col gap-3">
+        {tasks.map((task) => (
+          <HousekeepingTaskCard key={task.id} task={task} onUpdate={handleTaskUpdate} />
+        ))}
+      </div>
+    </div>
+  );
+}

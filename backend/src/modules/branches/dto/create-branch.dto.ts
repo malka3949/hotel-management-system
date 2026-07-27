@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsEmail, IsOptional, IsUrl, IsArray, MinLength, MaxLength } from 'class-validator';
 
 export class CreateBranchDto {
   @IsString()
@@ -24,4 +24,23 @@ export class CreateBranchDto {
   @IsString()
   @IsOptional()
   timezone?: string;
+
+  @IsString()
+  @MaxLength(5000)
+  @IsOptional()
+  description?: string;
+
+  @IsUrl()
+  @IsOptional()
+  coverPhoto?: string;
+
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  amenities?: string[];
+
+  @IsString()
+  @MaxLength(5000)
+  @IsOptional()
+  cancellationPolicy?: string;
 }

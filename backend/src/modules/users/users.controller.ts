@@ -22,9 +22,9 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Post()
-  @Roles('chain_admin')
-  create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  @Roles('chain_admin', 'hotel_manager')
+  create(@Body() dto: CreateUserDto, @CurrentUser() user: JwtPayload) {
+    return this.usersService.create(dto, user);
   }
 
   @Get()
@@ -34,6 +34,7 @@ export class UsersController {
   }
 
   @Get('me')
+  @Roles('chain_admin', 'hotel_manager', 'receptionist', 'housekeeping')
   findMe(@CurrentUser() user: JwtPayload) {
     return this.usersService.findMe(user.sub);
   }

@@ -8,8 +8,11 @@ import {
   Param,
   Query,
   UseGuards,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { GuestsService } from './guests.service';
+import { ReservationsService } from '../reservations/reservations.service';
 import { CreateGuestDto } from './dto/create-guest.dto';
 import { UpdateGuestDto } from './dto/update-guest.dto';
 import { FilterGuestsDto } from './dto/filter-guests.dto';
@@ -19,14 +22,16 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
-import { IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsOptional, IsString, MaxLength, Matches } from 'class-validator';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 class SearchGuestsDto {
   @IsString()
   @MaxLength(100)
   q!: string;
 
-  @IsUUID()
+  @Matches(UUID_RE, { message: 'branchId must be a UUID' })
   @IsOptional()
   branchId?: string;
 }
@@ -34,7 +39,10 @@ class SearchGuestsDto {
 @Controller('v1/guests')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class GuestsController {
-  constructor(private guestsService: GuestsService) {}
+  constructor(
+    private guestsService: GuestsService,
+    private reservationsService: ReservationsService,
+  ) {}
 
   @Post()
   @Roles('chain_admin', 'hotel_manager', 'receptionist')
@@ -44,18 +52,20 @@ export class GuestsController {
 
   @Get('search')
   @Roles('chain_admin', 'hotel_manager', 'receptionist')
-  search(@Query() query: SearchGuestsDto, @CurrentUser() user: JwtPayload) {
-    return this.guestsService.search(query.q, user, query.branchId);
+  search(@Query() query: SearchGuestsDto, @CurrentUser() user: JwtPayload, @Req() req: Request) {
+    return this.guestsService.search(query.q, user, query.branchId, req.ip, req.headers['user-agent']);
   }
 
   @Get()
-  findAll(@CurrentUser() user: JwtPayload, @Query() filters: FilterGuestsDto) {
-    return this.guestsService.findAll(user, filters);
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
+  findAll(@CurrentUser() user: JwtPayload, @Query() filters: FilterGuestsDto, @Req() req: Request) {
+    return this.guestsService.findAll(user, filters, req.ip, req.headers['user-agent']);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.guestsService.findOne(id, user);
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Req() req: Request) {
+    return this.guestsService.findOne(id, user, req.ip, req.headers['user-agent']);
   }
 
   @Patch(':id')
@@ -64,20 +74,21 @@ export class GuestsController {
     @Param('id') id: string,
     @Body() dto: UpdateGuestDto,
     @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
   ) {
-    return this.guestsService.update(id, dto, user);
+    return this.guestsService.update(id, dto, user, req.ip, req.headers['user-agent']);
   }
 
   @Delete(':id')
   @Roles('chain_admin', 'hotel_manager')
-  softDelete(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.guestsService.softDelete(id, user);
+  softDelete(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Req() req: Request) {
+    return this.guestsService.softDelete(id, user, req.ip, req.headers['user-agent']);
   }
 
   @Get(':id/documents')
   @Roles('chain_admin', 'hotel_manager', 'receptionist')
-  getDocuments(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
-    return this.guestsService.getDocuments(id, user);
+  getDocuments(@Param('id') id: string, @CurrentUser() user: JwtPayload, @Req() req: Request) {
+    return this.guestsService.getDocuments(id, user, req.ip, req.headers['user-agent']);
   }
 
   @Post(':id/documents')
@@ -86,7 +97,14 @@ export class GuestsController {
     @Param('id') id: string,
     @Body() dto: CreateGuestDocumentDto,
     @CurrentUser() user: JwtPayload,
+    @Req() req: Request,
   ) {
-    return this.guestsService.addDocument(id, dto, user);
+    return this.guestsService.addDocument(id, dto, user, req.ip, req.headers['user-agent']);
+  }
+
+  @Get(':id/reservations')
+  @Roles('chain_admin', 'hotel_manager', 'receptionist')
+  getReservations(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.reservationsService.getByGuest(id, user);
   }
 }

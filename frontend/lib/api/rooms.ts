@@ -10,6 +10,12 @@ export interface RoomType {
   basePrice: string;
   maxOccupancy: number;
   description: string | null;
+  photos: string[];
+  amenities: string[];
+  bedType: string | null;
+  roomSize: number | null;
+  maxAdults: number | null;
+  maxChildren: number | null;
   createdAt: string;
 }
 
@@ -50,6 +56,12 @@ export interface CreateRoomTypePayload {
   basePrice: number;
   maxOccupancy: number;
   description?: string;
+  photos?: string[];
+  amenities?: string[];
+  bedType?: string;
+  roomSize?: number;
+  maxAdults?: number;
+  maxChildren?: number;
 }
 
 export interface UpdateRoomTypePayload {
@@ -57,6 +69,12 @@ export interface UpdateRoomTypePayload {
   basePrice?: number;
   maxOccupancy?: number;
   description?: string;
+  photos?: string[];
+  amenities?: string[];
+  bedType?: string;
+  roomSize?: number;
+  maxAdults?: number;
+  maxChildren?: number;
 }
 
 export interface RoomsFilter {

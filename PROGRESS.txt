@@ -1,0 +1,128 @@
+================================================================================
+2026-06-29 | Phase 7 — Billing & Payments | COMPLETE + n8n triggers
+================================================================================
+Tasks:
+  - Migration 20260629000006_phase7_billing applied (dev + test DB)
+  - BillingModule: PaymentService, ChargeService, RefundService, InvoicePdfService
+  - Providers: StripeProvider (lazy), TranzilaProvider (stub), ManualProvider
+  - DTOs: CreatePayment, CreateCharge, CreateRefund, PrePayment
+  - 12 REST endpoints in BillingController
+  - Frontend: billing.ts API client, AddChargeModal, RefundModal
+  - Pages updated: /invoices/[id], /payments/checkout, /reports
+  - E2E tests: billing.e2e-spec.ts — 11/11 PASS
+  - ESLint: 0 errors | Frontend TS: 0 errors
+  - Documentation: team-Yuri/dev-phase7.md, PROJECT_STATUS.md updated
+  - n8n triggers added: payment.succeeded, payment.failed, refund.processed
+  - /payments/checkout wrapped in Suspense (Next.js useSearchParams fix)
+  - reservations/[id] page: re-fetch after check-in/out (crash fix)
+
+Files changed (key):
+  backend/src/modules/billing/** (new)
+  backend/prisma/migrations/20260629000006_phase7_billing/migration.sql (new)
+  backend/src/main.ts (rawBody: true)
+  backend/src/app.module.ts (BillingModule registered)
+  backend/src/config/env.validation.ts (Stripe keys optional)
+  backend/package.json (stripe, pdfkit added)
+  backend/test/billing.e2e-spec.ts (new)
+  frontend/lib/api/billing.ts (new)
+  frontend/components/shared/AddChargeModal.tsx (new)
+  frontend/components/shared/RefundModal.tsx (new)
+  frontend/app/(dashboard)/invoices/[id]/page.tsx (updated)
+  frontend/app/(dashboard)/payments/checkout/page.tsx (updated)
+  frontend/app/(dashboard)/reports/page.tsx (updated)
+  backend/src/modules/notifications/n8n.service.ts (3 billing events added)
+  backend/src/modules/billing/payment.service.ts (N8nService injected, triggers)
+  backend/src/modules/billing/refund.service.ts (N8nService injected, trigger)
+  frontend/app/(dashboard)/payments/checkout/page.tsx (Suspense fix)
+  frontend/app/(dashboard)/reservations/[id]/page.tsx (re-fetch after check-in/out)
+================================================================================
+
+================================================================================
+2026-06-30 | Phase 8 — Guest Portal | COMPLETE
+================================================================================
+Tasks:
+  - Prisma schema updated with Phase 7 billing models (missing from schema.prisma)
+  - BillingModule registered in AppModule, exports PaymentService + InvoicePdfService
+  - Migration 20260630000007_phase8_guest_portal: guest_access_tokens, online_check_ins, payments.created_by nullable
+  - GuestPortalModule: GuestPortalService, GuestPortalController, GuestTokenGuard, GuestPaymentTokenGuard
+  - Token generation (SHA-256 hash) on reservation create → portal link emailed
+  - 7 portal endpoints: view, invoice, pdf, check-in, payment, token list, token revoke
+  - Online check-in: window validation (24h before check-in), guest profile update
+  - Portal payment: single-use token enforcement, audit log, invoice marked paid
+  - Frontend: 5 portal pages (/[token], /[token]/check-in, /[token]/payment, /[token]/confirmation, /expired)
+  - Frontend: online check-in badge in reservations/[id] page
+  - E2E tests: guest-portal.e2e-spec.ts — 12/12 PASS
+  - ESLint: 0 errors | Backend TS: 0 errors | Frontend TS: 0 errors
+
+Files changed (key):
+  backend/prisma/schema.prisma (billing models + portal models added)
+  backend/prisma/migrations/20260630000007_phase8_guest_portal/migration.sql (new)
+  backend/src/modules/guest-portal/** (new)
+  backend/src/app.module.ts (BillingModule + GuestPortalModule registered)
+  backend/src/modules/billing/billing.module.ts (exports added)
+  backend/src/modules/reservations/reservations.module.ts (GuestPortalModule import)
+  backend/src/modules/reservations/reservations.service.ts (portal link generation + include fix)
+  backend/test/guest-portal.e2e-spec.ts (new)
+  frontend/lib/api/portal.ts (new)
+  frontend/app/(portal)/[token]/** (new pages)
+  frontend/app/(portal)/expired/page.tsx (new)
+  frontend/lib/api/reservations.ts (onlineCheckIn field added)
+  frontend/app/(dashboard)/reservations/[id]/page.tsx (online check-in badge)
+================================================================================
+
+================================================================================
+2026-07-10 | Session: phase-11-security | Phase 11 — Security Audit & Hardening
+Branch: feature/phase-11-security
+Commits: fa5d379 (backend), e004461 (frontend)
+================================================================================
+
+Tasks completed:
+  1. RBAC audit — fixed 3 gaps: reports (any auth), housekeeping (any auth), billing service-catalog (any auth)
+  2. Password reset flow — forgotPassword + resetPassword (SHA-256 hash, 1h TTL, single-use, revokes sessions)
+  3. Session management — GET/DELETE sessions with ownership enforcement
+  4. Security e2e test suite — RBAC, DTO validation, password reset, session isolation
+  5. Frontend — forgot-password page, reset-password page, SessionsPanel in Topbar, auth.ts API
+
+Files changed (key):
+  backend/prisma/schema.prisma (PasswordResetToken model)
+  backend/prisma/migrations/20260710000010_phase11_security/migration.sql (new)
+  backend/src/modules/auth/auth.service.ts (4 new methods)
+  backend/src/modules/auth/auth.controller.ts (4 new endpoints)
+  backend/src/modules/auth/dto/forgot-password.dto.ts (new)
+  backend/src/modules/auth/dto/reset-password.dto.ts (new)
+  backend/src/modules/reports/reports.controller.ts (RBAC fix)
+  backend/src/modules/housekeeping/housekeeping.controller.ts (RBAC fix)
+  backend/src/modules/billing/billing.controller.ts (RBAC fix)
+  backend/src/types/exceljs.d.ts (new — TS7016 workaround)
+  backend/test/security.e2e-spec.ts (new — regression suite)
+  frontend/lib/api/auth.ts (5 new functions + Session interface)
+  frontend/app/(auth)/forgot-password/page.tsx (new)
+  frontend/app/(auth)/reset-password/page.tsx (new)
+  frontend/app/(auth)/login/page.tsx (forgot-password link)
+  frontend/components/layout/Topbar.tsx (SessionsPanel)
+
+Verification:
+  npm run build → PASS (exit 0)
+  npm run lint  → PASS (exit 0)
+  npx tsc --noEmit (frontend) → PASS (exit 0)
+================================================================================
+
+
+[2026-07-12] phase-12-production-deployment
+Tasks: backend observability, Dockerfile, health endpoints, Sentry, CI/CD, Render IaC, k6, deployment docs
+Files changed: backend/Dockerfile, src/middleware/*, src/health/*, src/main.ts, src/app.module.ts, global-exception.filter.ts, frontend/sentry.*.ts, next.config.ts, render.yaml, .github/workflows/ci.yml, .github/workflows/deploy.yml, k6/scenarios/*, docs/deployment/*, team-Yuri/arch-phase12.md, team-Yuri/dev-phase12.md
+Status: 2 commits on feature/phase-12-production-deployment. Build: PASS. Lint: PASS. Frontend tsc: PASS. Render deploy: pending live secrets.
+
+[2026-07-12] Phase 13 AI Features — backend + frontend complete
+Tasks: AiModule, ConciergeService (haiku-4-5), PricingService (sonnet-4-6), NlReportsService, AiEmailService, CancellationRiskService (rule-based), ScheduleOptimizerService (rule-based)
+Files: backend/src/modules/ai/**, reservations service+module, housekeeping service+controller, frontend AI components
+
+[2026-07-19] Phase 15 Public Booking Portal — complete
+Tasks: GET /api/public/branches, /book landing page (hero, date+guests search, hotel cards, skeleton), layout header update, RTL fixes, max_adults/max_children schema + migration + UI
+Files: backend public-booking controller/service/module, room-types DTOs+service, prisma schema+migration, frontend book/page.tsx (new), book/[branchId]/page.tsx, rooms/page.tsx, checkout/page.tsx, confirmation/page.tsx, layout.tsx, lib/api/public-booking.ts, lib/api/rooms.ts, dashboard/room-types/page.tsx, team-Yuri/arch-phase15.md, team-Yuri/dev-phase15.md
+Status: TS PASS (frontend+backend). Migration applied. DB seeded with maxAdults/maxChildren.
+
+[2026-07-19] Phase 15c — filter bar + room details page
+Tasks: filter bar (bedType select + sort) in rooms list, URL params as filter state source, useMemo filter/sort, "פרטים" button, new [roomTypeId]/page.tsx with lightbox, chips, sticky booking bar, back preserves all filter params
+Files: frontend/app/(booking)/book/[branchId]/rooms/page.tsx (rewrite), frontend/app/(booking)/book/[branchId]/rooms/[roomTypeId]/page.tsx (new), team-Yuri/arch-phase15.md, team-Yuri/dev-phase15.md
+Status: TS PASS (frontend exit 0).

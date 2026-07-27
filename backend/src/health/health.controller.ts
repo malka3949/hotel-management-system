@@ -1,13 +1,21 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, HttpException, HttpStatus } from '@nestjs/common';
+import { HealthService, HealthStatus } from './health.service';
 
 @Controller()
 export class HealthController {
+  constructor(private readonly health: HealthService) {}
+
   @Get('health')
-  check(): { status: string; timestamp: string; version: string } {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      version: process.env.npm_package_version ?? '0.0.1',
-    };
+  async check(): Promise<HealthStatus> {
+    return this.health.check();
+  }
+
+  @Get('ready')
+  async ready(): Promise<{ ready: boolean }> {
+    const isReady = await this.health.isReady();
+    if (!isReady) {
+      throw new HttpException('Service not ready', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    return { ready: true };
   }
 }

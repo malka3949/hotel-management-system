@@ -1,195 +1,157 @@
-# Software Security Findings — Hotel Management System — 2026-06-17
+# Software Security Findings — Hotel Management System — 2026-07-07
 
 > Read-only audit against the 16 software-security principles. No code was modified.
-> Scope: `hotel-management-system/backend/src` + dependency tree.
-> Verify pass: `/security-review` — **skipped** (not a git repository; no diff available).
-
----
+> Scope: `/home/runner/hotel-management-system` (backend + frontend).
+> Stack: NestJS 11 + Next.js 16, TypeScript strict, PostgreSQL, Redis.
+> Verify pass: /security-review **skipped** — not a git repo at the runner root (`/home/runner`).
 
 ## Summary
 
 | Severity | Count |
 |---|---|
-| 🔴 critical | 3 |
-| 🟡 risk | 17 |
-| 🔵 nit | 9 |
+| 🔴 critical | 8 |
+| 🟡 risk | 11 |
+| 🔵 nit | 4 |
+| Supply chain (GHSA/CVE) | 2 moderate · 4 low |
 
-**Principles covered:** 10 / 11 code-auditable · **Domains:** authn/authz · input/files · data/secrets/sessions · errors/defaults · supply-chain
+**Principles covered:** 11 / 11 code-auditable · **Domains:** authn/authz · input/files · data/secrets/sessions · errors/defaults · supply-chain
 
-**Top 3 to fix first:**
-1. 🔴 `backend/.env:5` — JWT secrets committed as plaintext (rotate immediately)
-2. 🔴 `backend/src/modules/rooms/rooms.service.ts:106` — mass-assignment: entire UpdateRoomDto written to DB including `isActive`
-3. 🔴 `form-data@4.0.5` — GHSA-hmw2-7cc7-3qxx CRLF injection in prod dependency
+**New modules since June 17 audit:** `availability`, `billing`, `check-in`, `guest-portal`, `notifications`, `reservations` — all audited.
+
+Top 3 to fix first:
+1. 🔴 `backend/src/modules/guest-portal/guest-portal.service.ts:291` — stub payment gate lets guests pay nothing
+2. 🔴 `frontend/lib/api/auth.ts:44` — JWT stored in `localStorage` (XSS-readable)
+3. 🔴 `backend/src/modules/billing/payment.service.ts:249` — Stripe webhook silently accepted with no signature when secret is absent
 
 ---
 
 ## 1. Authentication — WARN
 
-- 🟡 `backend/src/common/guards/roles.guard.ts:17` — `RolesGuard` returns `true` (allows all authenticated users) when no `@Roles()` decorator is present; any future mutating route that omits `@Roles()` silently passes the guard.
-  **Why:** principle 1 — a missing decorator must not silently open access. **Fix:** change default to `return false` (deny-by-default) or adopt a `@Public()` allowlist pattern.
-
-- 🟡 `backend/src/modules/auth/auth.controller.ts:27` — `access_token` cookie set with `httpOnly: false`, making the JWT directly readable by JavaScript and vulnerable to XSS exfiltration. The comment says it's deliberate for the Next.js proxy, but the token is already returned in the response body (line 78), making the non-HttpOnly cookie redundant.
-  **Why:** principle 1 / `06-tokens-and-sessions.md §transport-and-storage`. **Fix:** set `httpOnly: true`; rely on `Authorization: Bearer` from the proxy, or pass token only in response body and drop the cookie.
-
-- 🟡 `backend/src/modules/auth/auth.controller.ts:78` — `accessToken` returned in the JSON response body on login (and again on refresh at line 105), persisting the JWT wherever the frontend stores API responses.
-  **Why:** principle 6 / `06-tokens-and-sessions.md §transport-and-storage`. **Fix:** if the HttpOnly-cookie path is used, omit the token from the response body; if Bearer header is used, drop the cookie.
-
-- 🔵 `backend/src/health/health.controller.ts:6` — `GET /health` is unauthenticated and returns `npm_package_version`, leaking the exact software version to any caller.
-  **Why:** principle 1 / principle 11. **Fix:** remove the version field or restrict to internal/monitoring networks.
+- 🟡 `backend/src/modules/auth/auth.controller.ts:27` — `access_token` cookie set `httpOnly: false`; browser JS can read it directly. Comment at line 24–26 documents this as intentional (Next.js proxy strips Cookie headers when forwarding requests, so the token must be readable as Bearer). XSS in the frontend exposes the token for its 15-minute window. **Why:** `06-tokens-and-sessions.md §Transport & storage`. **Fix:** couldn't find a clean fix — needs human decision. Remove `localStorage` redundancy (see P6 below) to at least eliminate the second exposure vector.
 
 ---
 
-## 2. Authorization (IDOR / ownership) — WARN
+## 2. Authorization (IDOR / ownership) — FAIL
 
-- 🟡 `backend/src/modules/users/users.service.ts:86` — `hotel_manager` can set `isActive: false/true` on any user in their branch (including other managers) because `UpdateUserDto` includes `isActive` and `update()` applies the DTO directly with no role-rank check — a manager could lock out accounts they should not control.
-  **Why:** principle 2 / `07-authorization-and-roles.md §privilege-escalation`. **Fix:** restrict `isActive` mutations to `chain_admin` only, or validate that requester's role outranks the target's role.
+- 🔴 `backend/src/modules/guest-portal/guest-portal.service.ts:98` — `sendPortalLinkByStaff` fetches `reservation` by caller-controlled `:reservationId` with no branch-ownership check. The controller receives `@CurrentUser() _user` (underscore — never forwarded to the service), so a receptionist in branch A can trigger portal-link generation and email delivery for reservations in branch B. **Why:** `07-authorization-and-roles.md §IDOR`. **Fix:** pass `user: JwtPayload` to the service and call `assertBranchAccess(reservation.branchId, user)` before generating the link.
 
-- 🔵 `backend/src/modules/guests/guests.service.ts:214` — `guestDocument.findMany({ where: { guestId } })` does not scope by `branchId`; relies entirely on the prior guest ownership check. If a document row has a mismatched `branchId` (data migration error), documents from another branch could leak.
-  **Why:** principle 2 / `07-authorization-and-roles.md §IDOR`. **Fix:** add `branchId: guest.branchId` to the `findMany` where clause as defence-in-depth.
+- 🔴 `backend/src/modules/guest-portal/guest-portal.controller.ts:107` — `listTokens` (line 107) and `revokeTokens` (line 115) carry no `@CurrentUser()` decorator; `listActiveTokens` and `revokeAllTokens` in the service perform no branch check. A `hotel_manager` from any branch can enumerate or revoke guest portal tokens for reservations belonging to other branches. **Why:** `07-authorization-and-roles.md §IDOR`. **Fix:** add `@CurrentUser() user: JwtPayload` to both handlers, pass to service, add branch ownership assertion.
 
----
+- 🔴 `backend/src/modules/guest-portal/guards/guest-token.guard.ts:39` — `GuestPaymentTokenGuard` validates token existence and `usedAt` but never checks `payload.purpose`; all tokens are created with `purpose: 'view'` (`guest-portal.service.ts:54`), so any valid guest view-token can reach `POST /v1/portal/reservation/:token/payment` and trigger payment processing. **Why:** `07-authorization-and-roles.md §Where the check must live`. **Fix:** add `if (payload.purpose !== 'payment') throw new ForbiddenException('TOKEN_WRONG_PURPOSE')` in the guard; add a new `POST /v1/portal/reservation/:viewToken/init-payment` endpoint that validates the view token and returns a short-lived `purpose: 'payment'` token.
 
-## 3. Input Validation (mass-assignment) — FAIL
-
-- 🔴 `backend/src/modules/rooms/rooms.service.ts:106` — `data: dto` passes the entire `UpdateRoomDto` into `prisma.room.update`; `UpdateRoomDto` includes `isActive: boolean`, so any user with PATCH access can deactivate a room directly, bypassing the dedicated `softDelete` endpoint. The global `whitelist: true` pipe only strips unknown fields — `isActive` is decorated and passes through.
-  **Why:** principle 3 / `08-input-validation-and-injection.md §mass-assignment`. **Fix:** build an explicit data object (pick only `roomTypeId`, `number`, `floor`, `notes`); move `isActive` out of `UpdateRoomDto`.
-
-- 🟡 `backend/src/modules/branches/branches.service.ts:12` — `prisma.branch.create({ data: dto })` spreads the entire `CreateBranchDto`; no explicit field map means any future field added to the DTO is automatically written to the DB without review.
-  **Why:** principle 3 / `08-input-validation-and-injection.md §mass-assignment`. **Fix:** explicit field mapping; add `@MaxLength` to unconstrained string fields.
-
-- 🟡 `backend/src/modules/branches/branches.service.ts:29` — `prisma.branch.update({ data: dto })` spreads `UpdateBranchDto` directly; same structural mass-assignment risk.
-  **Why:** principle 3. **Fix:** explicit field mapping.
-
-- 🟡 `backend/src/modules/guests/guests.controller.ts:26` — `SearchGuestsDto.q` has no `@MaxLength`; passed as a parameterised value into a LIKE/ILIKE on `$queryRaw`. No SQL injection (Prisma parameterises), but an unbounded string allows pathological ILIKE work.
-  **Why:** principle 3 / `08-input-validation-and-injection.md §input-validation`. **Fix:** add `@MaxLength(100)` to `SearchGuestsDto.q`.
-
-- 🔵 `backend/src/modules/guests/dto/create-guest.dto.ts:47` (and `update-guest.dto.ts:44`, `create-room.dto.ts:35`, `update-room.dto.ts:23`, `create-room-type.dto.ts:26`, `update-room-type.dto.ts:25`) — Free-text `notes`/`description` fields decorated only with `@IsString()`; no `@MaxLength` allows arbitrarily large payloads.
-  **Why:** principle 3. **Fix:** add `@MaxLength(2000)` (or appropriate limit) to all free-text fields.
+- 🟡 `backend/src/modules/billing/billing.controller.ts:199` — `GET /v1/service-catalog` decorated with only `@UseGuards(JwtAuthGuard)` — no `RolesGuard` and no `@Roles()`. Any authenticated user regardless of role (including `housekeeping`) can read service-catalog pricing. **Why:** `07-authorization-and-roles.md §RolesGuard gaps`. **Fix:** add `@UseGuards(JwtAuthGuard, RolesGuard)` and `@Roles('chain_admin', 'hotel_manager', 'receptionist')`.
 
 ---
 
-## 4. Data Protection — WARN
+## 3. Input Validation — WARN
 
-- 🟡 `backend/src/modules/guests/guests.service.ts` (full file) + `backend/src/modules/users/users.service.ts` (full file) — No audit log is written for any guest PII read, write, or delete, and no log is written for user role changes or password changes. `AuditService` is injected only in `AuthService`.
-  **Why:** principle 4 / `10-logging-and-audit.md §audit-trail-events`. **Fix:** inject `AuditService` into `GuestsService` and `UsersService`; log `GUEST_READ`, `GUEST_UPDATE`, `GUEST_DELETE`, `USER_ROLE_CHANGE`, `USER_PASSWORD_CHANGE`.
+- 🟡 `backend/src/modules/billing/billing.controller.ts:173` — `@Body() body: { amount: number; description?: string }` is a plain TypeScript interface, not a class-validator DTO class. NestJS `ValidationPipe` resolves the metatype to `Object` at runtime and skips all validation and whitelisting. `description` has no length bound; extra fields pass through unfiltered. **Why:** `08-input-validation-and-injection.md §Validation strategy`. **Fix:** extract `ApplyDiscountDto` class with `@IsNumber() @IsPositive() amount` and `@IsOptional() @IsString() @MaxLength(255) description`.
 
----
+- 🟡 `backend/src/modules/billing/billing.controller.ts:207` — same problem: `@Body() body: { branchId: string; chargeType: string; price: number }` is a plain object, bypassing `ValidationPipe`. `chargeType` is cast `as never` in the service to bypass TypeScript enum check, so an invalid value propagates to Prisma as a `PrismaClientValidationError`. **Why:** `08-input-validation-and-injection.md §Validation strategy`. **Fix:** create `UpsertCatalogEntryDto` with `@IsEnum(ChargeType) chargeType`, `@IsNumber() @IsPositive() price`, `@IsUUID() branchId`.
 
-## 5. Privacy by Design — FAIL
+- 🟡 `backend/src/modules/guest-portal/dto/online-check-in.dto.ts:26` — `specialRequests?: string` has `@IsOptional() @IsString()` but no `@MaxLength()`. This field is accepted via a public guest-portal endpoint (throttled at 20 req/min); no DB-level length constraint exists (`@db.Text`). An attacker with a valid portal token can persist multi-megabyte strings. **Why:** `08-input-validation-and-injection.md §Validation strategy`. **Fix:** add `@MaxLength(2000)`.
 
-- 🟡 `backend/src` (no retention mechanism found) — No data retention, cleanup job, anonymisation, or guest-data export/erasure capability exists. Guest PII (passport ID, DOB, phone) accumulates indefinitely with no purge path.
-  **Why:** principle 5 / Israeli Amendment 13. **Fix:** scheduled task to anonymise/delete inactive guest records beyond retention window; `DELETE /v1/guests/:id/pii` endpoint for erasure requests.
+- 🔵 `backend/src/modules/availability/dto/get-availability.dto.ts:18` — `floor?: number` (line 18) and `maxOccupancy?: number` (line 20) have `@IsOptional()` but no `@IsInt()` or `@Min(0)`. With `enableImplicitConversion: true` in `main.ts`, query strings are coerced to numbers but float or negative values pass unrejected. **Why:** `08-input-validation-and-injection.md §Validation strategy`. **Fix:** add `@IsInt() @Min(0)` to both fields.
 
 ---
 
-## 6. Sessions & Tokens — FAIL
+## 4. Data Protection — PASS
 
-- 🔴 `backend/.env:5` — `JWT_SECRET=hotel-jwt-secret-development-32chars!!` present on disk as plaintext. `backend/.env:6` — `JWT_REFRESH_SECRET=hotel-refresh-secret-dev-32chars!!` same. Root `.gitignore` covers `.env` pattern, but `.env.test` is not listed and may be committed.
-  **Why:** principle 6 / `09-secrets-management.md §secret-storage`. **Fix:** rotate both secrets immediately; add `.env.*` to `.gitignore`; use a secrets manager (Vault, AWS Secrets Manager) or at minimum generate cryptographically random 256-bit values.
-
-- 🟡 `backend/src/modules/auth/auth.controller.ts:46` + `backend/src/common/guards/csrf.guard.ts:18` — `JWT_SECRET` is dual-used as both the JWT signing key and the CSRF HMAC key; a single key compromise breaks both mechanisms.
-  **Why:** principle 6 / `06-tokens-and-sessions.md §secret-strength`. **Fix:** introduce a dedicated `CSRF_SECRET` env var; use it exclusively in `CsrfGuard`.
-
-- 🟡 `backend/src/modules/auth/auth.service.ts:151` — Refresh tokens stored hashed with SHA-256 (fast, no salt); vulnerable to offline brute-force if DB is breached.
-  **Why:** principle 6 / `06-tokens-and-sessions.md §token-storage`. **Fix:** use HMAC-SHA256 keyed on a server secret (`REFRESH_TOKEN_HMAC_KEY`), making offline brute-force infeasible.
-
-- 🟡 `backend/src/modules/auth/auth.module.ts:19` + `backend/src/modules/auth/auth.controller.ts:71` — `JWT_ACCESS_EXPIRES_IN=8h` (in `.env`) but cookie `maxAge` is hardcoded to 15 minutes; the JWT is valid for 8 hours while the cookie expires in 15 minutes, so an extracted token (especially with `httpOnly: false`) is usable for 8 hours.
-  **Why:** principle 6 / `06-tokens-and-sessions.md §expiry`. **Fix:** derive `maxAge` from parsed `JWT_ACCESS_EXPIRES_IN`; align `.env` default back to `15m`.
-
-- 🟡 `backend/src/modules/auth/auth.service.ts:109` — Logout only revokes the single presented refresh token; all other active sessions remain valid.
-  **Why:** principle 6 / `06-tokens-and-sessions.md §revocation`. **Fix:** add a "logout all devices" endpoint that calls `updateMany({ where: { userId, revokedAt: null } })`.
-
-- 🔵 `backend/src/config/env.validation.ts:11` — `JWT_REFRESH_SECRET` declared and required but never used anywhere (refresh tokens use `crypto.randomBytes`, not a JWT). Creates false-security impression.
-  **Why:** principle 6. **Fix:** remove from env validation and `.env` files, or document why it is reserved.
-
-- 🔵 `backend/src/modules/auth/auth.controller.ts:46` — CSRF endpoint reads `process.env.JWT_SECRET` directly (bypassing `ConfigService`); throws a generic `Error` (not `HttpException`) if absent — produces an unhandled 500 that leaks a stack trace.
-  **Why:** principle 6 / principle 10. **Fix:** inject `ConfigService` and use `configService.getOrThrow('JWT_SECRET')`.
+No over-collection or unmasked PII found in response shapes. Sensitive reads use Prisma `select` projections. See P5 below for privacy gap.
 
 ---
 
-## 7. Safe File Handling — NOT APPLICABLE
+## 5. Privacy by design — WARN (out-of-scope for code; see `/privacy-audit`)
 
-No file upload handlers exist in the current codebase. When document upload is added (Phase 5+), enforce: type allowlist (MIME + extension), size cap, filename sanitisation (no path traversal), out-of-webroot storage.
-
----
-
-## 9. Logging & Monitoring — WARN
-
-- 🟡 `backend/src/modules/auth/auth.service.ts:45` — Failed-login audit log stores `email: dto.email` verbatim in `audit_logs.metadata`; for non-existent users this also confirms whether an email is registered (user-enumeration artifact in the audit trail).
-  **Why:** principle 9 / `10-logging-and-audit.md §never-log-list`. **Fix:** omit `email` from failed-login metadata; the `userId` field already identifies confirmed users.
-
-- 🔵 `backend/src/modules/notifications/notification.service.ts:15` — Stub logs `options.to` (recipient email address) to NestJS logger without masking; when a real email sink is attached in production, PII will persist in application logs.
-  **Why:** principle 9 / `10-logging-and-audit.md §never-log-list`. **Fix:** mask the address (`u***@domain`) in the log line.
+No personal-data field mapping, retention/cleanup mechanism, or delete/export capability found in code. Guests' `passportId`, `phone`, `email`, and `fullName` are collected and stored but no deletion or correction endpoint exists. **Note:** full Amendment 13 audit → run `/privacy-audit`.
 
 ---
 
-## 10. Error Handling (fail-closed) — WARN
+## 6. Sessions & tokens — FAIL
 
-- 🟡 `backend/src/modules/auth/auth.service.ts:96` — Refresh-token rotation performs two separate DB writes (revoke old + create new in `issueTokens`) with no wrapping `$transaction`; if CREATE fails after revoke succeeds, the user is permanently locked out.
-  **Why:** principle 10 / `03-error-handling.md §half-updated-state`. **Fix:** wrap both writes in `this.prisma.$transaction([...])`.
+- 🔴 `frontend/lib/api/auth.ts:44` — JWT access token written to `localStorage` on every login (`localStorage.setItem('auth_token', data.accessToken)`). Any XSS in the Next.js app can exfiltrate the token. The token is already available from the non-`httpOnly` `access_token` cookie; `localStorage` adds a second, redundant exposure. **Why:** `06-tokens-and-sessions.md §Transport & storage`. **Fix:** remove `localStorage.setItem('auth_token', …)` and the corresponding `logout` cleanup; update `getAccessToken()` in `client.ts` to read only from `document.cookie`.
 
-- 🔵 `backend/src/common/filters/global-exception.filter.ts:33` — `ValidationPipe` constraint messages (e.g., `"password must be longer than or equal to 8 characters"`) forwarded verbatim to client, leaking internal field names.
-  **Why:** principle 10 / `03-error-handling.md §stack-trace`. **Fix:** return a fixed `"VALIDATION_ERROR"` string with constraint details only in non-prod environments.
+- 🔴 `frontend/lib/api/client.ts:38` — refreshed access token is also written to `localStorage` on every silent refresh, re-exposing the JWT to XSS. **Why:** `06-tokens-and-sessions.md §Transport & storage`. **Fix:** same as above — remove the `localStorage.setItem` in `doRefresh()`.
 
 ---
 
-## 11. Secure Defaults — WARN
+## 7. Safe file handling — PASS
 
-- 🟡 `backend/src/main.ts:34` — `http://localhost:3000` and `http://127.0.0.1:3000` included in CORS allowlist unconditionally regardless of `NODE_ENV`; in production any local browser request is cross-origin allowed with credentials.
-  **Why:** principle 11 / `04-secure-defaults.md §CORS`. **Fix:** gate dev origins on `process.env.NODE_ENV !== 'production'`.
-
-- 🟡 `backend/src/modules/room-types/room-types.service.ts:57` — `RoomType` is hard-deleted with `prisma.roomType.delete()`; a deletion races with in-flight reservation queries and permanently loses the type name/price from historical audit records.
-  **Why:** principle 11 / `04-secure-defaults.md §hard-delete`. **Fix:** add `isActive` flag to `RoomType` and soft-delete instead.
+No upload handlers (`FileInterceptor`, `multer`, `@UploadedFile`) found in the backend. Not applicable.
 
 ---
 
-## 12. Supply Chain — FAIL
+## 8. Secure communication — FAIL
 
-- 🔴 `backend/package.json` (transitive: `multer@2.1.1` → `form-data@4.0.5`) — **GHSA-hmw2-7cc7-3qxx**: CRLF injection via unescaped multipart field names/filenames in `form-data <4.0.6`. Present in the production dependency tree.
-  **Why:** principle 12 / `12-supply-chain.md §known-vulnerabilities`. **Fix:** upgrade `multer` to a version that resolves `form-data >=4.0.6`.
+- 🔴 `backend/src/modules/billing/payment.service.ts:249` — when `STRIPE_WEBHOOK_SECRET` is absent (currently empty in `backend/.env:30`), `handleStripeWebhook` logs a warning and silently returns `void`. The controller responds `{ received: true }` (HTTP 200) without verifying the signature. Any unauthenticated POST with a crafted `payment_intent.succeeded` body will be accepted and can mark arbitrary payments as paid. **Why:** `11-secure-communication.md §Authenticating the caller`. **Fix:** throw `InternalServerErrorException` when the secret is absent — treat missing secret as a fatal misconfiguration.
 
-- 🟡 `backend/package.json` (transitive: Jest chain → `js-yaml <=4.1.1`) — **GHSA-h67p-54hq-rp68**: quadratic-complexity DoS in YAML merge-key handling. Dev dependency only; 19 moderate advisories cascade from the same root cause.
-  **Why:** principle 12 / `12-supply-chain.md §known-vulnerabilities`. **Fix:** upgrade `jest` + `ts-jest` to a major version that pulls `js-yaml >=4.1.2`; needs human decision (breaking major change).
+- 🟡 `backend/src/modules/rooms/room-status.gateway.ts:14` — WebSocket gateway sets `cors: { origin: '*' }`, allowing any web origin to open a WebSocket connection to `/ws`. This contradicts the explicit origin allowlist enforced for HTTP endpoints in `main.ts`. **Why:** `11-secure-communication.md §CORS`. **Fix:** replace `'*'` with `process.env.FRONTEND_URL` (same pattern used in `main.ts`).
 
-- 🟡 `backend/package.json` — All direct dependencies use `^` (caret) ranges; `npm install` (not `npm ci`) would pull any minor bump without review.
-  **Why:** principle 12 / `12-supply-chain.md §version-pinning`. **Fix:** use `npm ci` in CI; pin exact versions for critical prod deps.
+---
 
-- 🟡 `backend/package.json` — `prisma` (`preinstall`) and `@prisma/client` (`postinstall`) run arbitrary Node scripts at install time to download binary engines; `@nestjs/core` (`postinstall`) runs `opencollective` making an outbound network call.
-  **Why:** principle 12 / `12-supply-chain.md §install-hooks`. **Fix:** pin `prisma` to exact version; add `DISABLE_OPENCOLLECTIVE=1` and `HUSKY=0` to CI environment.
+## 9. Logging & monitoring — WARN
 
-- 🔵 `backend/package-lock.json` — lockfile exists on disk but this is not a git repository; cannot confirm it is committed to version control.
-  **Why:** principle 12 / `12-supply-chain.md §lockfile`. **Fix:** confirm `package-lock.json` is tracked in version control.
+- 🟡 `backend/src/modules/guest-portal/guest-portal.service.ts:66` — the full portal URL including the raw 64-char hex access token is logged at INFO level (`this.logger.log(… portalUrl)`). Anyone with log-system read access can replay the token within its 24-hour validity window to access a guest's reservation, invoice, and trigger payment. **Why:** `10-logging-and-audit.md §What to NEVER log`. **Fix:** log only `reservationId` and `expiresAt`; never include the raw URL.
+
+- 🟡 `backend/src/modules/notifications/notification.service.ts:15` — stub `sendEmail()` logs the full email body at INFO level. If callers pass a portal link (with raw token), PII, or financial data in `body`, it appears in application logs in plaintext. **Why:** `10-logging-and-audit.md §What to NEVER log`. **Fix:** log only recipient and subject; never log the body.
+
+- 🟡 `backend/src/modules/notifications/n8n.service.ts:8` — eight n8n webhook path-segments (e.g. `vOZ77rpHCNDjHYrT`, `QNz3j1O2wnsVcuhZ`, …) are hardcoded in TypeScript source. These are effectively API credentials embedded in code — if the source is ever shared, all eight n8n endpoints become callable by unauthorized parties. **Why:** `09-secrets-management.md §Where secrets must (and must not) live`. **Fix:** move each path to an environment variable (e.g. `N8N_WEBHOOK_RESERVATION_CONFIRMED`) and read via `ConfigService`.
+
+---
+
+## 10. Error handling (fail-closed) — FAIL
+
+- 🔴 `backend/src/modules/guest-portal/guest-portal.service.ts:291` — `processPortalPayment` determines payment success via `dto.provider !== 'stripe' || !dto.token?.includes('fail')` (a test stub). Sending `provider: 'manual'` or `provider: 'tranzila'` unconditionally evaluates to `succeeded = true`, marks the invoice `paid`, and records a payment row with zero real money collected. Any guest with a valid portal token can zero out their bill. **Why:** `03-error-handling.md §2` (fail-closed on payment logic). **Fix:** remove the stub condition; route portal payments through the real payment providers (`StripeProvider`, `TranzilaProvider`, `ManualProvider`) using the same `selectProvider` pattern as `PaymentService.initiatePayment`.
+
+- 🔴 `backend/src/modules/billing/providers/tranzila.provider.ts:17` — `TranzilaProvider.charge()` always returns `status: 'succeeded'` (stub, no real HTTP call). Any payment routed to `provider: 'tranzila'` via `PaymentService` or the portal flow records as paid without charging the guest. **Why:** `03-error-handling.md §2`. **Fix:** throw `NotImplementedException('TRANZILA_NOT_IMPLEMENTED')` until a real merchant account is wired; prevents silent fake payments.
+
+- 🟡 `backend/src/modules/billing/payment.service.ts:289` — `getPosStatus()` always returns `{ status: 'succeeded' }` unconditionally (stub). Any caller checking POS terminal status receives a false success regardless of terminal state. **Why:** `03-error-handling.md §2`. **Fix:** throw `NotImplementedException('POS_NOT_IMPLEMENTED')` until a real POS terminal is wired.
+
+---
+
+## 11. Secure defaults — WARN
+
+- 🔵 `backend/Dockerfile.dev:11` — `NODE_TLS_REJECT_UNAUTHORIZED=0` is set as an inline env prefix for the `npm run prisma:generate` build step, disabling TLS certificate verification for all HTTPS connections made during that command. **Why:** `04-secure-defaults.md §9`. **Fix:** remove the prefix; `prisma generate` reads the schema file and does not connect to any DB.
+
+- 🔵 `backend/src/health/health.controller.ts:6` — `GET /health` endpoint is unauthenticated and returns `process.env.npm_package_version`, exposing the precise application version to unauthenticated callers. **Why:** `04-secure-defaults.md §3`. **Fix:** remove the `version` field from the public health response.
+
+- 🔵 `backend/src/modules/guest-portal/guest-portal.controller.ts:54` — a synthetic `JwtPayload` with `role: 'chain_admin'` and `branchId: null` is constructed to bypass `InvoicePdfService.assertAccess()` for guest PDF downloads. If `assertAccess` is ever hardened, this bypass will silently elevate guest access. **Why:** `04-secure-defaults.md §1`. **Fix:** add a `guestPortal: boolean` overload to `assertAccess` that skips the branch check without impersonating a privileged role.
+
+---
+
+## Supply chain findings
+
+| Severity | ID | Location | Issue | Fix |
+|---|---|---|---|---|
+| 🟡 MODERATE | GHSA-qx2v-qp2m-jg93 | `frontend/package.json:16` | PostCSS <8.5.10 bundled in `next@16.2.6` — `</style>` escape failure, XSS in CSS-inlined pages | Await Next.js release vendoring postcss ≥8.5.10 |
+| 🟡 MODERATE | GHSA-h67p-54hq-rp68 | `frontend/package.json:16` | `js-yaml@4.1.1` in `eslint-config-next` — quadratic DoS on deeply nested merge-key YAML | Await fix in `eslint-config-next` upstream |
+| 🟡 MODERATE | n/a | `backend/package.json:14` | `postinstall: "prisma generate"` — arbitrary code execution on every `npm install`/`npm ci` if any dep in the tree is compromised | Remove `postinstall`; call `npm run prisma:generate` explicitly in CI after `npm ci --ignore-scripts` |
+| 🔵 LOW | GHSA-h67p-54hq-rp68 | `backend/` (dev) | `js-yaml@<3.15.0` via `@istanbuljs/load-nyc-config` — same DoS, dev/test only | Await fix upstream |
+| 🔵 LOW | n/a | `frontend/package.json:24` | `@tailwindcss/postcss: "^4"` — wide major-version float | Tighten to `"~4.x.y"` matching current lockfile version |
+| 🔵 LOW | n/a | `frontend/package.json:30` | `tailwindcss: "^4"` — same wide float | Tighten to `"~4.x.y"` |
 
 ---
 
 ## Out-of-code (process/infra) notes
 
-- No rate-limiting implementation was found on auth endpoints in the source. CLAUDE.md specifies "Rate limit auth endpoints: 30 req/min per IP" — not implemented in Phase 1 code. This is an architectural gap to address before production.
-- `BranchGuard` exists in `src/common/guards/` but is applied to zero routes. Branch isolation is enforced ad-hoc per-service. A developer adding a new route who forgets the service-level check has no safety net guard. Recommend applying as a global guard or annotating explicitly on all branch-scoped controllers.
-
----
+- `backend/.env:28` — a real Stripe test-mode secret key (`sk_test_51TnNM73…`) is present on disk. The `.gitignore` lists `.env` as excluded but if accidentally staged, all payment credentials are exposed. **Action:** confirm via `git log -S sk_test_` that it has never been committed; rotate the key; provide `.env.example` with placeholders only.
+- Branch isolation invariant: all entities must include `branchId`; queries must filter by JWT branch. The IDOR findings above (P2) are violations of this invariant.
 
 ## Low-confidence / needs human review
 
-- 🟡? `backend/src/modules/users/users.service.ts` — whether `hotel_manager` can reach other managers in the same branch via the `update` endpoint depends on the RBAC query scope in `findAll`; the ownership check was read but the cross-branch enumeration path was not fully traced in the controller layer. Needs integration test to confirm.
-
----
+- 🟡? `backend/src/modules/auth/auth.controller.ts:27` — `httpOnly: false` access token. Documented as intentional (proxy bypass); whether the risk is acceptable is an architectural decision. The `/e2e-security` run should attempt XSS + token-theft scenario to confirm exploitability.
 
 ## Coverage gaps & follow-ups
 
-- **Not scanned:** frontend (`/home/runner/hotel-management-system/frontend`) — XSS surface, token storage in localStorage/memory, CSRF token handling in Next.js proxy, client-side authorization bypasses.
-- **Not scanned:** `reservations`, `check-in`, `availability`, `housekeeping`, `reports` modules — not yet implemented (Phase 1 scope). Re-audit when added; IDOR risk is high in reservation endpoints.
-- **Not scanned:** database migration files / Prisma schema for column-level permissions.
-- **Not scanned:** WebSocket (`socket.io`) authentication and channel-level authorization.
-- **Out of scope here:** infrastructure (Docker, nginx, TLS, exposed ports) → `/infra-audit`.
-- **Out of scope here:** runtime confirmations of findings → `/runtime-confirm`.
-- **Blind spot:** cross-service data flows (e.g., `NotificationService` in Phase 5+) not yet audited.
-
----
+- **Frontend coverage:** `frontend/` audited for auth storage and API client only. React component security (XSS sinks, dangerouslySetInnerHTML, URL injection), client-side authz bypasses — **not audited**. Run `/e2e-security`.
+- **Runtime behavior:** Stripe webhook `0.0.0.0` binding, actual port exposure — confirmed in config but internet reachability depends on cloud firewall. Run `/runtime-confirm`.
+- **Israeli Amendment 13:** PII handling, data-subject rights, security level — **not audited** here. Run `/privacy-audit` (high priority).
+- **Supply chain CVEs:** upstream packages — no direct upgrade path available; track `next.js` and `eslint-config-next` releases.
+- **WebSocket channel authz:** `socket.io` channel authorization not traced end-to-end.
 
 ## Method
 
-- Auditors (read-only): `appsec-auditor` ×4 (authn-authz, input-files, data-secrets-sessions, errors-defaults) + `dependency-auditor` ×1 (supply-chain) — parallel.
-- Baseline: 16 principles in `secure-code-review/references/`.
-- Every 🔴 was spot-checked against actual source lines before listing.
-- `/security-review` verify pass: **skipped** — directory is not a git repository (no diff available).
+- Auditors (read-only): `appsec-auditor` ×4 (authn-authz · input-files · data-secrets-sessions · errors-defaults) + `dependency-auditor` ×1 (supply-chain). All run in parallel.
+- Baseline: the 11 code-auditable principles in `secure-code-review/references/02-software-principles.md`.
+- Each 🔴 was spot-checked against actual source lines before listing.
+- `/security-review` skipped — requires git repository at current working directory.

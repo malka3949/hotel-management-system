@@ -35,18 +35,31 @@ model Branch {
   email          String?   @db.VarChar(255)
   contactPerson  String?   @db.VarChar(255) @map("contact_person")
   timezone       String    @default("Asia/Jerusalem") @db.VarChar(50)
-  isActive       Boolean   @default(true) @map("is_active")
+  description          String?   @db.Text
+  coverPhoto           String?   @db.VarChar(2048) @map("cover_photo")
+  amenities            String[]  @default([])
+  cancellationPolicy   String?   @db.Text @map("cancellation_policy")
+  isActive             Boolean   @default(true) @map("is_active")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
-  users          User[]
-  refreshTokens  RefreshToken[]
-  auditLogs      AuditLog[]
-  roomTypes       RoomType[]
-  rooms           Room[]
-  guests          Guest[]
-  guestDocuments  GuestDocument[]
-  reservations    Reservation[]
+  users              User[]
+  refreshTokens      RefreshToken[]
+  auditLogs          AuditLog[]
+  roomTypes          RoomType[]
+  rooms              Room[]
+  guests             Guest[]
+  guestDocuments     GuestDocument[]
+  reservations       Reservation[]
+  checkIns           CheckIn[]
+  checkOuts          CheckOut[]
+  invoices           Invoice[]
+  payments           Payment[]
+  charges            Charge[]
+  refunds            Refund[]
+  serviceCatalog     ServiceCatalogEntry[]
+  housekeepingTasks  HousekeepingTask[]
+  guestFeedback      GuestFeedback[]
 
   @@map("branches")
 }
@@ -67,6 +80,14 @@ model User {
   auditLogs            AuditLog[]
   recordedDocuments    GuestDocument[]
   createdReservations  Reservation[]   @relation("ReservationCreatedBy")
+  checkIns             CheckIn[]       @relation("CheckedInBy")
+  checkOuts            CheckOut[]      @relation("CheckedOutBy")
+  payments                    Payment[]           @relation("PaymentCreatedBy")
+  charges                     Charge[]            @relation("ChargeAddedBy")
+  refunds                     Refund[]            @relation("RefundApprovedBy")
+  assignedHousekeepingTasks   HousekeepingTask[]  @relation("HousekeepingAssignedTo")
+  createdHousekeepingTasks    HousekeepingTask[]  @relation("HousekeepingCreatedBy")
+  passwordResetTokens         PasswordResetToken[]
 
   @@map("users")
 }
@@ -93,6 +114,12 @@ model RoomType {
   basePrice     Decimal   @map("base_price") @db.Decimal(10, 2)
   maxOccupancy  Int       @map("max_occupancy")
   description   String?   @db.Text
+  photos        String[]  @default([])
+  amenities     String[]  @default([])
+  bedType       String?   @db.VarChar(50) @map("bed_type")
+  roomSize      Int?      @map("room_size")
+  maxAdults     Int?      @map("max_adults")
+  maxChildren   Int?      @map("max_children")
   createdAt     DateTime  @default(now()) @map("created_at")
 
   branch        Branch    @relation(fields: [branchId], references: [id])
@@ -114,9 +141,10 @@ model Room {
   createdAt      DateTime       @default(now()) @map("created_at")
   updatedAt      DateTime       @updatedAt @map("updated_at")
 
-  branch         Branch         @relation(fields: [branchId], references: [id])
-  roomType       RoomType       @relation(fields: [roomTypeId], references: [id])
-  reservations   Reservation[]
+  branch            Branch              @relation(fields: [branchId], references: [id])
+  roomType          RoomType            @relation(fields: [roomTypeId], references: [id])
+  reservations      Reservation[]
+  housekeepingTasks HousekeepingTask[]
 
   @@unique([branchId, number])
   @@index([branchId, status])
@@ -145,9 +173,14 @@ model Guest {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
-  branch       Branch          @relation(fields: [branchId], references: [id])
-  documents    GuestDocument[]
-  reservations Reservation[]
+  branch             Branch             @relation(fields: [branchId], references: [id])
+  documents          GuestDocument[]
+  reservations       Reservation[]
+  reservationGuests  ReservationGuest[]
+  invoices           Invoice[]
+  guestAccessTokens  GuestAccessToken[]
+  onlineCheckIns     OnlineCheckIn[]
+  feedback           GuestFeedback[]
 
   @@index([branchId, email])
   @@index([branchId, phone])
@@ -182,6 +215,8 @@ model AuditLog {
   entityId    String?   @map("entity_id") @db.Uuid
   metadata    Json?
   branchId    String?   @map("branch_id")
+  ipAddress   String?   @map("ip_address") @db.VarChar(45)
+  userAgent   String?   @map("user_agent") @db.VarChar(500)
   createdAt   DateTime  @default(now()) @map("created_at")
 
   user        User?     @relation(fields: [userId], references: [id])
@@ -199,29 +234,405 @@ enum ReservationStatus {
   no_show
 }
 
-model Reservation {
-  id           String            @id @default(uuid())
-  branchId     String            @map("branch_id")
-  roomId       String            @map("room_id")
-  guestId      String            @map("guest_id")
-  checkInDate  DateTime          @db.Date @map("check_in_date")
-  checkOutDate DateTime          @db.Date @map("check_out_date")
-  status       ReservationStatus @default(pending)
-  totalPrice   Decimal           @map("total_price") @db.Decimal(10, 2)
-  source       String?           @db.VarChar(50)
-  notes        String?           @db.Text
-  version      Int               @default(0)
-  createdBy    String            @map("created_by")
-  createdAt    DateTime          @default(now()) @map("created_at")
-  updatedAt    DateTime          @updatedAt @map("updated_at")
+enum ReservationSource {
+  walk_in
+  phone
+  website
+  ota
+}
 
-  branch        Branch  @relation(fields: [branchId], references: [id])
-  room          Room    @relation(fields: [roomId], references: [id])
-  guest         Guest   @relation(fields: [guestId], references: [id])
-  createdByUser User    @relation("ReservationCreatedBy", fields: [createdBy], references: [id])
+model Reservation {
+  id                 String             @id @default(uuid())
+  branchId           String             @map("branch_id")
+  roomId             String             @map("room_id")
+  guestId            String             @map("guest_id")
+  checkInDate        DateTime           @db.Date @map("check_in_date")
+  checkOutDate       DateTime           @db.Date @map("check_out_date")
+  status             ReservationStatus  @default(pending)
+  totalPrice         Decimal            @map("total_price") @db.Decimal(10, 2)
+  source             ReservationSource? @default(walk_in)
+  adults             Int                @default(1)
+  children           Int                @default(0)
+  notes              String?            @db.Text
+  cancelledAt        DateTime?          @map("cancelled_at")
+  cancellationReason String?            @db.Text @map("cancellation_reason")
+  version            Int                @default(0)
+  createdBy          String?            @map("created_by")
+  createdAt          DateTime           @default(now()) @map("created_at")
+  updatedAt          DateTime           @updatedAt @map("updated_at")
+
+  branch             Branch             @relation(fields: [branchId], references: [id])
+  room               Room               @relation(fields: [roomId], references: [id])
+  guest              Guest              @relation(fields: [guestId], references: [id])
+  createdByUser      User?              @relation("ReservationCreatedBy", fields: [createdBy], references: [id])
+  reservationGuests  ReservationGuest[]
+  checkIn            CheckIn?
+  checkOut           CheckOut?
+  invoice            Invoice?
+  payments           Payment[]
+  guestAccessTokens  GuestAccessToken[]
+  onlineCheckIn      OnlineCheckIn?
+  housekeepingTasks  HousekeepingTask[]
+  feedback           GuestFeedback?
 
   @@index([branchId, checkInDate, checkOutDate])
   @@index([roomId, checkInDate, checkOutDate])
   @@index([branchId, status])
   @@map("reservations")
+}
+
+model ReservationGuest {
+  id            String      @id @default(uuid())
+  reservationId String      @map("reservation_id")
+  guestId       String      @map("guest_id")
+  isPrimary     Boolean     @default(false) @map("is_primary")
+
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  guest         Guest       @relation(fields: [guestId], references: [id])
+
+  @@index([reservationId])
+  @@map("reservation_guests")
+}
+
+model CheckIn {
+  id               String      @id @default(uuid())
+  reservationId    String      @unique @map("reservation_id")
+  branchId         String      @map("branch_id")
+  actualCheckInAt  DateTime    @default(now()) @map("actual_check_in_at")
+  checkedInBy      String      @map("checked_in_by")
+  notes            String?     @db.Text
+  createdAt        DateTime    @default(now()) @map("created_at")
+
+  reservation      Reservation @relation(fields: [reservationId], references: [id])
+  branch           Branch      @relation(fields: [branchId], references: [id])
+  checkedInByUser  User        @relation("CheckedInBy", fields: [checkedInBy], references: [id])
+
+  @@map("check_ins")
+}
+
+model CheckOut {
+  id                String      @id @default(uuid())
+  reservationId     String      @unique @map("reservation_id")
+  branchId          String      @map("branch_id")
+  actualCheckOutAt  DateTime    @default(now()) @map("actual_check_out_at")
+  checkedOutBy      String      @map("checked_out_by")
+  notes             String?     @db.Text
+  createdAt         DateTime    @default(now()) @map("created_at")
+
+  reservation       Reservation @relation(fields: [reservationId], references: [id])
+  branch            Branch      @relation(fields: [branchId], references: [id])
+  checkedOutByUser  User        @relation("CheckedOutBy", fields: [checkedOutBy], references: [id])
+
+  @@map("check_outs")
+}
+
+enum InvoiceStatus {
+  draft
+  finalized
+  paid
+  void
+}
+
+enum InvoiceItemType {
+  room_charge
+  tax
+  discount
+  other
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  reservationId String        @unique @map("reservation_id")
+  branchId      String        @map("branch_id")
+  guestId       String        @map("guest_id")
+  status        InvoiceStatus @default(draft)
+  subtotal      Decimal       @db.Decimal(10, 2)
+  tax           Decimal       @db.Decimal(10, 2)
+  total         Decimal       @db.Decimal(10, 2)
+  issuedAt      DateTime?     @map("issued_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+
+  reservation   Reservation       @relation(fields: [reservationId], references: [id])
+  branch        Branch            @relation(fields: [branchId], references: [id])
+  guest         Guest             @relation(fields: [guestId], references: [id])
+  lineItems     InvoiceLineItem[]
+  payments      Payment[]
+  charges       Charge[]
+
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id          String          @id @default(uuid())
+  invoiceId   String          @map("invoice_id")
+  description String          @db.VarChar(255)
+  quantity    Int
+  unitPrice   Decimal         @db.Decimal(10, 2) @map("unit_price")
+  total       Decimal         @db.Decimal(10, 2)
+  itemType    InvoiceItemType @map("item_type")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  invoice     Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@map("invoice_line_items")
+}
+
+// ── Phase 7: Billing & Payments ───────────────────────────────────────────────
+
+enum PaymentStatus {
+  pending
+  processing
+  succeeded
+  failed
+  cancelled
+  refunded
+}
+
+enum PaymentMethod {
+  credit_card
+  cash
+  bank_transfer
+  pos_terminal
+}
+
+enum PaymentProvider {
+  stripe
+  tranzila
+  manual
+}
+
+enum ChargeType {
+  room_service
+  minibar
+  laundry
+  telephone
+  parking
+  other
+}
+
+enum RefundStatus {
+  pending
+  succeeded
+  failed
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  branchId          String        @map("branch_id")
+  invoiceId         String        @map("invoice_id")
+  reservationId     String        @map("reservation_id")
+  amount            Decimal       @db.Decimal(10, 2)
+  currency          String        @db.VarChar(3) @default("ILS")
+  status            PaymentStatus @default(pending)
+  paymentMethod     PaymentMethod @map("payment_method")
+  provider          PaymentProvider
+  providerPaymentId String?       @unique @map("provider_payment_id")
+  idempotencyKey    String        @unique @map("idempotency_key")
+  metadata          Json?
+  paidAt            DateTime?     @map("paid_at")
+  createdBy         String?       @map("created_by")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  branch          Branch          @relation(fields: [branchId], references: [id])
+  invoice         Invoice         @relation(fields: [invoiceId], references: [id])
+  reservation     Reservation     @relation(fields: [reservationId], references: [id])
+  createdByUser   User?           @relation("PaymentCreatedBy", fields: [createdBy], references: [id])
+  attempts        PaymentAttempt[]
+  refunds         Refund[]
+
+  @@index([branchId, invoiceId])
+  @@index([branchId, reservationId])
+  @@map("payments")
+}
+
+model PaymentAttempt {
+  id               String        @id @default(uuid())
+  paymentId        String        @map("payment_id")
+  attemptNumber    Int           @map("attempt_number")
+  status           PaymentStatus
+  errorCode        String?       @db.VarChar(100) @map("error_code")
+  errorMessage     String?       @db.Text @map("error_message")
+  providerResponse Json?         @map("provider_response")
+  attemptedAt      DateTime      @default(now()) @map("attempted_at")
+
+  payment          Payment       @relation(fields: [paymentId], references: [id])
+
+  @@map("payment_attempts")
+}
+
+model Charge {
+  id          String     @id @default(uuid())
+  branchId    String     @map("branch_id")
+  invoiceId   String     @map("invoice_id")
+  description String     @db.VarChar(255)
+  amount      Decimal    @db.Decimal(10, 2)
+  chargeType  ChargeType @map("charge_type")
+  addedBy     String     @map("added_by")
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+  addedByUser User  @relation("ChargeAddedBy", fields: [addedBy], references: [id])
+
+  @@index([branchId, invoiceId])
+  @@map("charges")
+}
+
+model Refund {
+  id               String       @id @default(uuid())
+  branchId         String       @map("branch_id")
+  paymentId        String       @map("payment_id")
+  amount           Decimal      @db.Decimal(10, 2)
+  reason           String       @db.Text
+  status           RefundStatus @default(pending)
+  providerRefundId String?      @map("provider_refund_id")
+  approvedBy       String       @map("approved_by")
+  createdAt        DateTime     @default(now()) @map("created_at")
+
+  branch        Branch  @relation(fields: [branchId], references: [id])
+  payment       Payment @relation(fields: [paymentId], references: [id])
+  approvedByUser User   @relation("RefundApprovedBy", fields: [approvedBy], references: [id])
+
+  @@map("refunds")
+}
+
+// ── Phase 8: Guest Portal ─────────────────────────────────────────────────────
+
+enum TokenPurpose {
+  view
+  checkin
+  payment
+}
+
+model GuestAccessToken {
+  id            String       @id @default(uuid())
+  reservationId String       @map("reservation_id")
+  guestId       String       @map("guest_id")
+  tokenHash     String       @map("token_hash") @db.VarChar
+  purpose       TokenPurpose @default(view)
+  expiresAt     DateTime     @map("expires_at")
+  usedAt        DateTime?    @map("used_at")
+  revokedAt     DateTime?    @map("revoked_at")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  reservation   Reservation  @relation(fields: [reservationId], references: [id])
+  guest         Guest        @relation(fields: [guestId], references: [id])
+
+  @@index([tokenHash])
+  @@index([reservationId])
+  @@map("guest_access_tokens")
+}
+
+model ServiceCatalogEntry {
+  id         String     @id @default(uuid())
+  branchId   String     @map("branch_id")
+  chargeType ChargeType @map("charge_type")
+  price      Decimal    @db.Decimal(10, 2)
+  isActive   Boolean    @default(true) @map("is_active")
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  branch     Branch     @relation(fields: [branchId], references: [id])
+
+  @@unique([branchId, chargeType])
+  @@map("service_catalog_entries")
+}
+
+model OnlineCheckIn {
+  id                   String    @id @default(uuid())
+  reservationId        String    @unique @map("reservation_id")
+  guestId              String    @map("guest_id")
+  fullName             String    @db.VarChar(255) @map("full_name")
+  passportId           String    @db.VarChar(50) @map("passport_id")
+  email                String?   @db.VarChar(255)
+  phone                String?   @db.VarChar(30)
+  estimatedArrivalTime String?   @db.VarChar(5) @map("estimated_arrival_time")
+  specialRequests      String?   @db.Text @map("special_requests")
+  completedAt          DateTime  @default(now()) @map("completed_at")
+
+  reservation          Reservation @relation(fields: [reservationId], references: [id])
+  guest                Guest       @relation(fields: [guestId], references: [id])
+
+  @@map("online_check_ins")
+}
+
+// ── Phase 9: Housekeeping ─────────────────────────────────────────────────────
+
+enum HousekeepingTaskStatus {
+  pending
+  in_progress
+  completed
+  skipped
+}
+
+enum HousekeepingPriority {
+  normal
+  urgent
+}
+
+model HousekeepingTask {
+  id            String                 @id @default(uuid())
+  branchId      String                 @map("branch_id")
+  roomId        String                 @map("room_id")
+  reservationId String?                @map("reservation_id")
+  assignedTo    String?                @map("assigned_to")
+  status        HousekeepingTaskStatus @default(pending)
+  priority      HousekeepingPriority   @default(normal)
+  notes         String?                @db.Text
+  scheduledFor  DateTime               @db.Date @map("scheduled_for")
+  startedAt     DateTime?              @map("started_at")
+  completedAt   DateTime?              @map("completed_at")
+  createdBy     String?                @map("created_by")
+  createdAt     DateTime               @default(now()) @map("created_at")
+
+  branch      Branch       @relation(fields: [branchId], references: [id])
+  room        Room         @relation(fields: [roomId], references: [id])
+  reservation Reservation? @relation(fields: [reservationId], references: [id])
+  assignee    User?        @relation("HousekeepingAssignedTo", fields: [assignedTo], references: [id])
+  creator     User?        @relation("HousekeepingCreatedBy", fields: [createdBy], references: [id])
+
+  @@index([branchId, status])
+  @@index([branchId, assignedTo, status])
+  @@index([branchId, scheduledFor])
+  @@map("housekeeping_tasks")
+}
+
+// ── Phase 11: Security ────────────────────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash") @db.VarChar
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user      User      @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("password_reset_tokens")
+}
+
+// ── Phase 14: Guest Feedback ──────────────────────────────────────────────────
+
+model GuestFeedback {
+  id            String   @id @default(uuid())
+  reservationId String   @unique @map("reservation_id")
+  guestId       String   @map("guest_id")
+  branchId      String   @map("branch_id")
+  rating        Int
+  comment       String?  @db.Text
+  sentiment     String?  @db.VarChar(20)
+  aiSummary     String?  @db.Text @map("ai_summary")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  reservation   Reservation @relation(fields: [reservationId], references: [id])
+  guest         Guest       @relation(fields: [guestId], references: [id])
+  branch        Branch      @relation(fields: [branchId], references: [id])
+
+  @@index([branchId])
+  @@index([branchId, rating])
+  @@map("guest_feedback")
 }

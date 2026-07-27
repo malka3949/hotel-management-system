@@ -5,25 +5,32 @@ import { getRooms, type Room, type RoomStatus, type CleaningStatus } from '@/lib
 import { RoomStatusBadge } from '@/components/shared/RoomStatusBadge';
 import { CleaningStatusBadge } from '@/components/shared/CleaningStatusBadge';
 import { useAuth } from '@/hooks/useAuth';
+import { useBranchStore } from '@/lib/store/branch.store';
 import { getSocket, disconnectSocket } from '@/lib/socket';
 
 export default function StatusBoardPage() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'chain_admin';
+  const { selectedBranchId } = useBranchStore();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
 
   const loadRooms = useCallback(async () => {
     if (!user) return;
+    if (isAdmin && !selectedBranchId) {
+      setLoading(false);
+      setRooms([]);
+      return;
+    }
+    const branchId = isAdmin ? selectedBranchId : (user.branchId ?? undefined);
     try {
-      const data = await getRooms(
-        user.role === 'chain_admin' ? {} : { branchId: user.branchId ?? undefined },
-      );
+      const data = await getRooms(branchId ? { branchId } : {});
       setRooms(data);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isAdmin, selectedBranchId]);
 
   useEffect(() => {
     void loadRooms();
@@ -87,75 +94,82 @@ export default function StatusBoardPage() {
         </span>
       </div>
 
-      <div className="overflow-auto">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr style={{ backgroundColor: 'var(--color-bg-base)' }}>
-              <th
-                className="text-right px-4 py-2 font-medium border-b"
-                style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
-              >
-                חדר
-              </th>
-              <th
-                className="text-right px-4 py-2 font-medium border-b"
-                style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
-              >
-                קומה
-              </th>
-              <th
-                className="text-right px-4 py-2 font-medium border-b"
-                style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
-              >
-                סוג
-              </th>
-              <th
-                className="text-right px-4 py-2 font-medium border-b"
-                style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
-              >
-                סטטוס תפעולי
-              </th>
-              <th
-                className="text-right px-4 py-2 font-medium border-b"
-                style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
-              >
-                סטטוס ניקיון
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {rooms.map((room) => (
-              <tr
-                key={room.id}
-                className="border-b transition-colors"
-                style={{ borderColor: 'var(--color-border-default)' }}
-              >
-                <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                  {room.number}
-                </td>
-                <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
-                  {room.floor ?? '—'}
-                </td>
-                <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
-                  {room.roomType.name}
-                </td>
-                <td className="px-4 py-3">
-                  <RoomStatusBadge status={room.status} />
-                </td>
-                <td className="px-4 py-3">
-                  <CleaningStatusBadge status={room.cleaningStatus} />
-                </td>
+      {isAdmin && !selectedBranchId ? (
+        <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
+          <div className="text-4xl mb-3">🏨</div>
+          <p className="text-sm">בחר סניף כדי לצפות בלוח הסטטוס</p>
+        </div>
+      ) : (
+        <div className="overflow-auto">
+          <table className="w-full text-sm border-collapse">
+            <thead>
+              <tr style={{ backgroundColor: 'var(--color-bg-base)' }}>
+                <th
+                  className="text-right px-4 py-2 font-medium border-b"
+                  style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
+                >
+                  חדר
+                </th>
+                <th
+                  className="text-right px-4 py-2 font-medium border-b"
+                  style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
+                >
+                  קומה
+                </th>
+                <th
+                  className="text-right px-4 py-2 font-medium border-b"
+                  style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
+                >
+                  סוג
+                </th>
+                <th
+                  className="text-right px-4 py-2 font-medium border-b"
+                  style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
+                >
+                  סטטוס תפעולי
+                </th>
+                <th
+                  className="text-right px-4 py-2 font-medium border-b"
+                  style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
+                >
+                  סטטוס ניקיון
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {rooms.map((room) => (
+                <tr
+                  key={room.id}
+                  className="border-b transition-colors"
+                  style={{ borderColor: 'var(--color-border-default)' }}
+                >
+                  <td className="px-4 py-3 font-medium" style={{ color: 'var(--color-text-primary)' }}>
+                    {room.number}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    {room.floor ?? '—'}
+                  </td>
+                  <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
+                    {room.roomType.name}
+                  </td>
+                  <td className="px-4 py-3">
+                    <RoomStatusBadge status={room.status} />
+                  </td>
+                  <td className="px-4 py-3">
+                    <CleaningStatusBadge status={room.cleaningStatus} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-        {rooms.length === 0 && (
-          <div className="text-center py-12 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            אין חדרים להצגה
-          </div>
-        )}
-      </div>
+          {rooms.length === 0 && (
+            <div className="text-center py-12 text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+              אין חדרים להצגה
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

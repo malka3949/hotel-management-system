@@ -2,9 +2,11 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Body,
   Req,
   Res,
+  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -16,16 +18,15 @@ import { Throttle } from '@nestjs/throttler';
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CsrfGuard } from '../../common/guards/csrf.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
-// access_token is non-HttpOnly so the browser JS can read it and send as Authorization: Bearer.
-// This ensures auth works even when proxy (Next.js rewrites) strips Cookie headers.
-// refresh_token stays HttpOnly since it must never be readable by JS.
 const ACCESS_TOKEN_COOKIE_OPTIONS = {
-  httpOnly: false,
+  httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
   sameSite: 'lax' as const,
   path: '/',
@@ -57,7 +58,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @Throttle({ default: { limit: 10, ttl: 900000 } })
   @UseGuards(CsrfGuard)
   async login(
     @Body() dto: LoginDto,
@@ -78,7 +79,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return { user: result.user, accessToken: result.accessToken };
+    return { user: result.user };
   }
 
   @Post('refresh')
@@ -105,7 +106,7 @@ export class AuthController {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    return { accessToken: tokens.accessToken };
+    return {};
   }
 
   @Post('logout')
@@ -144,5 +145,34 @@ export class AuthController {
     res.clearCookie('refresh_token', REFRESH_TOKEN_COOKIE_OPTIONS);
 
     return {};
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    await this.authService.forgotPassword(dto.email);
+    return {};
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    await this.authService.resetPassword(dto.token, dto.newPassword);
+    return {};
+  }
+
+  @Get('sessions')
+  @UseGuards(JwtAuthGuard)
+  getSessions(@CurrentUser() user: JwtPayload) {
+    return this.authService.getSessions(user.sub);
+  }
+
+  @Delete('sessions/:id')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  revokeSession(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    return this.authService.revokeSession(id, user.sub);
   }
 }
