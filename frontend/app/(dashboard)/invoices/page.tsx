@@ -39,7 +39,6 @@ export default function InvoicesListPage() {
 
   useEffect(() => {
     if (isAdmin && !selectedBranchId) { setLoading(false); return; }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
     listInvoices({
       status: statusFilter || undefined,
