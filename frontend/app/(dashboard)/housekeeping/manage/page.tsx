@@ -140,7 +140,7 @@ export default function HousekeepingManagePage() {
       {isAdmin && !selectedBranchId ? (
         <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
           <div className="text-4xl mb-3">🏨</div>
-          <p>בחר סניף כדי לצפות משימות ניקוי</p>
+          <p>בחר סניף כדי לצפות במשימות ניקוי</p>
         </div>
       ) : (
         <>
