@@ -28,9 +28,9 @@ export default function ReconciliationPage() {
   const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.role === 'chain_admin';
-  const { selectedBranchId } = useBranchStore();
   const [startDate, setStartDate] = useState(monthStart());
   const [endDate, setEndDate] = useState(today());
+  const { selectedBranchId } = useBranchStore();
   const [report, setReport] = useState<ReconciliationReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
