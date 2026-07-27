@@ -11,7 +11,7 @@ import {
 } from '@/lib/api/housekeeping';
 import { getUsers, User } from '@/lib/api/users';
 import { getRooms, Room } from '@/lib/api/rooms';
-import { getBranches, Branch } from '@/lib/api/branches';
+import { useBranchStore } from '@/lib/store/branch.store';
 import { useAuth } from '@/hooks/useAuth';
 import { PriorityBadge } from '@/components/shared/PriorityBadge';
 
@@ -27,9 +27,7 @@ const priorityLabels: Record<HousekeepingPriority, string> = { urgent: 'דחוף
 export default function HousekeepingManagePage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'chain_admin';
-
-  const [selectedBranchId, setSelectedBranchId] = useState('');
-  const [branches, setBranches] = useState<Branch[]>([]);
+  const { selectedBranchId } = useBranchStore();
 
   const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
   const [housekeepers, setHousekeepers] = useState<User[]>([]);
@@ -50,10 +48,6 @@ export default function HousekeepingManagePage() {
   const [creating, setCreating] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
-
-  useEffect(() => {
-    if (isAdmin) getBranches().then(setBranches).catch(() => {});
-  }, [isAdmin]);
 
   const branchId = isAdmin ? selectedBranchId || undefined : undefined;
 
@@ -132,16 +126,6 @@ export default function HousekeepingManagePage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-[#0F172A]">{isAdmin ? 'ניהול ניקוי — כל הרשת' : 'ניהול ניקוי'}</h1>
         <div className="flex items-center gap-3">
-          {isAdmin && (
-            <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="border border-[#E2E8F0] rounded px-3 py-1.5 text-sm bg-white"
-            >
-              <option value="">— בחר סניף —</option>
-              {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          )}
           <button
             onClick={() => setShowCreate(!showCreate)}
             disabled={isAdmin && !selectedBranchId}

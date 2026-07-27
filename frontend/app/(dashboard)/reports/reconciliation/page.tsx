@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { getReconciliation, type ReconciliationReport } from '@/lib/api/billing';
-import { getBranches, type Branch } from '@/lib/api/branches';
+import { useBranchStore } from '@/lib/store/branch.store';
 import { useAuth } from '@/hooks/useAuth';
 
 function today() {
@@ -28,19 +28,12 @@ export default function ReconciliationPage() {
   const router = useRouter();
   const { user } = useAuth();
   const isAdmin = user?.role === 'chain_admin';
+  const { selectedBranchId } = useBranchStore();
   const [startDate, setStartDate] = useState(monthStart());
   const [endDate, setEndDate] = useState(today());
-  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
-  const [branches, setBranches] = useState<Branch[]>([]);
   const [report, setReport] = useState<ReconciliationReport | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (isAdmin) {
-      getBranches().then(setBranches).catch(() => {});
-    }
-  }, [isAdmin]);
 
   const branchId = isAdmin ? selectedBranchId || undefined : (user?.branchId ?? undefined);
 
@@ -67,20 +60,6 @@ export default function ReconciliationPage() {
       </div>
 
       <div className="flex gap-4 mb-6 items-end flex-wrap">
-        {isAdmin && (
-          <div>
-            <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>סניף</label>
-            <select
-              value={selectedBranchId}
-              onChange={(e) => setSelectedBranchId(e.target.value)}
-              className="rounded-md border px-3 py-2 text-sm min-w-40"
-              style={{ borderColor: 'var(--color-border-default)' }}
-            >
-              <option value="">בחר סניף...</option>
-              {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
-        )}
         <div>
           <label className="block text-xs font-medium mb-1" style={{ color: 'var(--color-text-secondary)' }}>מתאריך</label>
           <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}

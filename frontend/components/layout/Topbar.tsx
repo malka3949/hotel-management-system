@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { logout, getSessions, revokeSession, revokeAllSessions, type Session } from '@/lib/api/auth';
+import { useBranchStore } from '@/lib/store/branch.store';
+import { getBranches } from '@/lib/api/branches';
 
 const ROLE_LABELS: Record<string, string> = {
   chain_admin: 'מנהל רשת',
@@ -100,10 +102,46 @@ function SessionsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+function NotificationsPanel({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="absolute left-0 top-11 z-50 w-72 rounded-xl shadow-xl p-4"
+      style={{
+        backgroundColor: 'var(--color-bg-surface)',
+        border: '1px solid var(--color-border-default)',
+      }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text-primary)' }}>
+          התראות
+        </h3>
+        <button
+          onClick={onClose}
+          className="text-xs px-2 py-0.5 rounded"
+          style={{ color: 'var(--color-text-secondary)' }}
+        >
+          סגור
+        </button>
+      </div>
+      <p className="text-xs text-center py-4" style={{ color: 'var(--color-text-secondary)' }}>
+        אין התראות חדשות
+      </p>
+    </div>
+  );
+}
+
 export function Topbar() {
   const { user, clearUser } = useAuth();
   const router = useRouter();
   const [showSessions, setShowSessions] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const { selectedBranchId, branches, setBranches, selectBranch } = useBranchStore();
+
+  useEffect(() => {
+    if (user?.role === 'chain_admin' && branches.length === 0) {
+      getBranches().then(setBranches).catch(() => {});
+    }
+  }, [user?.role, branches.length, setBranches]);
 
   async function handleLogout() {
     try {
@@ -154,33 +192,53 @@ export function Topbar() {
         </div>
       </div>
 
+      {/* Branch selector — chain_admin only */}
+      {user?.role === 'chain_admin' && branches.length > 0 && (
+        <select
+          value={selectedBranchId}
+          onChange={(e) => selectBranch(e.target.value)}
+          className="text-sm rounded-lg border px-3 py-1.5 outline-none transition-all font-medium"
+          style={{
+            borderColor: selectedBranchId ? 'var(--color-accent)' : 'var(--color-border-default)',
+            backgroundColor: selectedBranchId ? 'rgba(196,162,83,0.08)' : 'var(--color-bg-base)',
+            color: selectedBranchId ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+            minWidth: '160px',
+          }}
+        >
+          <option value="">— בחר סניף —</option>
+          {branches.map((b) => (
+            <option key={b.id} value={b.id}>{b.name}</option>
+          ))}
+        </select>
+      )}
+
       {/* Actions */}
       {user && (
         <div className="flex items-center gap-3">
           {/* Notification bell */}
-          <button
-            className="relative w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
-            style={{ color: 'var(--color-text-secondary)' }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-bg-base)';
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-            }}
-            title="התראות"
-          >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path
-                d="M8 1.5a4.5 4.5 0 00-4.5 4.5v2.5l-1 1.5h11l-1-1.5V6A4.5 4.5 0 008 1.5z"
-                stroke="currentColor" strokeWidth="1.4" fill="none"
-              />
-              <path d="M6.5 11.5a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
-            </svg>
-            <span
-              className="absolute top-1 right-1 w-2 h-2 rounded-full"
-              style={{ backgroundColor: '#DC2626', border: '1.5px solid var(--color-bg-surface)' }}
-            />
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => { setShowNotifications((v) => !v); setShowSessions(false); }}
+              className="relative w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+              style={{ color: 'var(--color-text-secondary)' }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'var(--color-bg-base)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+              }}
+              title="התראות"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M8 1.5a4.5 4.5 0 00-4.5 4.5v2.5l-1 1.5h11l-1-1.5V6A4.5 4.5 0 008 1.5z"
+                  stroke="currentColor" strokeWidth="1.4" fill="none"
+                />
+                <path d="M6.5 11.5a1.5 1.5 0 003 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" fill="none"/>
+              </svg>
+            </button>
+            {showNotifications && <NotificationsPanel onClose={() => setShowNotifications(false)} />}
+          </div>
 
           {/* Divider */}
           <div className="w-px h-5" style={{ backgroundColor: 'var(--color-border-default)' }} />
@@ -188,7 +246,7 @@ export function Topbar() {
           {/* User info */}
           <div className="relative">
             <button
-              onClick={() => setShowSessions((v) => !v)}
+              onClick={() => { setShowSessions((v) => !v); setShowNotifications(false); }}
               className="flex items-center gap-2 text-sm"
             >
               <div
