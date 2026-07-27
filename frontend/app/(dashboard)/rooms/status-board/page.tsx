@@ -95,9 +95,10 @@ export default function StatusBoardPage() {
       </div>
 
       {isAdmin && !selectedBranchId ? (
-        <p className="text-sm py-8 text-center" style={{ color: 'var(--color-text-secondary)' }}>
-          בחר סניף כדי לצפות בלוח הסטטוס
-        </p>
+        <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
+          <div className="text-4xl mb-3">🏨</div>
+          <p className="text-sm">בחר סניף כדי לצפות בלוח הסטטוס</p>
+        </div>
       ) : (
         <div className="overflow-auto">
           <table className="w-full text-sm border-collapse">
