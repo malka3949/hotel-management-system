@@ -4,11 +4,14 @@ import { useEffect, useState } from 'react';
 import { HousekeepingTask, HousekeepingTaskStatus, housekeepingApi } from '@/lib/api/housekeeping';
 import { HousekeepingTaskCard } from '@/components/shared/HousekeepingTaskCard';
 import { useAuth } from '@/hooks/useAuth';
+import { useBranchStore } from '@/lib/store/branch.store';
 
 type Filter = 'today' | 'pending';
 
 export default function HousekeepingPage() {
   const { user } = useAuth();
+  const isAdmin = user?.role === 'chain_admin';
+  const { selectedBranchId } = useBranchStore();
   const [tasks, setTasks] = useState<HousekeepingTask[]>([]);
   const [filter, setFilter] = useState<Filter>('today');
   const [loading, setLoading] = useState(true);
@@ -17,10 +20,11 @@ export default function HousekeepingPage() {
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
-    const params: { scheduledFor?: string; status?: HousekeepingTaskStatus } =
+    if (isAdmin && !selectedBranchId) { setLoading(false); return; }
+    const params: { scheduledFor?: string; status?: HousekeepingTaskStatus; branchId?: string } =
       filter === 'today'
-        ? { scheduledFor: today }
-        : { status: 'pending' };
+        ? { scheduledFor: today, branchId: isAdmin ? selectedBranchId : undefined }
+        : { status: 'pending', branchId: isAdmin ? selectedBranchId : undefined };
 
     async function load() {
       setLoading(true);
@@ -35,13 +39,22 @@ export default function HousekeepingPage() {
       }
     }
     void load();
-  }, [filter, today]);
+  }, [filter, today, isAdmin, selectedBranchId]);
 
   function handleTaskUpdate(updated: HousekeepingTask) {
     setTasks((prev) => prev.map((t) => (t.id === updated.id ? updated : t)));
   }
 
   const greeting = `שלום, ${user?.name ?? ''}. יש לך ${tasks.filter((t) => t.status === 'pending' || t.status === 'in_progress').length} משימות פעילות.`;
+
+  if (isAdmin && !selectedBranchId) {
+    return (
+      <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
+        <div className="text-4xl mb-3">🏨</div>
+        <p className="text-sm">בחר סניף כדי לצפות במשימות ניקיון</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen p-4 max-w-lg mx-auto" style={{ backgroundColor: 'var(--color-bg-base)' }}>
