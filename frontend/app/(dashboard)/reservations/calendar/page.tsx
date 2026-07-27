@@ -7,9 +7,9 @@ import {
   type CalendarReservation,
   type ReservationStatus,
 } from '@/lib/api/reservations';
-import { getBranches, type Branch } from '@/lib/api/branches';
 import { getRooms, type Room } from '@/lib/api/rooms';
 import { useAuth } from '@/hooks/useAuth';
+import { useBranchStore } from '@/lib/store/branch.store';
 
 const STATUS_COLORS: Record<ReservationStatus, string> = {
   pending: '#FEF3C7',
@@ -40,22 +40,17 @@ function formatDateKey(year: number, month: number, day: number): string {
 export default function ReservationsCalendarPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'chain_admin';
+  const { selectedBranchId } = useBranchStore();
 
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth());
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [branchId, setBranchId] = useState('');
   const [rooms, setRooms] = useState<Room[]>([]);
   const [reservations, setReservations] = useState<CalendarReservation[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const effectiveBranchId = isAdmin ? branchId : (user?.branchId ?? '');
-
-  useEffect(() => {
-    if (isAdmin) getBranches().then(setBranches).catch(() => {});
-  }, [isAdmin]);
+  const effectiveBranchId = isAdmin ? selectedBranchId : (user?.branchId ?? '');
 
   useEffect(() => {
     if (!effectiveBranchId) return;
@@ -135,18 +130,6 @@ export default function ReservationsCalendarPage() {
             </button>
           </div>
         </div>
-
-        {isAdmin && (
-          <select
-            value={branchId}
-            onChange={(e) => setBranchId(e.target.value)}
-            className="rounded-md border px-3 py-2 text-sm"
-            style={{ borderColor: 'var(--color-border-default)' }}
-          >
-            <option value="">בחר סניף</option>
-            {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-        )}
       </div>
 
       {error && (
