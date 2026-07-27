@@ -2,25 +2,19 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { getRooms, type Room, type RoomStatus, type CleaningStatus } from '@/lib/api/rooms';
-import { getBranches, type Branch } from '@/lib/api/branches';
 import { RoomStatusBadge } from '@/components/shared/RoomStatusBadge';
 import { CleaningStatusBadge } from '@/components/shared/CleaningStatusBadge';
 import { useAuth } from '@/hooks/useAuth';
+import { useBranchStore } from '@/lib/store/branch.store';
 import { getSocket, disconnectSocket } from '@/lib/socket';
 
 export default function StatusBoardPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'chain_admin';
+  const { selectedBranchId } = useBranchStore();
   const [rooms, setRooms] = useState<Room[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
-  const [selectedBranchId, setSelectedBranchId] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [connected, setConnected] = useState(false);
-
-  useEffect(() => {
-    if (!isAdmin) return;
-    getBranches().then(setBranches).catch(() => {});
-  }, [isAdmin]);
 
   const loadRooms = useCallback(async () => {
     if (!user) return;
@@ -99,22 +93,6 @@ export default function StatusBoardPage() {
           {connected ? '● חי' : '○ מנותק'}
         </span>
       </div>
-
-      {isAdmin && (
-        <div className="mb-5">
-          <select
-            value={selectedBranchId}
-            onChange={(e) => setSelectedBranchId(e.target.value)}
-            className="rounded-md border px-3 py-2 text-sm font-medium"
-            style={{ borderColor: 'var(--color-border-default)' }}
-          >
-            <option value="">בחר סניף</option>
-            {branches.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
-            ))}
-          </select>
-        </div>
-      )}
 
       {isAdmin && !selectedBranchId ? (
         <p className="text-sm py-8 text-center" style={{ color: 'var(--color-text-secondary)' }}>
