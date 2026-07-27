@@ -9,7 +9,7 @@ import {
   type ReservationStatus,
   STATUS_LABELS,
 } from '@/lib/api/reservations';
-import { getBranches, type Branch } from '@/lib/api/branches';
+import { useBranchStore } from '@/lib/store/branch.store';
 import { ReservationStatusBadge } from '@/components/shared/ReservationStatusBadge';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -31,8 +31,9 @@ export default function ReservationsPage() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'chain_admin';
 
+  const { selectedBranchId } = useBranchStore();
+
   const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [branches, setBranches] = useState<Branch[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [total, setTotal] = useState(0);
@@ -41,8 +42,9 @@ export default function ReservationsPage() {
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (isAdmin) getBranches().then(setBranches).catch(() => {});
-  }, [isAdmin]);
+    setPage(1);
+    setFilters((f) => ({ ...f, branchId: selectedBranchId || undefined }));
+  }, [selectedBranchId]);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -97,18 +99,6 @@ export default function ReservationsPage() {
         className="mb-5 p-4 rounded-lg border flex flex-wrap gap-3"
         style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
       >
-        {isAdmin && (
-          <select
-            value={filters.branchId ?? ''}
-            onChange={(e) => { setPage(1); setFilters((f) => ({ ...f, branchId: e.target.value || undefined })); }}
-            className="rounded-md border px-3 py-2 text-sm"
-            style={{ borderColor: 'var(--color-border-default)' }}
-          >
-            <option value="">בחר סניף</option>
-            {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
-        )}
-
         <select
           value={filters.status ?? ''}
           onChange={(e) => { setPage(1); setFilters((f) => ({ ...f, status: (e.target.value as ReservationStatus) || undefined })); }}
