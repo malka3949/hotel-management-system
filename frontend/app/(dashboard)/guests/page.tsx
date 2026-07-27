@@ -107,9 +107,10 @@ export default function GuestsPage() {
       )}
 
       {isAdmin && !filters.branchId ? (
-        <p className="text-sm py-8 text-center" style={{ color: 'var(--color-text-secondary)' }}>
-          בחר סניף כדי לצפות באורחים
-        </p>
+        <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
+          <div className="text-4xl mb-3">🏨</div>
+          <p className="text-sm">בחר סניף כדי לצפות באורחים</p>
+        </div>
       ) : loading ? (
         <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>טוען...</p>
       ) : (
