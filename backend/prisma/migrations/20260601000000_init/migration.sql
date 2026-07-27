@@ -88,7 +88,12 @@ ALTER TABLE "audit_logs" ADD CONSTRAINT "audit_logs_branch_id_fkey"
     ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- Audit log immutability: revoke mutation rights from the app DB user
-REVOKE UPDATE, DELETE ON audit_logs FROM hotel_user;
+-- hotel_user role may not exist in all environments (e.g. Render uses hotel_admin)
+DO $$ BEGIN
+  IF EXISTS (SELECT FROM pg_roles WHERE rolname = 'hotel_user') THEN
+    REVOKE UPDATE, DELETE ON audit_logs FROM hotel_user;
+  END IF;
+END $$;
 
 -- Belt-and-suspenders rules prevent modifications even in privileged sessions
 CREATE RULE no_update_audit_logs AS ON UPDATE TO audit_logs DO INSTEAD NOTHING;

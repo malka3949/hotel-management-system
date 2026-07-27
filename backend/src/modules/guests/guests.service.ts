@@ -206,14 +206,9 @@ export class GuestsService {
       select: GUEST_SELECT,
     });
 
-    const changedFields = (Object.keys(dto) as Array<keyof UpdateGuestDto>).reduce<
-      Record<string, { before: unknown; after: unknown }>
-    >((acc, key) => {
-      if (dto[key] !== undefined) {
-        acc[key] = { before: (guest as Record<string, unknown>)[key] ?? null, after: dto[key] ?? null };
-      }
-      return acc;
-    }, {});
+    const changedFields = (Object.keys(dto) as Array<keyof UpdateGuestDto>).filter(
+      (key) => dto[key] !== undefined,
+    );
 
     await this.audit.log({
       userId: requester.sub,
@@ -221,7 +216,7 @@ export class GuestsService {
       entityType: 'guest',
       entityId: updated.id,
       branchId: updated.branchId,
-      metadata: { changes: changedFields } as Prisma.InputJsonObject,
+      metadata: { changedFields } as Prisma.InputJsonObject,
       ipAddress,
       userAgent,
     });
@@ -253,6 +248,10 @@ export class GuestsService {
       this.prisma.guestDocument.updateMany({
         where: { guestId: id },
         data: { documentNumber: '[deleted]', issuingCountry: '[deleted]' },
+      }),
+      this.prisma.guestFeedback.updateMany({
+        where: { guestId: id },
+        data: { comment: null, aiSummary: null },
       }),
     ]);
 

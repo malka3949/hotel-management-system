@@ -179,7 +179,8 @@ export default function InvoicePage() {
           {canPay && (
             <button
               onClick={() => setShowAddCharge(true)}
-              className="rounded border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-blue-50"
+              className="rounded px-4 py-2 text-sm font-medium transition-colors"
+              style={{ border: '1px solid var(--color-accent)', color: 'var(--color-accent)' }}
             >
               הוסף חיוב
             </button>

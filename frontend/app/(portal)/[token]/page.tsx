@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { portalApi, ReservationDetail } from '@/lib/api/portal';
 import { AiConcierge } from '@/components/guest-portal/AiConcierge';
+import FeedbackForm from '@/components/guest-portal/FeedbackForm';
 
 function StatusBadge({ status }: { status: string }) {
   const labels: Record<string, string> = {
@@ -69,6 +70,8 @@ export default function PortalLandingPage() {
   const totalPaid = reservation.invoice?.payments?.reduce((s, p) => s + Number(p.amount), 0) ?? 0;
   const hasPartialPayment = totalPaid > 0 && reservation.invoice?.status === 'finalized';
   const remaining = Number(reservation.invoice?.total ?? 0) - totalPaid;
+
+  const showFeedback = ['checked_in', 'checked_out'].includes(reservation.status);
 
   return (
     <div className="space-y-6">
@@ -175,6 +178,8 @@ export default function PortalLandingPage() {
       </div>
 
       <AiConcierge token={token} />
+
+      {showFeedback && <FeedbackForm token={token} />}
     </div>
   );
 }

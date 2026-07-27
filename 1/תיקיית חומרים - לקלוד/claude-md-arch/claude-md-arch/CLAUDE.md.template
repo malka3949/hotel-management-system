@@ -1,0 +1,50 @@
+# CLAUDE.md
+
+Claude Code project instructions. Detail docs in `<repo>/CLAUDE/` — read on demand.
+
+## Repo
+
+<One-paragraph summary: what this repo is, primary stack, default architecture/version, anything deprecated. Mention the canonical "this is the default" so Claude doesn't add features to legacy code.>
+
+> **Non-obvious gotcha:** <e.g. column X in DB regularly drifts from reality; trust source Y over column Z.>
+
+## Default Test User / Fixture
+
+- **Email:** `<test@example.com>`
+- **Password:** `<...>`
+- **Customer / tenant:** `<...>`
+- **Data scope:** <which IDs / which dataset is safe to manipulate>
+
+Use this for any manual/browser/API test against real data.
+
+## Golden Rules
+
+- **PROGRESS.txt** — append after every significant change. Fields: timestamp, session_id, tasks, file changes. NEVER overwrite. Too big → rename `PROGRESS_OLD_{date}.txt`, start fresh.
+- **FOLLOWUPS.md / BACKLOG.md** — at the start of every session, read both. If FOLLOWUPS has open P0/P1 items, surface them before touching the new task. Found a bug not in current scope? Append one line to FOLLOWUPS (severity P0/P1/P2/P3, file:line, repro). Out-of-scope feature idea or mock/stub code? Append to BACKLOG. Never silently leave broken state.
+- **Past work lookup order** — check before re-investigating:
+  1. `PROGRESS.txt` + `PROGRESS_OLD_*.txt`
+  2. `git log --all --oneline --grep=<keyword>`
+  3. Memory search (claude-mem or equivalent)
+  4. `CLAUDE/*.md` + project `CLAUDE.md`
+- **Commit every significant change** — local repo, descriptive message. No push unless asked.
+- **READ INVARIANTS FIRST.** Before touching <risky-subsystem-1>, <risky-subsystem-2>, <risky-subsystem-3> → read `CLAUDE/invariants.md`. Single-source MUSTs/NEVERs derived from past incidents.
+- **"Verified" = real run, not compile.** Type-check / build pass = syntax OK only. Mark verified only after running against a live env. Say "compiles, untested" until that happens.
+- **Sync CLAUDE.md with code.** New port/service/env/endpoint/file rename/schema/table/script/auth flow/deploy step → update matching doc in the same commit. Targets: root `CLAUDE.md`, `CLAUDE/<topic>.md`, project `CLAUDE.md`. Skip only: typos, comment edits, pure internal refactor.
+
+## Detail Docs (read when relevant)
+
+| File | When to read |
+|------|--------------|
+| `CLAUDE/invariants.md` | **MUSTs/NEVERs** — load-bearing rules from incidents. Read before risky edits. |
+| `CLAUDE/lessons-learned.md` | Backward-looking incident log, grouped by subsystem. |
+| `CLAUDE/system-flows.md` | Cross-system data flows: topology, connection matrix, numbered flows. |
+| `CLAUDE/servers.md` | SSH keys, hosts, environment topology. |
+| `CLAUDE/services.md` | Port map, containers, dev commands, tests, logs. |
+| `CLAUDE/deploy.md` | Build/push, release flow. |
+| `CLAUDE/db.md` | Schemas, connection strings, keys. |
+| `CLAUDE/<subsystem>.md` | <one row per major subsystem> |
+
+## Per-project Refs
+
+- `<project-a>/CLAUDE.md` — <project-a> guide
+- `<project-b>/CLAUDE.md` — <project-b> guide

@@ -36,14 +36,11 @@ async function fetchCsrfToken(): Promise<string> {
 
 export async function login(email: string, password: string): Promise<AuthUser> {
   const csrfToken = await fetchCsrfToken();
-  const data = await apiFetch<{ user: AuthUser; accessToken: string }>('/v1/auth/login', {
+  const data = await apiFetch<{ user: AuthUser }>('/v1/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password }),
     headers: { 'X-CSRF-Token': csrfToken },
   });
-  if (data.accessToken && typeof localStorage !== 'undefined') {
-    localStorage.setItem('auth_token', data.accessToken);
-  }
   return data.user;
 }
 
@@ -53,9 +50,6 @@ export async function logout(): Promise<void> {
     method: 'POST',
     headers: { 'X-CSRF-Token': csrfToken },
   });
-  if (typeof localStorage !== 'undefined') {
-    localStorage.removeItem('auth_token');
-  }
 }
 
 export async function refreshToken(): Promise<void> {
@@ -104,7 +98,4 @@ export async function revokeAllSessions(): Promise<void> {
     method: 'POST',
     headers: { 'X-CSRF-Token': csrfToken },
   });
-  if (typeof localStorage !== 'undefined') {
-    localStorage.removeItem('auth_token');
-  }
 }

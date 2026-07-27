@@ -137,7 +137,7 @@ export default function ChainDashboardPage() {
                               b.occupancyPct >= 80
                                 ? '#059669'
                                 : b.occupancyPct >= 50
-                                  ? '#CA8A04'
+                                  ? '#C4A253'
                                   : '#DC2626',
                           }}
                         />

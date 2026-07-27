@@ -36,11 +36,11 @@ export function InvoiceSummary({ invoice }: Props) {
           className="mb-3 rounded-md px-3 py-2 text-sm space-y-1"
           style={{ backgroundColor: '#FEF9C3', border: '1px solid #FDE047' }}
         >
-          <div className="flex justify-between font-medium" style={{ color: '#854D0E' }}>
+          <div className="flex justify-between font-medium" style={{ color: 'var(--color-accent)' }}>
             <span>שולם מקוון</span>
             <span>₪{totalPaid.toLocaleString('he-IL', { minimumFractionDigits: 2 })}</span>
           </div>
-          <div className="flex justify-between font-bold" style={{ color: '#B45309' }}>
+          <div className="flex justify-between font-bold" style={{ color: 'var(--color-accent)' }}>
             <span>יתרה לגבייה</span>
             <span>₪{remaining.toLocaleString('he-IL', { minimumFractionDigits: 2 })}</span>
           </div>

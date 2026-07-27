@@ -33,28 +33,28 @@ export default function FeedbackInsights() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div className="text-[#475569] text-sm p-4">טוען...</div>;
+  if (loading) return <div className="text-[var(--color-text-secondary)] text-sm p-4">טוען...</div>;
   if (!data || data.total === 0)
-    return <div className="text-[#475569] text-sm p-4">אין ביקורות עדיין</div>;
+    return <div className="text-[var(--color-text-secondary)] text-sm p-4">אין ביקורות עדיין</div>;
 
   return (
     <div dir="rtl" className="space-y-4">
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-[#1E3A8A]">{data.averageRating}</p>
-          <p className="text-xs text-[#475569] mt-1">ממוצע ציון</p>
+        <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-[var(--color-primary)]">{data.averageRating}</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1">ממוצע ציון</p>
         </div>
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-[#1E3A8A]">{data.total}</p>
-          <p className="text-xs text-[#475569] mt-1">סה&quot;כ ביקורות</p>
+        <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl p-4 text-center">
+          <p className="text-2xl font-bold text-[var(--color-primary)]">{data.total}</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1">סה&quot;כ ביקורות</p>
         </div>
-        <div className="bg-white border border-[#E2E8F0] rounded-xl p-4 text-center">
+        <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl p-4 text-center">
           <p className="text-2xl font-bold text-green-600">{data.sentimentBreakdown['positive'] ?? 0}</p>
-          <p className="text-xs text-[#475569] mt-1">חיוביות</p>
+          <p className="text-xs text-[var(--color-text-secondary)] mt-1">חיוביות</p>
         </div>
       </div>
 
-      <div className="bg-white border border-[#E2E8F0] rounded-xl p-4">
+      <div className="bg-[var(--color-bg-surface)] border border-[var(--color-border-default)] rounded-xl p-4">
         <h4 className="text-sm font-semibold text-[#0F172A] mb-3">ביקורות אחרונות</h4>
         <div className="space-y-3">
           {data.recent.map((f, i) => (
@@ -67,8 +67,8 @@ export default function FeedbackInsights() {
                   </span>
                 )}
               </div>
-              {f.aiSummary && <p className="text-xs text-[#475569] italic">{f.aiSummary}</p>}
-              {f.comment && !f.aiSummary && <p className="text-xs text-[#475569]">{f.comment}</p>}
+              {f.aiSummary && <p className="text-xs text-[var(--color-text-secondary)] italic">{f.aiSummary}</p>}
+              {f.comment && !f.aiSummary && <p className="text-xs text-[var(--color-text-secondary)]">{f.comment}</p>}
             </div>
           ))}
         </div>

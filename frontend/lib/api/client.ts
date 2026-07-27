@@ -1,3 +1,6 @@
+import { toast } from 'sonner';
+import { translateError } from './error-messages';
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '/api';
 
 let refreshPromise: Promise<boolean> | null = null;
@@ -59,12 +62,25 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     });
   };
 
-  let res = await doRequest();
+  let res: Response;
+  try {
+    res = await doRequest();
+  } catch {
+    const msg = 'אין חיבור לאינטרנט או שהשרת אינו מגיב';
+    if (typeof window !== 'undefined') toast.error(msg);
+    throw new Error(msg);
+  }
 
   if (res.status === 401) {
     const refreshed = await doRefresh();
     if (refreshed) {
-      res = await doRequest();
+      try {
+        res = await doRequest();
+      } catch {
+        const msg = 'אין חיבור לאינטרנט או שהשרת אינו מגיב';
+        if (typeof window !== 'undefined') toast.error(msg);
+        throw new Error(msg);
+      }
     }
     if (res.status === 401 && typeof window !== 'undefined') {
       window.location.href = '/login';
@@ -73,7 +89,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   }
 
   if (!res.ok && res.headers.get('content-type')?.includes('text/html')) {
-    throw new Error('השרת אינו זמין');
+    const msg = 'השרת אינו זמין';
+    if (typeof window !== 'undefined') toast.error(msg);
+    throw new Error(msg);
   }
 
   const body = (await res.json()) as {
@@ -84,7 +102,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
   };
 
   if (!res.ok || !body.success) {
-    throw new Error(body.message ?? body.error ?? 'Request failed');
+    const msg = translateError(body.message ?? body.error ?? '');
+    if (typeof window !== 'undefined') toast.error(msg);
+    throw new Error(msg);
   }
 
   return body.data as T;

@@ -55,11 +55,14 @@ export class CheckInService {
     if (!reservation) throw new NotFoundException('RESERVATION_NOT_FOUND');
     this.assertBranchAccess(reservation.branchId, requester);
 
+    let currentVersion = reservation.version;
     if (reservation.status === 'pending') {
-      await this.prisma.reservation.update({
+      const confirmed = await this.prisma.reservation.update({
         where: { id: reservationId },
         data: { status: 'confirmed', version: { increment: 1 } },
+        select: { version: true },
       });
+      currentVersion = confirmed.version;
     } else if (reservation.status !== 'confirmed') {
       throw new BadRequestException('RESERVATION_MUST_BE_CONFIRMED');
     }
@@ -81,7 +84,7 @@ export class CheckInService {
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const res = await tx.reservation.update({
-        where: { id: reservationId, version: reservation.version },
+        where: { id: reservationId, version: currentVersion },
         data: { status: 'checked_in', version: { increment: 1 } },
         include: RESERVATION_INCLUDE,
       });
@@ -100,26 +103,29 @@ export class CheckInService {
         },
       });
 
-      await tx.invoice.create({
-        data: {
-          reservationId,
-          branchId: reservation.branchId,
-          guestId: reservation.guestId,
-          status: 'draft',
-          subtotal,
-          tax,
-          total,
-          lineItems: {
-            create: {
-              description: `לינה ${nights} לילות — חדר ${reservation.room.number}`,
-              quantity: nights,
-              unitPrice: netNightly,
-              total: subtotal,
-              itemType: 'room_charge',
+      const existingInvoice = await tx.invoice.findUnique({ where: { reservationId }, select: { id: true } });
+      if (!existingInvoice) {
+        await tx.invoice.create({
+          data: {
+            reservationId,
+            branchId: reservation.branchId,
+            guestId: reservation.guestId,
+            status: 'draft',
+            subtotal,
+            tax,
+            total,
+            lineItems: {
+              create: {
+                description: `לינה ${nights} לילות — חדר ${reservation.room.number}`,
+                quantity: nights,
+                unitPrice: netNightly,
+                total: subtotal,
+                itemType: 'room_charge',
+              },
             },
           },
-        },
-      });
+        });
+      }
 
       return res;
     });

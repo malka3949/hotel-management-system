@@ -99,7 +99,8 @@ export function HousekeepingTaskCard({ task, onUpdate }: Props) {
             <button
               onClick={() => void handleStart()}
               disabled={loading}
-              className="flex-1 bg-[#1E3A8A] text-white text-sm py-2 rounded-lg font-medium disabled:opacity-50"
+              className="flex-1 text-white text-sm py-2 rounded-lg font-medium disabled:opacity-50"
+              style={{ backgroundColor: 'var(--color-primary)' }}
             >
               {loading ? 'מעדכן...' : 'התחל ניקיון'}
             </button>

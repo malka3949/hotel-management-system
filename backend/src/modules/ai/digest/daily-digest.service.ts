@@ -73,11 +73,11 @@ export class DailyDigestService {
       מנהל: manager.name,
       אורחים_כעת: currentGuests,
       תפוסה: `${occupiedRooms}/${totalRooms} (${totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0}%)`,
-      צק_אין_היום: todayCheckIns.map((r) => ({ אורח: r.guest.fullName, חדר: r.room.number, הערות: r.notes ?? '' })),
-      צק_אאוט_היום: todayCheckOuts.map((r) => ({ אורח: r.guest.fullName, חדר: r.room.number })),
+      צק_אין_היום: todayCheckIns.map((r, i) => ({ אורח: `אורח_${i + 1}`, חדר: r.room.number })),
+      צק_אאוט_היום: todayCheckOuts.map((r, i) => ({ אורח: `אורח_${i + 1}`, חדר: r.room.number })),
       הכנסות_אתמול: `${Number(yesterdayRevenue._sum.total ?? 0).toLocaleString('he-IL')} ₪ (${yesterdayRevenue._count.id} חשבוניות)`,
       ביטולים_היום: cancellations,
-      בקשות_מיוחדות: specialRequests.map((r) => ({ אורח: r.guest.fullName, הערה: r.notes })),
+      בקשות_מיוחדות: specialRequests.map((r, i) => ({ אורח: `אורח_${i + 1}`, הערה: r.notes ? '[בקשה קיימת]' : '' })),
     };
 
     if (!this.ai.isAvailable()) {

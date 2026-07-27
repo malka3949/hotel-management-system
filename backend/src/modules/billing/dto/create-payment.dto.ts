@@ -30,6 +30,6 @@ export class CreatePaymentDto {
   amount?: number;
 
   @IsOptional()
-  @IsUUID()
+  @IsUUID('all')
   branchId?: string;
 }

@@ -56,7 +56,7 @@ export function OccupancyChart({ data, loading }: OccupancyChartProps) {
           <Line
             type="monotone"
             dataKey="occupancyPct"
-            stroke="#1E3A8A"
+            stroke="#C4A253"
             strokeWidth={2}
             dot={false}
             activeDot={{ r: 4 }}

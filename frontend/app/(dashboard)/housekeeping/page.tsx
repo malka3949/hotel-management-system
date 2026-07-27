@@ -53,11 +53,12 @@ export default function HousekeepingPage() {
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+            className="px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
+            style={
               filter === f
-                ? 'bg-[#1E3A8A] text-white'
-                : 'bg-white text-[#475569] border border-[#E2E8F0]'
-            }`}
+                ? { backgroundColor: 'var(--color-primary)', color: '#fff' }
+                : { backgroundColor: 'var(--color-bg-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border-default)' }
+            }
           >
             {f === 'today' ? 'היום' : 'כל הממתינות'}
           </button>

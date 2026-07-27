@@ -1,0 +1,21 @@
+# Databases
+
+## Connections
+
+| DB | Host | Port | User | Notes |
+|----|------|------|------|-------|
+| ... | ... | ... | ... | ... |
+
+## Tables (canonical schemas)
+
+### `<table_name>`
+
+| Column | Type | Notes |
+|--------|------|-------|
+| ... | ... | ... |
+
+## Redis / cache keys
+
+| Key pattern | Owner | TTL | Purpose |
+|-------------|-------|-----|---------|
+| ... | ... | ... | ... |

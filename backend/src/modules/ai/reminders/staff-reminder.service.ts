@@ -54,20 +54,19 @@ export class StaffReminderService {
     if (!manager) return;
     if (!this.ai.isAvailable()) return;
 
+    const HEALTH_PATTERN = /אלרג|צליאק|סוכרת|לחץ דם|לב |כאב|תרופ|נכות|כיסא גלגל|עיוור|חירש|כבד שמיעה|מוגבל/i;
+    const sanitizedArrivals = arrivals.map((r, i) => ({
+      אורח: `אורח_${i + 1}`,
+      חדר: `${r.room.number} (${r.room.roomType.name})`,
+      הערה: r.notes && HEALTH_PATTERN.test(r.notes) ? '[הערה מסולקת — מידע רגיש]' : r.notes,
+    }));
+
     const prompt = `אתה מנהל תפעול מלון. כתוב תזכורת לצוות לפני שתנועה מחר.
-הדגש הערות מיוחדות שדורשות הכנה (אלרגיות, יום הולדת, נגישות, בקשות מיוחדות).
+הדגש הערות מיוחדות שדורשות הכנה (בקשות מיוחדות, שירותים נוספים).
 תכלית: הצוות יודע מה להכין. סגנון: רשימה תמציתית, עברית.
 
 אורחים מגיעים מחר עם הערות מיוחדות:
-${JSON.stringify(
-  arrivals.map((r) => ({
-    אורח: r.guest.fullName,
-    חדר: `${r.room.number} (${r.room.roomType.name})`,
-    הערה: r.notes,
-  })),
-  null,
-  2,
-)}`;
+${JSON.stringify(sanitizedArrivals, null, 2)}`;
 
     const body = await this.ai.generateText(prompt);
 

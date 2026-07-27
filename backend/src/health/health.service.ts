@@ -6,8 +6,6 @@ export interface HealthStatus {
   status: 'ok' | 'degraded';
   db: 'up' | 'down';
   redis: 'up' | 'down' | 'not_configured';
-  version: string;
-  uptime: number;
 }
 
 @Injectable()
@@ -22,13 +20,7 @@ export class HealthService {
 
     const status = db === 'up' ? 'ok' : 'degraded';
 
-    return {
-      status,
-      db,
-      redis,
-      version: process.env.npm_package_version ?? '1.0.0',
-      uptime: Math.floor(process.uptime()),
-    };
+    return { status, db, redis };
   }
 
   async isReady(): Promise<boolean> {

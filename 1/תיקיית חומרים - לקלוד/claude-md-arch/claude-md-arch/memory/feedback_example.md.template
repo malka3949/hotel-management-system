@@ -1,0 +1,11 @@
+---
+name: <short title>
+description: <one-line — used to decide relevance in future conversations>
+type: feedback
+---
+
+<The rule itself in one sentence.>
+
+**Why:** <reason the user gave — past incident, strong preference, validated trade-off>
+
+**How to apply:** <when/where this kicks in — be concrete about the trigger condition>

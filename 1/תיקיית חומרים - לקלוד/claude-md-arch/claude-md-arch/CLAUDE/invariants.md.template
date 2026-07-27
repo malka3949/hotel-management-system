@@ -1,0 +1,40 @@
+# Invariants
+
+Load-bearing MUSTs and NEVERs derived from real incidents. Each rule has a **why** so future-you can judge edge cases.
+
+Read before touching: <list the risky surfaces — send pipelines, migrations, auth, payments, etc.>
+
+---
+
+## <Subsystem A>
+
+### MUST
+
+- **<Rule>.** Why: <past incident or constraint>. How to apply: <when this kicks in>.
+
+### NEVER
+
+- **<Rule>.** Why: <...>. How to apply: <...>.
+
+---
+
+## <Subsystem B>
+
+### MUST
+
+- **<Rule>.** Why: <...>. How to apply: <...>.
+
+### NEVER
+
+- **<Rule>.** Why: <...>. How to apply: <...>.
+
+---
+
+## Adding a new invariant
+
+A new entry earns its place only if:
+1. There's a real incident or constraint (not a hypothetical).
+2. Following the rule is non-obvious from reading the code.
+3. The rule is stable — not tied to a current refactor.
+
+Format: rule, then `Why:` and `How to apply:` lines. No prose.

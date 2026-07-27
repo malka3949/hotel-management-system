@@ -1,16 +1,20 @@
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* ── Design System Tokens ── */
 @theme {
-  /* Colors */
-  --color-primary:         #1E3A8A;
-  --color-primary-light:   #3B82F6;
-  --color-accent:          #CA8A04;
-  --color-bg-base:         #F8FAFC;
-  --color-bg-surface:      #FFFFFF;
-  --color-border-default:  #E2E8F0;
-  --color-text-primary:    #0F172A;
-  --color-text-secondary:  #475569;
+  /* Core palette — preview-10-pro */
+  --color-primary:         #1C1C1E;   /* sidebar, headings */
+  --color-primary-light:   #2C2C2E;   /* sidebar hover */
+  --color-accent:          #C4A253;   /* gold — CTAs, active nav */
+  --color-accent-hover:    #B8923F;   /* gold hover */
+  --color-bg-base:         #F6F4F0;   /* warm stone page bg */
+  --color-bg-surface:      #FFFFFF;   /* cards, panels */
+  --color-bg-sidebar:      #1C1C1E;   /* sidebar */
+  --color-border-default:  #E5DFDA;   /* warm border */
+  --color-text-primary:    #1A1A1A;   /* headings */
+  --color-text-secondary:  #6B6560;   /* supporting text */
+  --color-text-muted:      #9C9490;   /* placeholders */
 
   /* Status colors */
   --color-status-available:    #16A34A;
@@ -27,7 +31,7 @@
   --color-status-checked-out: #374151;
   --color-status-no-show:     #DC2626;
 
-  /* Spacing scale */
+  /* Spacing */
   --spacing-sidebar: 16rem;
 
   /* Border radius */
@@ -46,35 +50,36 @@
 body {
   background-color: var(--color-bg-base);
   color: var(--color-text-primary);
-  font-family: system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  font-family: 'Heebo', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
   direction: rtl;
+  -webkit-font-smoothing: antialiased;
 }
 
-/* ── shadcn/ui CSS Variables (mapped to design system) ── */
+/* ── shadcn/ui CSS Variables ── */
 :root {
-  --background: 248 250 252;        /* bg-base */
-  --foreground: 15 23 42;           /* text-primary */
-  --card: 255 255 255;              /* bg-surface */
-  --card-foreground: 15 23 42;
+  --background: 246 244 240;        /* bg-base warm stone */
+  --foreground: 26 26 26;           /* text-primary */
+  --card: 255 255 255;
+  --card-foreground: 26 26 26;
   --popover: 255 255 255;
-  --popover-foreground: 15 23 42;
-  --primary: 30 58 138;             /* #1E3A8A */
+  --popover-foreground: 26 26 26;
+  --primary: 28 28 30;              /* #1C1C1E */
   --primary-foreground: 255 255 255;
-  --secondary: 226 232 240;         /* border-default as secondary bg */
-  --secondary-foreground: 15 23 42;
-  --muted: 226 232 240;
-  --muted-foreground: 71 85 105;    /* text-secondary */
-  --accent: 202 138 4;              /* #CA8A04 */
+  --secondary: 229 223 218;         /* border-default */
+  --secondary-foreground: 26 26 26;
+  --muted: 229 223 218;
+  --muted-foreground: 107 101 96;   /* text-secondary */
+  --accent: 196 162 83;             /* #C4A253 gold */
   --accent-foreground: 255 255 255;
   --destructive: 220 38 38;
   --destructive-foreground: 255 255 255;
-  --border: 226 232 240;            /* border-default */
-  --input: 226 232 240;
-  --ring: 30 58 138;
+  --border: 229 223 218;
+  --input: 229 223 218;
+  --ring: 196 162 83;               /* gold focus ring */
   --radius: 0.5rem;
 }
 
-/* ── Utility aliases (for Tailwind v4 class usage) ── */
+/* ── Utility aliases ── */
 .bg-base    { background-color: var(--color-bg-base); }
 .bg-surface { background-color: var(--color-bg-surface); }
 .text-primary   { color: var(--color-text-primary); }

@@ -30,6 +30,8 @@ import { StaffReminderModule } from './modules/ai/reminders/staff-reminder.modul
 import { RoomUpgradeModule } from './modules/ai/upgrade/room-upgrade.module';
 import { FeedbackModule } from './modules/ai/feedback/feedback.module';
 import { AiTriggersModule } from './modules/ai/triggers/ai-triggers.module';
+import { PublicBookingModule } from './modules/public-booking/public-booking.module';
+import { UploadsModule } from './modules/uploads/uploads.module';
 
 @Module({
   providers: [HealthService],
@@ -73,6 +75,8 @@ import { AiTriggersModule } from './modules/ai/triggers/ai-triggers.module';
     RoomUpgradeModule,
     FeedbackModule,
     AiTriggersModule,
+    PublicBookingModule,
+    UploadsModule,
   ],
   controllers: [HealthController],
 })

@@ -12,7 +12,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { v2 as cloudinary } from 'cloudinary';
+import { v2 as cloudinary, UploadApiResponse, UploadApiErrorResponse } from 'cloudinary';
 import { memoryStorage } from 'multer';
 
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -46,12 +46,15 @@ export class UploadsController {
       api_secret: process.env.CLOUDINARY_API_SECRET,
     });
 
-    const result = await new Promise<{ secure_url: string }>((resolve, reject) => {
+    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
       cloudinary.uploader
-        .upload_stream({ folder: 'hotel-management', resource_type: 'image' }, (err, res) => {
-          if (err || !res) return reject(err ?? new Error('Upload failed'));
-          resolve(res);
-        })
+        .upload_stream(
+          { folder: 'hotel-management', resource_type: 'image' },
+          (err: UploadApiErrorResponse | undefined, res: UploadApiResponse | undefined) => {
+            if (err || !res) return reject(err ?? new Error('Upload failed'));
+            resolve(res);
+          },
+        )
         .end(file.buffer);
     });
 

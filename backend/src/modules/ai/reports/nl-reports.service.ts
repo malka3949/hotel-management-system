@@ -114,26 +114,26 @@ export class NlReportsService {
         })),
       },
       אורחים_כעת_במלון: currentGuests,
-      צ_ק_אין_היום: todayCheckIns.map((r) => ({
-        אורח: r.guest.fullName,
+      צ_ק_אין_היום: todayCheckIns.map((r, i) => ({
+        אורח: `אורח_${i + 1}`,
         חדר: r.room.number,
         סוג: r.room.roomType.name,
         עד: r.checkOutDate.toLocaleDateString('he-IL'),
       })),
-      צ_ק_אאוט_היום: todayCheckOuts.map((r) => ({
-        אורח: r.guest.fullName,
+      צ_ק_אאוט_היום: todayCheckOuts.map((r, i) => ({
+        אורח: `אורח_${i + 1}`,
         חדר: r.room.number,
       })),
-      הזמנות_אחרונות: recentReservations.map((r) => ({
-        אורח: r.guest.fullName,
+      הזמנות_אחרונות: recentReservations.map((r, i) => ({
+        אורח: `אורח_${i + 1}`,
         חדר: `${r.room.number} (${r.room.roomType.name})`,
         כניסה: r.checkInDate.toLocaleDateString('he-IL'),
         יציאה: r.checkOutDate.toLocaleDateString('he-IL'),
         סטטוס: r.status,
         סכום: r.invoice ? Number(r.invoice.total).toLocaleString('he-IL') + ' ₪' : 'אין חשבונית',
       })),
-      הזמנות_עתידיות: upcomingReservations.map((r) => ({
-        אורח: r.guest.fullName,
+      הזמנות_עתידיות: upcomingReservations.map((r, i) => ({
+        אורח: `אורח_${i + 1}`,
         חדר: `${r.room.number} (${r.room.roomType.name})`,
         כניסה: r.checkInDate.toLocaleDateString('he-IL'),
         יציאה: r.checkOutDate.toLocaleDateString('he-IL'),
@@ -149,7 +149,7 @@ export class NlReportsService {
 
     const systemPrompt = `אתה אנליסט נתונים של מלון. ענה על שאלות המשתמש בעברית בצורה ברורה ותמציתית.
 
-המשתמש: ${user.email} | תפקיד: ${roleLabel}
+תפקיד: ${roleLabel}
 ${branchId ? `הנתונים מוגבלים לסניף: ${branchId}` : 'הנתונים כוללים את כל הסניפים ברשת'}
 
 נתוני המלון (מעודכנים לרגע זה):
