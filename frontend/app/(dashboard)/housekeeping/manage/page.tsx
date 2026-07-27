@@ -124,7 +124,7 @@ export default function HousekeepingManagePage() {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-[#0F172A]">{isAdmin ? 'ניהול ניקוי — כל הרשת' : 'ניהול ניקוי'}</h1>
+        <h1 className="text-2xl font-bold" style={{ color: 'var(--color-text-primary)' }}>{isAdmin ? 'ניהול ניקוי — כל הרשת' : 'ניהול ניקוי'}</h1>
         <div className="flex items-center gap-3">
           <button
             onClick={() => setShowCreate(!showCreate)}
@@ -138,7 +138,7 @@ export default function HousekeepingManagePage() {
       </div>
 
       {isAdmin && !selectedBranchId ? (
-        <div className="text-center py-16 text-[#475569]">
+        <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
           <div className="text-4xl mb-3">🏨</div>
           <p>בחר סניף כדי לצפות משימות ניקוי</p>
         </div>
@@ -147,13 +147,15 @@ export default function HousekeepingManagePage() {
           {showCreate && (
             <form
               onSubmit={(e) => void handleCreate(e)}
-              className="bg-white rounded-lg border border-[#E2E8F0] p-4 mb-6 grid grid-cols-2 gap-3"
+              className="rounded-lg border p-4 mb-6 grid grid-cols-2 gap-3"
+              style={{ borderColor: 'var(--color-border-default)', backgroundColor: 'var(--color-bg-surface)' }}
             >
-              <div className="col-span-2 font-medium text-[#0F172A] text-sm">משימה חדשה</div>
+              <div className="col-span-2 font-medium text-sm" style={{ color: 'var(--color-text-primary)' }}>משימה חדשה</div>
               <div>
-                <label className="text-xs text-[#475569] block mb-1">חדר</label>
+                <label className="text-xs block mb-1" style={{ color: 'var(--color-text-secondary)' }}>חדר</label>
                 <select
-                  className="w-full border border-[#E2E8F0] rounded px-2 py-1.5 text-sm bg-white"
+                  className="w-full border rounded px-2 py-1.5 text-sm bg-white"
+                  style={{ borderColor: 'var(--color-border-default)' }}
                   value={createForm.roomId ?? ''}
                   onChange={(e) => setCreateForm((f) => ({ ...f, roomId: e.target.value }))}
                   required
@@ -170,19 +172,21 @@ export default function HousekeepingManagePage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-[#475569] block mb-1">תאריך מתוכנן</label>
+                <label className="text-xs block mb-1" style={{ color: 'var(--color-text-secondary)' }}>תאריך מתוכנן</label>
                 <input
                   type="date"
-                  className="w-full border border-[#E2E8F0] rounded px-2 py-1.5 text-sm"
+                  className="w-full border rounded px-2 py-1.5 text-sm"
+                  style={{ borderColor: 'var(--color-border-default)' }}
                   value={createForm.scheduledFor ?? today}
                   onChange={(e) => setCreateForm((f) => ({ ...f, scheduledFor: e.target.value }))}
                   required
                 />
               </div>
               <div>
-                <label className="text-xs text-[#475569] block mb-1">עדיפות</label>
+                <label className="text-xs block mb-1" style={{ color: 'var(--color-text-secondary)' }}>עדיפות</label>
                 <select
-                  className="w-full border border-[#E2E8F0] rounded px-2 py-1.5 text-sm"
+                  className="w-full border rounded px-2 py-1.5 text-sm"
+                  style={{ borderColor: 'var(--color-border-default)' }}
                   value={createForm.priority ?? 'normal'}
                   onChange={(e) =>
                     setCreateForm((f) => ({
@@ -196,9 +200,10 @@ export default function HousekeepingManagePage() {
                 </select>
               </div>
               <div>
-                <label className="text-xs text-[#475569] block mb-1">שייך ל</label>
+                <label className="text-xs block mb-1" style={{ color: 'var(--color-text-secondary)' }}>שייך ל</label>
                 <select
-                  className="w-full border border-[#E2E8F0] rounded px-2 py-1.5 text-sm"
+                  className="w-full border rounded px-2 py-1.5 text-sm"
+                  style={{ borderColor: 'var(--color-border-default)' }}
                   value={createForm.assignedTo ?? ''}
                   onChange={(e) => setCreateForm((f) => ({ ...f, assignedTo: e.target.value || undefined }))}
                 >
@@ -209,9 +214,10 @@ export default function HousekeepingManagePage() {
                 </select>
               </div>
               <div className="col-span-2">
-                <label className="text-xs text-[#475569] block mb-1">הערות</label>
+                <label className="text-xs block mb-1" style={{ color: 'var(--color-text-secondary)' }}>הערות</label>
                 <input
-                  className="w-full border border-[#E2E8F0] rounded px-2 py-1.5 text-sm"
+                  className="w-full border rounded px-2 py-1.5 text-sm"
+                  style={{ borderColor: 'var(--color-border-default)' }}
                   value={createForm.notes ?? ''}
                   onChange={(e) => setCreateForm((f) => ({ ...f, notes: e.target.value }))}
                 />
@@ -220,7 +226,8 @@ export default function HousekeepingManagePage() {
                 <button
                   type="button"
                   onClick={() => setShowCreate(false)}
-                  className="border border-[#E2E8F0] text-[#475569] px-3 py-1.5 rounded text-sm"
+                  className="border px-3 py-1.5 rounded text-sm"
+                  style={{ borderColor: 'var(--color-border-default)', color: 'var(--color-text-secondary)' }}
                 >
                   ביטול
                 </button>
@@ -239,7 +246,8 @@ export default function HousekeepingManagePage() {
           {/* Filters */}
           <div className="flex flex-wrap gap-3 mb-4">
             <select
-              className="border border-[#E2E8F0] rounded px-2 py-1.5 text-sm bg-white"
+              className="border rounded px-2 py-1.5 text-sm bg-white"
+              style={{ borderColor: 'var(--color-border-default)' }}
               value={filterStatus}
               onChange={(e) => setFilterStatus(e.target.value as HousekeepingTaskStatus | '')}
             >
@@ -249,7 +257,8 @@ export default function HousekeepingManagePage() {
               ))}
             </select>
             <select
-              className="border border-[#E2E8F0] rounded px-2 py-1.5 text-sm bg-white"
+              className="border rounded px-2 py-1.5 text-sm bg-white"
+              style={{ borderColor: 'var(--color-border-default)' }}
               value={filterPriority}
               onChange={(e) => setFilterPriority(e.target.value as HousekeepingPriority | '')}
             >
@@ -259,7 +268,8 @@ export default function HousekeepingManagePage() {
               ))}
             </select>
             <select
-              className="border border-[#E2E8F0] rounded px-2 py-1.5 text-sm bg-white"
+              className="border rounded px-2 py-1.5 text-sm bg-white"
+              style={{ borderColor: 'var(--color-border-default)' }}
               value={filterAssigned}
               onChange={(e) => setFilterAssigned(e.target.value)}
             >
@@ -270,40 +280,41 @@ export default function HousekeepingManagePage() {
             </select>
             <input
               type="date"
-              className="border border-[#E2E8F0] rounded px-2 py-1.5 text-sm bg-white"
+              className="border rounded px-2 py-1.5 text-sm bg-white"
+              style={{ borderColor: 'var(--color-border-default)' }}
               value={filterDate}
               onChange={(e) => setFilterDate(e.target.value)}
             />
           </div>
 
-          {loading && <p className="text-sm text-[#475569]">טוען...</p>}
+          {loading && <p className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>טוען...</p>}
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           {!loading && !error && (
-            <div className="bg-white rounded-lg border border-[#E2E8F0] overflow-hidden">
+            <div className="rounded-lg border overflow-hidden" style={{ borderColor: 'var(--color-border-default)' }}>
               <table className="w-full text-sm">
-                <thead className="bg-[#F8FAFC] border-b border-[#E2E8F0]">
+                <thead style={{ backgroundColor: 'var(--color-bg-base)', borderBottom: '1px solid var(--color-border-default)' }}>
                   <tr>
-                    <th className="text-right px-4 py-3 font-medium text-[#475569]">חדר</th>
-                    <th className="text-right px-4 py-3 font-medium text-[#475569]">עדיפות</th>
-                    <th className="text-right px-4 py-3 font-medium text-[#475569]">סטטוס</th>
-                    <th className="text-right px-4 py-3 font-medium text-[#475569]">תאריך</th>
-                    <th className="text-right px-4 py-3 font-medium text-[#475569]">מטפל</th>
-                    <th className="text-right px-4 py-3 font-medium text-[#475569]">פעולות</th>
+                    <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-text-secondary)' }}>חדר</th>
+                    <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-text-secondary)' }}>עדיפות</th>
+                    <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-text-secondary)' }}>סטטוס</th>
+                    <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-text-secondary)' }}>תאריך</th>
+                    <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-text-secondary)' }}>מטפל</th>
+                    <th className="text-right px-4 py-3 font-medium" style={{ color: 'var(--color-text-secondary)' }}>פעולות</th>
                   </tr>
                 </thead>
                 <tbody>
                   {tasks.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-[#475569]">אין משימות</td>
+                      <td colSpan={6} className="text-center py-8" style={{ color: 'var(--color-text-secondary)' }}>אין משימות</td>
                     </tr>
                   )}
                   {tasks.map((task) => (
-                    <tr key={task.id} className="border-b border-[#E2E8F0] last:border-0 hover:bg-[#F8FAFC]">
+                    <tr key={task.id} className="border-b last:border-0 hover:bg-[var(--color-bg-base)]" style={{ borderColor: 'var(--color-border-default)' }}>
                       <td className="px-4 py-3">
-                        <span className="font-medium text-[#0F172A]">חדר {task.room.number}</span>
+                        <span className="font-medium" style={{ color: 'var(--color-text-primary)' }}>חדר {task.room.number}</span>
                         {task.room.floor != null && (
-                          <span className="text-[#475569] text-xs mr-1">קומה {task.room.floor}</span>
+                          <span className="text-xs mr-1" style={{ color: 'var(--color-text-secondary)' }}>קומה {task.room.floor}</span>
                         )}
                         {task.createdBy === null && (
                           <span className="mr-1 text-xs" title="נוצר אוטומטית">🧹</span>
@@ -312,14 +323,15 @@ export default function HousekeepingManagePage() {
                       <td className="px-4 py-3">
                         <PriorityBadge priority={task.priority} />
                       </td>
-                      <td className="px-4 py-3 text-[#475569]">{statusLabels[task.status]}</td>
-                      <td className="px-4 py-3 text-[#475569]">
+                      <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>{statusLabels[task.status]}</td>
+                      <td className="px-4 py-3" style={{ color: 'var(--color-text-secondary)' }}>
                         {new Date(task.scheduledFor).toLocaleDateString('he-IL')}
                       </td>
                       <td className="px-4 py-3">
                         {task.status === 'pending' || task.status === 'in_progress' ? (
                           <select
-                            className="border border-[#E2E8F0] rounded px-1.5 py-1 text-xs bg-white"
+                            className="border rounded px-1.5 py-1 text-xs bg-white"
+                            style={{ borderColor: 'var(--color-border-default)' }}
                             value={task.assignedTo ?? ''}
                             onChange={(e) => void handleAssign(task.id, e.target.value)}
                           >
@@ -329,7 +341,7 @@ export default function HousekeepingManagePage() {
                             ))}
                           </select>
                         ) : (
-                          <span className="text-[#475569] text-xs">{task.assignee?.name ?? '—'}</span>
+                          <span className="text-xs" style={{ color: 'var(--color-text-secondary)' }}>{task.assignee?.name ?? '—'}</span>
                         )}
                       </td>
                       <td className="px-4 py-3">
