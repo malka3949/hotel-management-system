@@ -71,10 +71,13 @@ export default function ReconciliationPage() {
             className="rounded-md border px-3 py-2 text-sm" style={{ borderColor: 'var(--color-border-default)' }} />
         </div>
       </div>
-      {isAdmin && !selectedBranchId && (
-        <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>בחר סניף כדי להציג דוח</p>
-      )}
-
+      {isAdmin && !selectedBranchId ? (
+        <div className="text-center py-16" style={{ color: 'var(--color-text-secondary)' }}>
+          <div className="text-4xl mb-3">🏨</div>
+          <p className="text-sm">בחר סניף כדי לצפות בדוח גביה</p>
+        </div>
+      ) : (
+        <>
       {error && <p className="text-sm text-red-600 mb-4">{error}</p>}
       {loading && <p className="text-sm mb-4" style={{ color: 'var(--color-text-secondary)' }}>טוען...</p>}
 
@@ -214,6 +217,8 @@ export default function ReconciliationPage() {
               </div>
             </div>
           )}
+        </>
+      )}
         </>
       )}
     </div>
